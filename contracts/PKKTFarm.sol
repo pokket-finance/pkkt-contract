@@ -33,17 +33,19 @@ contract PKKTFarm is Ownable {
         uint256 accPKKTPerShare; // Accumulated PKKTs per share, times 1e12. See below.
     }
     // The PKKT TOKEN!
-    PKKTToken public pkkt;
+    PKKTToken public immutable pkkt;
     // Block number when bonus PKKT period ends.
     uint256 public pkktPerBlock;
     // Info of each pool.
     PoolInfo[] public poolInfo;
+    // A record status of LP pool.
+    mapping(address => bool) public isAdded;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
+    // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when PKKT mining starts.
-    uint256 public startBlock;
+    uint256 public immutable startBlock;
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -62,9 +64,15 @@ contract PKKTFarm is Ownable {
         uint256 _pkktPerBlock,
         uint256 _startBlock
     ) public {
+        require(address(_pkkt) != address(0) , "Zero address");
         pkkt = _pkkt;
         pkktPerBlock = _pkktPerBlock;
         startBlock = _startBlock;
+    }
+
+    modifier validatePoolById(uint256 _pid) {
+        require(_pid < poolInfo.length , "Pool are not exist");
+        _;
     }
 
     function poolLength() external view returns (uint256) {
@@ -77,7 +85,8 @@ contract PKKTFarm is Ownable {
         uint256 _allocPoint,
         IERC20 _lpToken,
         bool _withUpdate
-    ) public onlyOwner {
+    ) external onlyOwner {
+        require(!isAdded[address(_lpToken)], "Pool already is added");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -92,6 +101,7 @@ contract PKKTFarm is Ownable {
                 accPKKTPerShare: 0
             })
         );
+        isAdded[address(_lpToken)] = true;
     }
 
     // Update the given pool's PKKT allocation point. Can only be called by the owner.
@@ -99,7 +109,7 @@ contract PKKTFarm is Ownable {
         uint256 _pid,
         uint256 _allocPoint,
         bool _withUpdate
-    ) public onlyOwner {
+    ) external onlyOwner validatePoolById(_pid) {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -129,7 +139,8 @@ contract PKKTFarm is Ownable {
     function pendingPKKT(uint256 _pid, address _user)
         external
         view
-        returns (uint256 )
+        validatePoolById(_pid)
+        returns (uint256)
     {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -158,7 +169,7 @@ contract PKKTFarm is Ownable {
     }
 
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
+    function updatePool(uint256 _pid) public validatePoolById(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -180,7 +191,7 @@ contract PKKTFarm is Ownable {
     }
 
     // Deposit LP tokens to PKKT Farm for PKKT allocation.
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) public validatePoolById(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
@@ -189,19 +200,22 @@ contract PKKTFarm is Ownable {
                     user.rewardDebt
                 );
         user.pendingReward = user.pendingReward.add(pending);
+        user.amount = user.amount.add(_amount);
+        user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
             _amount
         );
-        user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
     // Withdraw LP tokens from Pool.
-    function withdraw(uint256 _pid, uint256 _amount, bool harvestReward) public {
-         PoolInfo storage pool = poolInfo[_pid];
+    function withdraw(uint256 _pid, uint256 _amount, bool harvestReward)
+        external
+        validatePoolById(_pid)
+    {
+        PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         if (harvestReward || user.amount == _amount) {
@@ -215,23 +229,24 @@ contract PKKTFarm is Ownable {
             } 
         }
         user.amount = user.amount.sub(_amount); 
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
         user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
+        pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid) external validatePoolById(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        uint256 amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        pool.lpToken.safeTransfer(address(msg.sender), amount);
+        emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
     //Compound rewards to pkkt pool
-    function compoundReward(uint256 _pkktPoolId) public {
+    function compoundReward(uint256 _pkktPoolId) external validatePoolById(_pkktPoolId) {
         PoolInfo memory pool = poolInfo[_pkktPoolId];
         require(pool.lpToken == IERC20(pkkt), "not pkkt pool");
         uint256 totalPending = harvest(_pkktPoolId);
@@ -241,7 +256,7 @@ contract PKKTFarm is Ownable {
     }
 
     //Harvest proceeds msg.sender
-    function harvest(uint256 _pid) public returns(uint256) {
+    function harvest(uint256 _pid) public validatePoolById(_pid) returns(uint256) {
        updatePool(_pid); 
        PoolInfo storage pool = poolInfo[_pid];
        UserInfo storage user = userInfo[_pid][msg.sender];  
@@ -262,13 +277,12 @@ contract PKKTFarm is Ownable {
     }
 
     //Harvest proceeds of all pools for msg.sender
-    function harvestAll(uint256[] memory _pids) public {
+    function harvestAll(uint256[] memory _pids) external {
        uint256 length = _pids.length;
         for (uint256 pid = 0; pid < length; ++pid) {
             harvest(pid);
         }
     }
-
 
     // Safe pkkt transfer function, just in case if rounding error causes pool to not have enough PKKTs.
     function safePKKTTransfer(address _to, uint256 _amount) internal {

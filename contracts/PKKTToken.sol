@@ -16,7 +16,7 @@ contract PKKTToken is ERC20, Ownable {
      /**
      * @dev maximum amount can be minted.
      */
-    uint256 private _cap;
+    uint256 private immutable _cap;
 
     event MinterAdded(address indexed account);
     event MinterRemoved(address indexed account);
@@ -61,11 +61,11 @@ contract PKKTToken is ERC20, Ownable {
         _approve(_account, msg.sender, decreasedAllowance);
         _burn(_account, _amount);
     }
-    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner .
+    /// @notice Creates `_amount` token to `_to`. Must only be called by the minter .
     function mint(address _to, uint256 _amount) public virtual {
-        require(minters[msg.sender] == true , "must have minter role to mint");
+        require(minters[msg.sender], "must have minter role to mint");
         require(mintingAllowance[msg.sender] >= _amount, "mint amount exceeds allowance");
-        require(totalSupply().add(_amount) <= _cap, "mint amount exceeds cap" );
+        require(totalSupply().add(_amount) <= _cap, "mint amount exceeds cap");
         mintingAllowance[msg.sender] = mintingAllowance[msg.sender].sub(_amount);
         _mint(_to, _amount);
     }
@@ -98,3 +98,4 @@ contract PKKTToken is ERC20, Ownable {
     }
 
 }
+
