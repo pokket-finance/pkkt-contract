@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -39,7 +39,7 @@ contract PKKTFarm is Ownable {
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // A record status of LP pool.
-    mapping(address => bool) public isAdded;
+    mapping(address => bool) public isAdded; 
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
@@ -87,6 +87,10 @@ contract PKKTFarm is Ownable {
         bool _withUpdate
     ) external onlyOwner {
         require(!isAdded[address(_lpToken)], "Pool already is added");
+        //here to ensure it's a valid address
+        uint256 lpSupply = _lpToken.balanceOf(address(this));
+        require(lpSupply == 0, "Pool should not been stake");
+        
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -206,7 +210,7 @@ contract PKKTFarm is Ownable {
             address(msg.sender),
             address(this),
             _amount
-        );
+        ); 
         emit Deposit(msg.sender, _pid, _amount);
     }
 
