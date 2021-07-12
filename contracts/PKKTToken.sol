@@ -22,7 +22,7 @@ contract PKKTToken is ERC20, Ownable {
     event MinterRemoved(address indexed account);
     event MintingAllowanceUpdated(address indexed account, uint256 oldAllowance, uint256 newAllowance);
 
-    constructor(uint256 cap_) public ERC20("PKKT Token", "PKKT") {
+    constructor(string memory tokenName, string memory symbol, uint256 cap_) public ERC20(tokenName, symbol) {
         minters[msg.sender] = true;
         _cap = cap_;
     }
