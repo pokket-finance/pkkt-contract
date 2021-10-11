@@ -14,7 +14,7 @@ describe("PKKT-Farm ", function () {
     this.ERC20Mock = await ethers.getContractFactory("ERC20Mock", this.minter);
   });
   beforeEach(async function () {
-    this.pkkt = await this.PKKTToken.deploy("100000000000");
+    this.pkkt = await this.PKKTToken.deploy("PokketToken","PKKT","100000000000");
     await this.pkkt.deployed();
   });
 

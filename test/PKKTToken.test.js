@@ -11,7 +11,7 @@ describe("PKKT Token", async function () {
   });
 
   beforeEach(async function () {
-    this.pkktToken = await this.PKKTToken.deploy("10000000");
+    this.pkktToken = await this.PKKTToken.deploy("PokketToken", "PKKT", "10000000");
     await this.pkktToken.deployed();
     await this.pkktToken.increaseMintingAllowance(
       this.alice.address,
