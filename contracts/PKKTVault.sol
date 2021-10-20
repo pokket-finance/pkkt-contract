@@ -1,64 +1,44 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    SafeERC20
-} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    ReentrancyGuardUpgradeable
-} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {
-    OwnableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {
-    ERC20Upgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol"; 
 import {Vault} from "../libraries/Vault.sol";  
 import "./PKKTToken.sol";
+import "./PKKTRewardManager.sol";
 
-contract PKKTVault is Ownable
-{
+contract PKKTVault is PKKTRewardManager {
     using SafeERC20 for IERC20;
     using SafeMath for uint256; 
- 
- 
-    // The PKKT TOKEN!
-    PKKTToken public immutable Pkkt;
-    // the underlying token: usdt/usdc/dai/etc.
-    address public immutable Underlying; 
+  
     
-    //current interest rates
-    Vault.SettlementSettings public VaultSettings;
+    Vault.VaultInfo[] public vaultInfo;
+
     bool public isSettelled;
-    uint256 private totalMatured;
  
     uint256 public immutable SettlementTimeOfDay;
 
     uint256 public immutable DeadlineTimeOfDay;
-
-    //users by address
-    mapping(address => Vault.UserVaultInfo) private userVaultInfo;
-
-    //user address enumeration
-    address[] private users;
+ 
+    mapping(uint256 => mapping(address => Vault.UserVaultInfo)) public userInfo; 
+    
 
 
     /************************************************
      *  EVENTS
      ***********************************************/
+ 
+    event Deposit(address indexed account, uint256 indexed vid, uint256 amount, bool internal); 
 
-    event Deposit(address indexed account, uint256 amount, bool internal); 
-
-    event InitiateWithdraw(address indexed account, uint256 amount);
+    event InitiateWithdraw(address indexed account, uint256 indexed vid,uint256 amount);
     
-    event CancelWithdraw(address indexed account, uint256 amount);
+    event CancelWithdraw(address indexed account, uint256 indexed vid, uint256 amount);
 
-    event Redeem(address indexed account, uint256 amount);
+    event Redeem(address indexed account, uint256 indexed vid, uint256 amount);
 
-    event CompleteWithdraw(address indexed account, uint256 amount);
+    event CompleteWithdraw(address indexed account, uint256 indexed vid, uint256 amount);
 
     event InitiateSettlement()
  
@@ -71,19 +51,69 @@ contract PKKTVault is Ownable
      * @notice Initializes the contract with immutable variables
      */
     constructor(
-        PKKTToken _pkkt,
-        address _underlying,
-        uint256 _settlementTimeOfDay,
-        uint256 _deadlineTimeOfDay
-    ) {
-        require(_underlying != address(0), "!_underlying"); 
-        require(_deadlineTimeOfDay < _settlementTimeOfDay, "Deadline must be earlier than settlement time"); 
-        Pkkt = _pkkt;
-        Underlying = _underlying; 
-        SettlementTimeOfDay = _settlementTimeOfDay;
-        DeadlineTimeOfDay = _deadlineTimeOfDay;
+        PKKTToken _pkkt, 
+        uint256 _pkktPerBlock,
+        uint256 _startBlock
+    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock) {  
+
     }
 
+
+    modifier validateVaultById(uint256 _vid) {
+        require(_vid < vaultInfo.length , "Vault doesn't exist");
+        _;
+    }
+
+    // Add a range of new underlyings to the vault. Can only be called by the owner.
+    function addMany(IERC20[] memory _underlyings, bool _withUpdate) external onlyOwner {
+         for(uint256 i = 0; i < _underlyings,length; i++) {
+            IERC20 memory underlying = _underlyings[i];
+            require(!isAdded[address(underlying)], "Vault already is added"); 
+            //here to ensure it's a valid address
+            uint256 underlyingSupply = underlying.balanceOf(address(this));
+            require(underlyingSupply == 0, "Vault should not been stake");
+        }  
+        if (_withUpdate) {
+            massUpdatePools();
+        } 
+        for(uint256 i = 0; i < _underlyings,length; i++) {
+            IERC20 memory underlying = _underlyings[i];
+            uint256 lastRewardBlock =
+                block.number > startBlock ? block.number : startBlock; 
+            vaultInfo.push(
+                        Vault.VaultInfo({
+                            underlying: underlying, 
+                            lastRewardBlock: lastRewardBlock,
+                            accPKKTPerShare: 0
+                        })
+                    );
+            isAdded[address(underlying)] = true;
+        }         
+    }
+    // Add a new underlying  to the vault. Can only be called by the owner.
+    // XXX DO NOT add the same underlying token more than once. Rewards will be messed up if you do.
+    function add(IERC20 _underlying,
+        bool _withUpdate
+    ) external onlyOwner {
+        require(!isAdded[address(_underlying)], "Vault already is added");
+        //here to ensure it's a valid address
+        uint256 underlyingSupply = _underlying.balanceOf(address(this));
+        require(underlyingSupply == 0, "Vault should not been stake");
+        
+        if (_withUpdate) {
+            massUpdatePools();
+        }
+        uint256 lastRewardBlock =
+            block.number > startBlock ? block.number : startBlock; 
+        vaultInfo.push(
+                    Vault.VaultInfo({
+                        underlying: _underlying, 
+                        lastRewardBlock: lastRewardBlock,
+                        accPKKTPerShare: 0
+                    })
+                );
+        isAdded[address(_underlying)] = true;
+    }
 
 
     /************************************************
@@ -94,39 +124,37 @@ contract PKKTVault is Ownable
      * @notice Deposits the `underlying` from msg.sender.
      * @param amount is the amount of `asset` to deposit
      */
-    function deposit(uint256 amount) external nonReentrant {
-        require(amount > 0, "!amount");
-        Vault.UserVaultInfo storage userInfo = userVaultInfo[msg.sender];
-        userInfo.pendingAmount = userInfo.pendingAmount.add(amount);
+    function deposit(uint256 _vid, uint256 _amount) external validateVaultById(_vid) {
+        require(_amount > 0, "!amount");
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
 
         // An approve() by the msg.sender is required beforehand
-        IERC20(Underlying).safeTransferFrom(
+        IERC20(vault.underlying).safeTransferFrom(
             msg.sender,
             address(this),
-            amount
+            _amount
         );
-         
-        if (userInfo.isEmpty){
-            users.push(msg.sender);
-            userInfo.isEmpty = false;
-        } 
-        emit Deposit(msg.sender, amount, false);
+          
+        user.pendingAmount = user.pendingAmount.add(_amount);
+        vault.totalPending = vault.totalPending.add(_amount);
+        emit Deposit(msg.sender, _vid, _amount, false);
     }
   
     /**
      * @notice Redeems pending amounts that are owed to the account
      * @param amount is the number of underlyings to redeem
      */
-    function redeem(uint256 amount) external nonReentrant {
-        require(amount > 0, "!amount");
-        _redeem(amount, false);
+    function redeem(uint256 _vid, uint256 _amount) external validateVaultById(_vid) {
+        require(_amount > 0, "!amount");
+        _redeem(_vid, _amount, false);
     }
 
     /**
      * @notice Redeems the entire pending balance that is owed to the account
      */
-    function maxRedeem() external nonReentrant {
-        _redeem(0, true);
+    function maxRedeem(uint256 _vid) external validateVaultById(_vid) {
+        _redeem(_vid, 0, true);
     }
 
     /**
@@ -134,41 +162,43 @@ contract PKKTVault is Ownable
      * @param amount is the number of underlyings to redeem, could be 0 when isMax=true
      * @param isMax is flag for when callers do a max redemption
      */
-    function _redeem(uint256 amount, bool isMax) internal {
-        Vault.UserVaultInfo storage userInfo =
-            userVaultInfo[msg.sender]; 
+    function _redeem(uint256 _vid, uint256 _amount, bool _isMax) internal {
+        
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
  
-        amount = isMax ? userInfo.pendingAmount : amount;
-        if (amount == 0) {
+        _amount = _isMax ? user.pendingAmount : _amount;
+        if (_amount == 0) {
             return;
         }
-        require(amount <= userInfo.pendingAmount, "Exceeds available");
+        require(_amount <= user.pendingAmount, "Exceeds available");
 
-        userInfo.pendingAmount = userInfo.pendingAmount.sub(amount); 
-        IERC20(Underlying).safeTransfer(
+        user.pendingAmount = user.pendingAmount.sub(_amount);  
+        vault.totalPending = vault.totalPending.sub(_amount);
+        IERC20(vault.underlying).safeTransfer(
             address(this),
             msg.sender,
-            amount
+            _amount
         ); 
         
 
-        emit Redeem(msg.sender, amount); 
+        emit Redeem(msg.sender, _vid, _amount); 
     }
  
     /**
      * @notice Initiates a withdrawal that can be processed once the round completes
      * @param amount is the number of underlyings to withdraw
      */
-    function initiateWithdraw(uint256 amount) external nonReentrant {
-        _initiateWithdraw(amount, false);
+    function initiateWithdraw(uint256 _vid, uint256 _amount) external validateVaultById(_vid)  {
+        _initiateWithdraw(_vid, _amount, false);
    
     }
 
     /**
      * @notice Withraws the entire available that is owed to the account
      */
-    function maxInitiateWithdraw() external nonReentrant {
-        _initiateWithdraw(0, true);
+    function maxInitiateWithdraw(uint256 _vid) external validateVaultById(_vid) {
+        _initiateWithdraw(_vid, 0, true);
     }
 
     /**
@@ -176,20 +206,22 @@ contract PKKTVault is Ownable
      * @param amount is the number of underlyings to initiate withdrawal, could be 0 when isMax=true
      * @param isMax is flag for when callers do a max withdrawal
      */
-    function _initiateWithdraw(uint256 amount, bool isMax) internal {
-        require(amount > 0, "!amount");
-        Vault.UserVaultInfo storage userInfo = userVaultInfo[msg.sender];
+    function _initiateWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
+        require(_amount > 0, "!amount");
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
 
-        uint256 maxAmountForRequest = userInfo.toMatureAmount.sub(userInfo.requestingAmount);
+        uint256 maxAmountForRequest = user.ongoingAmount.sub(user.requestingAmount);
        
-        amount = isMax ? maxAmountForRequest : amount;
-        if (amount == 0) {
+        _amount = _isMax ? maxAmountForRequest : _amount;
+        if (_amount == 0) {
             return;
         }
         
-        require(amount <= maxAmountForRequest,"Exceeds available"); 
-        userInfo.requestingAmount = userInfo.requestingAmount.add(amount);  
-        emit InitiateWithdraw(msg.sender, amount);
+        require(_amount <= maxAmountForRequest,"Exceeds available"); 
+        user.requestingAmount = user.requestingAmount.add(_amount);  
+        vault.totalRequesting = vault.totalRequesting.add(_amount);
+        emit InitiateWithdraw(msg.sender, _vid, _amount);
 
     }
  
@@ -197,15 +229,15 @@ contract PKKTVault is Ownable
      * @notice Cancel a withdrawal 
      * @param amount is the number of underlyings to cancel
      */
-    function cancelWithdraw(uint256 amount) external nonReentrant {
-        _cancelWithdraw(amount, false); 
+    function cancelWithdraw(uint256 _vid, uint256 _amount) external validateVaultById(_vid) {
+        _cancelWithdraw(_vid, _amount, false); 
     }
 
     /**
      * @notice Cancel the entire withdrawal
      */
-    function maxCancelWithdraw() external nonReentrant {
-        _cancelWithdraw(0, true); 
+    function maxCancelWithdraw(uint256 _vid) external validateVaultById(_vid) {
+        _cancelWithdraw(_vid, 0, true); 
     }
  
 
@@ -214,35 +246,36 @@ contract PKKTVault is Ownable
      * @param amount is the number of underlyings to cancel withdrawal, could be 0 when isMax=true
      * @param isMax is flag for when callers do a max withdrawal cancellation
      */
-    function _cancelWithdraw(uint256 amount, bool isMax) internal {
-        require(amount > 0, "!amount");
-        Vault.UserVaultInfo storage userInfo = userVaultInfo[msg.sender];
+    function _cancelWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
+        require(_amount > 0, "!amount");
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
  
-       amount = isMax ? userInfo.requestingAmount : amount;
-        if (amount == 0) {
+       _amount = _isMax ? user.requestingAmount : _amount;
+        if (_amount == 0) {
             return;
         }
         
-        require(amount <= userInfo.requestingAmount,  "Exceeds available"); 
-        userInfo.requestingAmount = userInfo.requestingAmount.sub(amount); 
-        emit CancelWithdraw(msg.sender, amount);
-
+        require(_amount <= user.requestingAmount,  "Exceeds available"); 
+        user.requestingAmount = user.requestingAmount.sub(_amount); 
+        vault.totalRequesting = vault.totalRequesting.sub(_amount);
+        emit CancelWithdraw(msg.sender, _vid, _amount); 
     }
 
 
     /**
      * @notice Completes partially a scheduled withdrawal from a past round.
      */
-    function completeWithdraw(uint256 amount) external nonReentrant {
-        _completeWithdraw(amount, false); 
+    function completeWithdraw(uint256 _vid, uint256 _amount) external validateVaultById(_vid) {
+        _completeWithdraw(_vid, _amount, false); 
   
     }
     
     /**
      * @notice Completes a whole scheduled withdrawal from a past round.
      */
-    function maxCompleteWithdraw() external nonReeentrant {
-        _completeWithdraw(0, true);
+    function maxCompleteWithdraw(uint256 _vid) external validateVaultById(_vid) {
+        _completeWithdraw(_vid, 0, true);
     }
 
     /**
@@ -250,25 +283,27 @@ contract PKKTVault is Ownable
      * @param amount is the number of underlyings to complete withdrawal, could be 0 when isMax=true
      * @param isMax is flag for when callers do a max withdrawal completion
      */
-    function _completeWithdraw(uint256 amount, bool isMax) internal {
+    function _completeWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
         require(isSettelled, "Settlment not finished yet");
-        Vault.UserVaultInfo storage userInfo = userVaultInfo[msg.sender];
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
  
-        amount = isMax ? userInfo.maturedAmount : amount;
-        if (amount == 0) {
+        _amount = _isMax ? user.maturedAmount : _amount;
+        if (_amount == 0) {
             return;
         }
 
-        require(amount <= userInfo.maturedAmount, "Exceeds available");
+        require(_amount <= user.maturedAmount, "Exceeds available");
     
-        IERC20(Underlying).safeTransfer(
+        IERC20(vault.underlying).safeTransfer(
             address(this),
             msg.sender,
-            amount
+            _amount
         ); 
         
-        userInfo.maturedAmount = userInfo.maturedAmount.sub(amount); 
-        emit CompleteWithdraw(msg.sender, amount);
+        user.maturedAmount = user.maturedAmount.sub(_amount); 
+        vault.totalMatured = vault.totalMatured.sub(_amount);
+        emit CompleteWithdraw(msg.sender, _vid, _amount);
 
     }
     
@@ -276,17 +311,17 @@ contract PKKTVault is Ownable
      * @notice revert a scheduled withdrawal from a past round and reput to pending pool 
      * @param amount is the number of underlyings to revert
      */
-    function redeposit(uint256 amount) external nonReentrant {
+    function redeposit(uint256 _vid, uint256 _amount) external validateVaultById(_vid) {
        
-         _redeposit(amount, false); 
+         _redeposit(_vid, _amount, false); 
     }
 
         
     /**
      * @notice revert a whole scheduled withdrawal from a past round and reput to pending pool  
      */
-    function maxRedeposit() external nonReentrant {
-         _redeposit(0, true); 
+    function maxRedeposit(uint256 _vid) external validateVaultById(_vid) {
+         _redeposit(_vid, 0, true); 
     } 
  
     /**
@@ -294,19 +329,22 @@ contract PKKTVault is Ownable
      * @param amount is the number of underlyings to revert, could be 0 when isMax=true
      * @param isMax is flag for when callers do a max withdrawal reversion
      */
-    function _redeposit(uint256 amount, bool isMax) internal {
-        Vault.UserVaultInfo storage userInfo = userVaultInfo[msg.sender];
+    function _redeposit(uint256 _vid, uint256 _amount, bool _isMax) internal {
+        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
  
-        amount = isMax ? userInfo.maturedAmount : amount;
-        if (amount == 0) {
+        _amount = _isMax ? user.maturedAmount : _amount;
+        if (_amount == 0) {
             return;
         }
 
-        require(amount <= userInfo.maturedAmount, "Exceeds available");
+        require(_amount <= user.maturedAmount, "Exceeds available");
    
-        userInfo.pendingAmount = userInfo.pendingAmount.add(amount);
-        userInfo.maturedAmount = userInfo.maturedAmount.sub(amount); 
-        emit Deposit(msg.sender, amount, true); 
+        user.pendingAmount = user.pendingAmount.add(_amount);
+        user.maturedAmount = user.maturedAmount.sub(_amount); 
+        vault.totalPending = vault.totalPending.add(_amount);
+        vault.totalMatured = vault.totalMatured.sub(_amount); 
+        emit Deposit(msg.sender, _vid, _amount, true); 
  
     }
 
@@ -324,7 +362,8 @@ contract PKKTVault is Ownable
      ***********************************************/
 
     //todo: implement pkkt reward
-    function initiateSettlement(Vault.SettlementSettings memory settings) external nonReentrant, onlyOwner returns(uint256){
+    //0 for _pkktPerBlock
+    function initiateSettlement(uint256 _pkktPerBlock) external onlyOwner returns(uint256[] memory balanceDiffs){
   
         int256 diff = 0;
         totalMatured = 0;
@@ -342,14 +381,20 @@ contract PKKTVault is Ownable
            totalMatured = totalMatured.add(userInfo.maturedAmount);
         }
         
-         VaultSettings = settings;
+        VaultSettings = settings;
         //if positive, send to trader, else trader send back
         return diff;
     }
 
-    function finishSettlement() external nonReentrant {
-        //check if the totalMatured is fullfilled or not
-        require(IERC20(Underlying).balanceOf(address(this)) >=  totalMatured, "Matured amount not fullfilled");
+    function finishSettlement() external {
+
+        uint256 length = vaultInfo.length;
+        for (uint256 vid = 0; vid < length; vid++) {
+           Vault.VaultInfo memory vault = vaultInfo[vid];
+           //check if the totalMatured is fullfilled or not
+           require(IERC20(vault.underlying).balanceOf(address(this)) >=  vault.totalMatured, "Matured amount not fullfilled");
+        }
+
         isSettelled = true;
     }
 }
