@@ -3,8 +3,13 @@ pragma solidity 0.6.12;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "@openzeppelin/contracts/math/SafeMath.sol"; 
+
 library Vault { 
-    struct UserVaultInfo {
+    
+    using SafeMath for uint256;
+
+    struct UserInfo {
         uint256 pendingAmount;  
         uint256 ongoingAmount;   
         uint256 requestingAmount;
@@ -20,7 +25,7 @@ library Vault {
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
-        bool isEmpty;
+        bool hasDeposit;
     } 
  
     struct VaultInfo {   
@@ -33,7 +38,27 @@ library Vault {
       
         // the underlying token: usdt/usdc/dai/etc.
         IERC20 underlying;
+        uint8 decimals;
     }
- 
+    
+    function getShare(VaultInfo storage _vault, uint8 _maxDecimals) external returns(uint256) {
+        uint8 extraDecimals = _maxDecimals.sub(_vault.decimals);
+        if (extraDecimals > 0) {
+            return _vault.totalOngoing.mul(10 ** extraDecimals);
+        }
+        else {
+            return _vault.totalOngoing;
+        }
+    }
+
+    function getUserShare(VaultInfo storage _vault, UserInfo storage _user, uint8 _maxDecimals) external returns(uint256) {
+        uint8 extraDecimals = _maxDecimals.sub(_vault.decimals);
+        if (extraDecimals > 0) {
+            return _user.ongoingAmount.mul(10 ** extraDecimals);
+        }
+        else {
+            return _user.ongoingAmount;
+        }
+    }
 
 }

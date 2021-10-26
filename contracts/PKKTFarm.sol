@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./PKKTToken.sol"; 
 import "./PKKTRewardManager.sol";
 import {Pool} from "../libraries/Pool.sol";  
+import {PoolData, UserData} from "../libraries/SharedData.sol";  
 
 contract PKKTFarm is PKKTRewardManager {
     using SafeMath for uint256;
@@ -40,12 +41,8 @@ contract PKKTFarm is PKKTRewardManager {
         
     }
 
-    modifier validatePoolById(uint256 _pid) {
-        require(_pid < poolInfo.length , "Pool doesn't exist");
-        _;
-    }
-
-    function poolLength() external view returns (uint256) {
+  
+    function poolLength() public override view returns (uint256) {
         return poolInfo.length;
     }
     
@@ -146,85 +143,58 @@ contract PKKTFarm is PKKTRewardManager {
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
-    // Return time multiplier over the given _from to _to block.
-    function timeMultiplier(uint256 _from, uint256 _to)
-        public
-        pure
-        returns (uint256)
-    {
-            return _to.sub(_from);
-    
+
+    function _getPoolData(uint256 _poolId, uint256 _getShare) override returns(PoolData.Data memory){
+        Pool.PoolInfo storage pool = poolInfo[_pid];
+        return PoolData.Data({
+            lastRewardBlock: pool.lastRewardBlock,
+            accPKKTPerShare: pool.accPKKTPerShare,
+            shareAmount: _getShare ? pool.lpToken.balanceOf(address(this)) : 0,
+            id: _poolId
+        });
+    }
+
+    function _getUserData(uint256 _poolId, uint256 _userAddress) override returns (UserData.Data memory) {
+        
+        Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+
+        return UserData.Data({
+            shareAmount: user.amount,
+            rewardDebt: user.rewardDebt,
+            pendingReward: user.pendingReward
+        });
+    }
+
+    function _getPoolPercentage(PoolData.Data memory _poolData) override returns(uint256) {
+         Pool.PoolInfo storage pool = poolInfo[_poolData.id];
+         return pool.allocPoint.mul(normalizer).div(totalAllocPoint);
     }
  
-
-    // View function to see pending PKKTs on frontend.
-    function pendingPKKT(uint256 _pid, address _user)
-        external
-        view
-        validatePoolById(_pid)
-        returns (uint256)
-    {
+    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
         Pool.PoolInfo storage pool = poolInfo[_pid];
-        Pool.UserInfo storage user = userInfo[_pid][_user];
-        uint256 accPKKTPerShare = pool.accPKKTPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier =
-                timeMultiplier(pool.lastRewardBlock, block.number);
-            uint256 pkktReward =
-                multiplier.mul(pkktPerBlock).mul(pool.allocPoint).div(
-                    totalAllocPoint
-                );
-            accPKKTPerShare = accPKKTPerShare.add(
-                pkktReward.mul(1e12).div(lpSupply)
-            );
-        }
-        return user.pendingReward.add(user.amount.mul(accPKKTPerShare).div(1e12).sub(user.rewardDebt));
-    }
-
-    // Update reward vairables for all pools. Be careful of gas spending!
-    function massUpdatePools() public override {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
-        }
-    }
-
-    // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public validatePoolById(_pid) {
-        Pool.PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
-            return;
-        }
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (lpSupply == 0) {
-            pool.lastRewardBlock = block.number;
-            return;
-        }
-        uint256 multiplier = timeMultiplier(pool.lastRewardBlock, block.number);
-        uint256 pkktReward =
-            multiplier.mul(pkktPerBlock).mul(pool.allocPoint).div(
-                totalAllocPoint
-            );
-        pool.accPKKTPerShare = pool.accPKKTPerShare.add(
-            pkktReward.mul(1e12).div(lpSupply)
-        );
         pool.lastRewardBlock = block.number;
+        if (_accPKKTPerShare > 0) { 
+           pool.accPKKTPerShare = _accPKKTPerShare;
+        }
+    }
+    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue)  override{
+         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+         user.pendingReward = _newValue;
     }
 
+    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) override {
+         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+         user.rewardDebt = _newValue;
+    }
+     
     // Deposit LP tokens to PKKT Farm for PKKT allocation.
     function deposit(uint256 _pid, uint256 _amount) public validatePoolById(_pid) {
         require(_amount > 0, "!amount");
         Pool.PoolInfo storage pool = poolInfo[_pid];
-        Pool.UserInfo storage user = userInfo[_pid][msg.sender];
+        Pool.UserInfo storage user = userInfo[_pid][msg.sender]; 
         updatePool(_pid);
-        uint256 pending =
-                user.amount.mul(pool.accPKKTPerShare).div(1e12).sub(
-                    user.rewardDebt
-                );
-        user.pendingReward = user.pendingReward.add(pending);
-        user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
+        updateUserReward(_pid, msg.sender, user.amount, user.amount.add(_amount), true);
+        user.amount = user.amount.add(_amount); 
         pool.lpToken.safeTransferFrom(
             address(msg.sender),
             address(this),
@@ -242,18 +212,17 @@ contract PKKTFarm is PKKTRewardManager {
         Pool.PoolInfo storage pool = poolInfo[_pid];
         Pool.UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
+        bool updatePending = false;
         if (harvestReward || user.amount == _amount) {
             harvest(_pid); 
         }
         else { 
-            updatePool(_pid);
-            uint256 pending = user.amount.mul(pool.accPKKTPerShare).div(1e12).sub(user.rewardDebt);
-            if (pending > 0) { 
-               user.pendingReward = user.pendingReward.add(pending);
-            } 
+            updatePool(_pid); 
+            updatePending = true;
         }
-        user.amount = user.amount.sub(_amount); 
-        user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
+        
+        updateUserReward(_pid, msg.sender, user.amount, user.amount.sub(_amount), updatePending); 
+        user.amount = user.amount.sub(_amount);  
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -278,34 +247,6 @@ contract PKKTFarm is PKKTRewardManager {
             deposit(_pkktPoolId, totalPending);
         }
     }
-
-    //Harvest proceeds msg.sender
-    function harvest(uint256 _pid) public validatePoolById(_pid) returns(uint256) {
-       updatePool(_pid); 
-       Pool.PoolInfo storage pool = poolInfo[_pid];
-       Pool.UserInfo storage user = userInfo[_pid][msg.sender];  
-       uint256 pendingReward = user.pendingReward;
-       uint256 totalPending = 
-                            user.amount.mul(pool.accPKKTPerShare)
-                                        .div(1e12)
-                                        .sub(user.rewardDebt)
-                                        .add(pendingReward); 
-       user.pendingReward = 0;
-       if (totalPending > 0) {
-            pkkt.mint(address(this), totalPending);
-            safePKKTTransfer(msg.sender, totalPending); 
-        }
-        user.rewardDebt = user.amount.mul(pool.accPKKTPerShare).div(1e12);
-        emit RewardsHarvested(msg.sender, _pid, totalPending);
-        return totalPending;
-    }
-
-    //Harvest proceeds of all pools for msg.sender
-    function harvestAll(uint256[] memory _pids) external {
-       uint256 length = _pids.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            harvest(pid);
-        }
-    }
+ 
 
 }
