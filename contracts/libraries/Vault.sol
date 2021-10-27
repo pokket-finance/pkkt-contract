@@ -60,5 +60,11 @@ library Vault {
             return _user.ongoingAmount;
         }
     }
+    struct VaultSettings {
+        
+        IERC20 underlying; 
+        uint8 decimals;
+    }
 
+     
 }

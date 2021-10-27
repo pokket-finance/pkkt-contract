@@ -27,17 +27,12 @@ contract PKKTFarm is PKKTRewardManager {
         uint256 indexed pid,
         uint256 amount
     );
-    event RewardsHarvested(
-        address indexed user,
-        uint256 indexed pid,
-        uint256 amount
-    );
 
     constructor(
         PKKTToken _pkkt,
         uint256 _pkktPerBlock,
         uint256 _startBlock
-    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock) {
+    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock, "Pool") {
         
     }
 
@@ -48,22 +43,20 @@ contract PKKTFarm is PKKTRewardManager {
     
     
     // Add an array of new lps to the pool. Can only be called by the owner.
-    function addMany(Pool.PoolSettings[] memory _pools,
-        bool _withUpdate) external onlyOwner {
-        for(uint256 i = 0; i < _pools,length; i++) {
+    function addMany(Pool.PoolSettings[] memory _pools, bool _withUpdate) external onlyOwner {
+        for(uint256 i = 0; i < _pools.length; i++) {
             Pool.PoolSettings memory pool = _pools[i];
             require(!isAdded[address(pool.lpToken)], "Pool already is added");
             uint256 lpSupply = pool.lpToken.balanceOf(address(this)); 
-            require(lpSupply == 0, "Pool should not been stake"); 
+            require(lpSupply == 0, "Pool should not be staked"); 
         }  
         if (_withUpdate) {
             massUpdatePools();
         }
+        uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         for(uint256 i = 0; i < _pools,length; i++) {
             
             Pool.PoolSettings memory pool = _pools[i];
-            uint256 lastRewardBlock =
-                block.number > startBlock ? block.number : startBlock;
             totalAllocPoint = totalAllocPoint.add(pool.allocPoint);
             poolInfo.push(
                 Pool.PoolInfo({
@@ -79,26 +72,22 @@ contract PKKTFarm is PKKTRewardManager {
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(
-        uint256 _allocPoint,
-        IERC20 _lpToken,
-        bool _withUpdate
-    ) external onlyOwner {
-        require(!isAdded[address(_lpToken)], "Pool already is added");
+    function add(Pool.PoolSettings[] memory _pool, bool _withUpdate) external onlyOwner {
+        require(!isAdded[address(_pool.lpToken)], "Pool already is added");
         //here to ensure it's a valid address
-        uint256 lpSupply = _lpToken.balanceOf(address(this));
-        require(lpSupply == 0, "Pool should not been stake");
+        uint256 lpSupply = _pool.lpToken.balanceOf(address(this));
+        require(lpSupply == 0, "Pool should not be staked");
         
         if (_withUpdate) {
             massUpdatePools();
         }
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
-        totalAllocPoint = totalAllocPoint.add(_allocPoint);
+        totalAllocPoint = totalAllocPoint.add(_pool.allocPoint);
         poolInfo.push(
             Pool.PoolInfo({
-                lpToken: _lpToken,
-                allocPoint: _allocPoint,
+                lpToken: _pool.lpToken,
+                allocPoint: _pool.allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accPKKTPerShare: 0
             })
@@ -107,12 +96,9 @@ contract PKKTFarm is PKKTRewardManager {
     }
 
     // Update the given array of pools' PKKT allocation points. Can only be called by the owner.
-    function setMany(
-        UpdatePoolParameters[] memory _newSettings,
-        bool _withUpdate
-    ) external onlyOwner  {
-        for(uint256 i = 0; i < _newSettings,length; i++) {
-            Pool.UpdatePoolParameters memory newSetting = _newSettings[i]; 
+    function setMany(Pool.UpdatePoolParameters[] memory _newSettings, bool _withUpdate) external onlyOwner  {
+        for(uint256 i = 0; i < _newSettings.length; i++) {
+           Pool.UpdatePoolParameters memory newSetting = _newSettings[i]; 
            require(newSetting.pid < poolInfo.length , "Pool doesn't exist"); 
         }  
 
@@ -129,64 +115,20 @@ contract PKKTFarm is PKKTRewardManager {
     }
 
     // Update the given pool's PKKT allocation point. Can only be called by the owner.
-    function set(
-        uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
-    ) external onlyOwner validatePoolById(_pid) {
+    function set(Pool.UpdatePoolParameters _newSetting, bool _withUpdate) external 
+    onlyOwner validatePoolById(_newSetting.pid) 
+    {
         if (_withUpdate) {
             massUpdatePools();
         }
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(
+        totalAllocPoint = totalAllocPoint.sub(poolInfo[_newSetting.pid].allocPoint).add(
             _allocPoint
         );
-        poolInfo[_pid].allocPoint = _allocPoint;
+        poolInfo[_newSetting.pid].allocPoint = _newSetting.allocPoint;
     }
 
 
-    function _getPoolData(uint256 _poolId, uint256 _getShare) override returns(PoolData.Data memory){
-        Pool.PoolInfo storage pool = poolInfo[_pid];
-        return PoolData.Data({
-            lastRewardBlock: pool.lastRewardBlock,
-            accPKKTPerShare: pool.accPKKTPerShare,
-            shareAmount: _getShare ? pool.lpToken.balanceOf(address(this)) : 0,
-            id: _poolId
-        });
-    }
-
-    function _getUserData(uint256 _poolId, uint256 _userAddress) override returns (UserData.Data memory) {
-        
-        Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
-
-        return UserData.Data({
-            shareAmount: user.amount,
-            rewardDebt: user.rewardDebt,
-            pendingReward: user.pendingReward
-        });
-    }
-
-    function _getPoolPercentage(PoolData.Data memory _poolData) override returns(uint256) {
-         Pool.PoolInfo storage pool = poolInfo[_poolData.id];
-         return pool.allocPoint.mul(normalizer).div(totalAllocPoint);
-    }
  
-    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
-        Pool.PoolInfo storage pool = poolInfo[_pid];
-        pool.lastRewardBlock = block.number;
-        if (_accPKKTPerShare > 0) { 
-           pool.accPKKTPerShare = _accPKKTPerShare;
-        }
-    }
-    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue)  override{
-         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
-         user.pendingReward = _newValue;
-    }
-
-    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) override {
-         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
-         user.rewardDebt = _newValue;
-    }
-     
     // Deposit LP tokens to PKKT Farm for PKKT allocation.
     function deposit(uint256 _pid, uint256 _amount) public validatePoolById(_pid) {
         require(_amount > 0, "!amount");
@@ -204,16 +146,16 @@ contract PKKTFarm is PKKTRewardManager {
     }
 
     // Withdraw LP tokens from Pool.
-    function withdraw(uint256 _pid, uint256 _amount, bool harvestReward)
+    function withdraw(uint256 _pid, uint256 _amount, bool _harvestReward)
         external
         validatePoolById(_pid)
     {
         require(_amount > 0, "!amount");
         Pool.PoolInfo storage pool = poolInfo[_pid];
         Pool.UserInfo storage user = userInfo[_pid][msg.sender];
-        require(user.amount >= _amount, "withdraw: not good");
+        require(user.amount >= _amount, "withdraw: exceeds available");
         bool updatePending = false;
-        if (harvestReward || user.amount == _amount) {
+        if (_harvestReward || user.amount == _amount) {
             harvest(_pid); 
         }
         else { 
@@ -248,5 +190,48 @@ contract PKKTFarm is PKKTRewardManager {
         }
     }
  
+    
+    function _getPoolData(uint256 _poolId, uint256 _getShare) override view returns(PoolData.Data memory){
+        Pool.PoolInfo storage pool = poolInfo[_poolId];
+        return PoolData.Data({
+            lastRewardBlock: pool.lastRewardBlock,
+            accPKKTPerShare: pool.accPKKTPerShare,
+            shareAmount: _getShare ? pool.lpToken.balanceOf(address(this)) : 0,
+            id: _poolId
+        });
+    }
 
+    function _getUserData(uint256 _poolId, uint256 _userAddress) override view returns (UserData.Data memory) {
+        
+        Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+
+        return UserData.Data({
+            shareAmount: user.amount,
+            rewardDebt: user.rewardDebt,
+            pendingReward: user.pendingReward
+        });
+    }
+
+    function _getPoolPercentage(PoolData.Data memory _poolData) override view returns(uint256) {
+         Pool.PoolInfo storage pool = poolInfo[_poolData.id];
+         return pool.allocPoint.mul(normalizer).div(totalAllocPoint);
+    }
+ 
+    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
+        Pool.PoolInfo storage pool = poolInfo[_pid];
+        pool.lastRewardBlock = block.number;
+        if (_accPKKTPerShare > 0) { 
+           pool.accPKKTPerShare = _accPKKTPerShare;
+        }
+    }
+    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue)  override{
+         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+         user.pendingReward = _newValue;
+    }
+
+    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) override {
+         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
+         user.rewardDebt = _newValue;
+    }
+     
 }

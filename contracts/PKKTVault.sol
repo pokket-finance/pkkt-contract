@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import {Vault} from "../libraries/Vault.sol";  
 import "./PKKTToken.sol";
 import "./PKKTRewardManager.sol";
-import {PoolData, UserData} from "./libraries/SharedData.sol";
+import {PoolData, UserData} from "../libraries/SharedData.sol";  
 
 
 contract PKKTVault is PKKTRewardManager {
@@ -55,50 +55,49 @@ contract PKKTVault is PKKTRewardManager {
         PKKTToken _pkkt, 
         uint256 _pkktPerBlock,
         uint256 _startBlock
-    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock) {  
+    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock,"Vault") {  
 
     }
  
 
     // Add a range of new underlyings to the vault. Can only be called by the owner.
-    function addMany(IERC20[] memory _underlyings, uint8[] memory _decimals, bool _withUpdate) external onlyOwner {
-         for(uint256 i = 0; i < _underlyings,length; i++) {
-            IERC20 memory underlying = _underlyings[i];
+    function addMany(Pool.VaultSettings[] memory _vaults, bool _withUpdate) external onlyOwner {
+         for(uint256 i = 0; i < _vaults.length; i++) {
+            IERC20 memory underlying = _vaults[i].underlying;
             require(!isAdded[address(underlying)], "Vault already is added"); 
             //here to ensure it's a valid address
             uint256 underlyingSupply = underlying.balanceOf(address(this));
-            require(underlyingSupply == 0, "Vault should not been stake");
+            require(underlyingSupply == 0, "Vault should not be staked");
         }  
         if (_withUpdate) {
             massUpdatePools();
         } 
-        for(uint256 i = 0; i < _underlyings,length; i++) {
-            IERC20 memory underlying = _underlyings[i];
+        for(uint256 i = 0; i <  _vaults.length; i++) {
+            Pool.VaultSettings memory setting = _vaults[i];
             uint256 lastRewardBlock =
                 block.number > startBlock ? block.number : startBlock; 
             vaultInfo.push(
                         Vault.VaultInfo({
-                            underlying: underlying, 
+                            underlying: setting.underlying, 
                             lastRewardBlock: lastRewardBlock,
-                            decimals: _decimals[i],
+                            decimals: setting.decimals,
                             accPKKTPerShare: 0
                         })
                     );
-            if (maxDecimals < _decimals[i]) {
-                maxDecimals = _decimals[i];
+            if (maxDecimals < setting.decimals) {
+                maxDecimals = setting.decimals;
             }
-            isAdded[address(underlying)] = true;
+            isAdded[address(setting.underlying)] = true;
         }         
     }
     // Add a new underlying  to the vault. Can only be called by the owner.
     // XXX DO NOT add the same underlying token more than once. Rewards will be messed up if you do.
-    function add(IERC20 _underlying,
-        uint8 _decimals,
+    function add(Pool.VaultSettings memory _vault,
         bool _withUpdate
     ) external onlyOwner {
-        require(!isAdded[address(_underlying)], "Vault already is added");
+        require(!isAdded[address(_vault.underlying)], "Vault already is added");
         //here to ensure it's a valid address
-        uint256 underlyingSupply = _underlying.balanceOf(address(this));
+        uint256 underlyingSupply = _vault.underlying.balanceOf(address(this));
         require(underlyingSupply == 0, "Vault should not been stake");
         
         if (_withUpdate) {
@@ -108,16 +107,16 @@ contract PKKTVault is PKKTRewardManager {
             block.number > startBlock ? block.number : startBlock; 
         vaultInfo.push(
                     Vault.VaultInfo({
-                        underlying: _underlying, 
+                        underlying: _vault.underlying, 
                         lastRewardBlock: lastRewardBlock,
-                        decimals: _decimals,
+                        decimals: _vault.decimals,
                         accPKKTPerShare: 0
                     })
                 );
-        if (maxDecimals < _decimals) {
-            maxDecimals = _decimals;
+        if (maxDecimals < _vault.decimals) {
+            maxDecimals = _vault.decimals;
         }               
-        isAdded[address(_underlying)] = true;
+        isAdded[address(_vault.underlying)] = true;
     }
 
 
@@ -350,30 +349,24 @@ contract PKKTVault is PKKTRewardManager {
    
         user.pendingAmount = user.pendingAmount.add(_amount);
         user.maturedAmount = user.maturedAmount.sub(_amount); 
+        //todo:do we need totalPending?
         vault.totalPending = vault.totalPending.add(_amount);
         vault.totalMatured = vault.totalMatured.sub(_amount); 
         emit Deposit(msg.sender, _vid, _amount, true); 
- 
     }
-
-    //todo: implement
-    function harvest() external nonReentrant {
-
-    }
-
  
 
     /************************************************
      *  SETTLEMENT
      ***********************************************/
     //todo: add settlement privilege, send coin? review code
-    function initiateSettlement(uint256 _pkktPerBlock) external onlyOwner returns(uint256[] memory balanceDiffs) onlyOwner {
+    function initiateSettlement(uint256 _pkktPerBlock) external onlyOwner returns(uint256[] memory balanceDiffs) {
         uint256 vaultCount = vaultInfo.length;
         uint256[] memory diffs = uint256[vaultCount];
         for(uint256 vid = 0; vid < vaultCount; vid++){
             Vault.VaultInfo storage vault = vaultInfo[vid];
             address[] storage addresses = userAddresses[vid];  
-            mapping(address=>Vault.UserInfo) users = userInfo[vid];
+            mapping(address=>Vault.UserInfo) storage users = userInfo[vid];
             uint256 userCount = addresses.length;
             uint256 diff = 0;
             uint256 totalOngoing = 0;
@@ -383,9 +376,9 @@ contract PKKTVault is PKKTRewardManager {
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
            
-                updateUserReward(_pid, msg.sender, 
-                vault.getUserShare(user.ongoingAmount, maxDecimals), 
-                vault.getUserShare(newUserOngoing, maxDecimals), true); 
+                updateUserReward(_pid, msg.sender,  
+                    vault.getUserShare(user.ongoingAmount, maxDecimals), 
+                    vault.getUserShare(newUserOngoing, maxDecimals), true); 
                 user.ongoingAmount = newUserOngoing;
                 user.pendingAmount = 0;
                 user.maturedAmount =  user.maturedAmount.add(user.requestingAmount);
@@ -410,6 +403,7 @@ contract PKKTVault is PKKTRewardManager {
 
         isSettelled = true;
     }
+
     function poolLength() public override view returns (uint256) {
         return vaultInfo.length;
     }
@@ -418,7 +412,7 @@ contract PKKTVault is PKKTRewardManager {
 
     function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
 
-        Vault.VaultInfo storage vault = vaultInfo[_vid];
+        Vault.VaultInfo storage vault = vaultInfo[_pid];
         vault.lastRewardBlock = block.number;
         if (_accPKKTPerShare > 0) { 
            vault.accPKKTPerShare = _accPKKTPerShare;
@@ -448,7 +442,7 @@ contract PKKTVault is PKKTRewardManager {
         });
     }
 
-    function _getPoolPercentage(PoolData.Data memory _poolData) override pure returns(uint256) {
+    function _getPoolPercentage(PoolData.Data memory _poolData) override view returns(uint256) {
          Vault.VaultInfo storage vault = vaultInfo[_poolData.id];  
          return vault.getShare(maxDecimals).mul(normalizer).div(getTotalShare());
     }
@@ -469,6 +463,6 @@ contract PKKTVault is PKKTRewardManager {
            Vault.VaultInfo storage vault = vaultInfo[vid]; 
            totalShares = totalShares.add(vault.getShare(maxDecimals));
        }
-       returns totalShares;
+      returns totalShares;
     }
 }
