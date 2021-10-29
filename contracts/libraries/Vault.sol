@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED 
 pragma solidity 0.6.12;
+ 
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
 import "@openzeppelin/contracts/math/SafeMath.sol"; 
+import './Utils.sol';
 
 library Vault { 
     
@@ -42,9 +43,9 @@ library Vault {
     }
     
     function getShare(VaultInfo storage _vault, uint8 _maxDecimals) external returns(uint256) {
-        uint8 extraDecimals = _maxDecimals.sub(_vault.decimals);
+        uint8 extraDecimals = Utils.Uint8Sub(_maxDecimals, _vault.decimals);
         if (extraDecimals > 0) {
-            return _vault.totalOngoing.mul(10 ** extraDecimals);
+            return _vault.totalOngoing.mul(10 ** uint256(extraDecimals));
         }
         else {
             return _vault.totalOngoing;
@@ -52,9 +53,9 @@ library Vault {
     }
 
     function getUserShare(VaultInfo storage _vault, UserInfo storage _user, uint8 _maxDecimals) external returns(uint256) {
-        uint8 extraDecimals = _maxDecimals.sub(_vault.decimals);
+        uint8 extraDecimals = Utils.Uint8Sub(_maxDecimals, _vault.decimals);
         if (extraDecimals > 0) {
-            return _user.ongoingAmount.mul(10 ** extraDecimals);
+            return _user.ongoingAmount.mul(10 **  uint256(extraDecimals));
         }
         else {
             return _user.ongoingAmount;

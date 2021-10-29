@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol"; 
+import {Pool} from "./libraries/Pool.sol";  
+import {PoolData, UserData} from "./libraries/SharedData.sol";   
 import "./PKKTToken.sol"; 
 import "./PKKTRewardManager.sol";
-import {Pool} from "../libraries/Pool.sol";  
-import {PoolData, UserData} from "../libraries/SharedData.sol";  
 
 contract PKKTFarm is PKKTRewardManager {
     using SafeMath for uint256;
@@ -32,7 +32,7 @@ contract PKKTFarm is PKKTRewardManager {
         PKKTToken _pkkt,
         uint256 _pkktPerBlock,
         uint256 _startBlock
-    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock, "Pool") {
+    ) public PKKTRewardManager(_pkkt, "Pool", _pkktPerBlock, _startBlock) {
         
     }
 
@@ -43,7 +43,7 @@ contract PKKTFarm is PKKTRewardManager {
     
     
     // Add an array of new lps to the pool. Can only be called by the owner.
-    function addMany(Pool.PoolSettings[] memory _pools, bool _withUpdate) external onlyOwner {
+    function addMany(Pool.PoolSettings[] calldata _pools, bool _withUpdate) external onlyOwner {
         for(uint256 i = 0; i < _pools.length; i++) {
             Pool.PoolSettings memory pool = _pools[i];
             require(!isAdded[address(pool.lpToken)], "Pool already is added");
@@ -54,7 +54,7 @@ contract PKKTFarm is PKKTRewardManager {
             massUpdatePools();
         }
         uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
-        for(uint256 i = 0; i < _pools,length; i++) {
+        for(uint256 i = 0; i < _pools.length; i++) {
             
             Pool.PoolSettings memory pool = _pools[i];
             totalAllocPoint = totalAllocPoint.add(pool.allocPoint);
@@ -72,7 +72,7 @@ contract PKKTFarm is PKKTRewardManager {
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(Pool.PoolSettings[] memory _pool, bool _withUpdate) external onlyOwner {
+    function add(Pool.PoolSettings memory _pool, bool _withUpdate) external onlyOwner {
         require(!isAdded[address(_pool.lpToken)], "Pool already is added");
         //here to ensure it's a valid address
         uint256 lpSupply = _pool.lpToken.balanceOf(address(this));
@@ -92,7 +92,7 @@ contract PKKTFarm is PKKTRewardManager {
                 accPKKTPerShare: 0
             })
         );
-        isAdded[address(_lpToken)] = true;
+        isAdded[address(_pool.lpToken)] = true;
     }
 
     // Update the given array of pools' PKKT allocation points. Can only be called by the owner.
@@ -105,7 +105,7 @@ contract PKKTFarm is PKKTRewardManager {
         if (_withUpdate) {
             massUpdatePools();
         }
-        for(uint256 i = 0; i < _newSettings,length; i++) {
+        for(uint256 i = 0; i < _newSettings.length; i++) {
             Pool.UpdatePoolParameters memory newSetting = _newSettings[i]; 
             totalAllocPoint = totalAllocPoint.sub(poolInfo[newSetting.pid].allocPoint).add(
                 newSetting.allocPoint
@@ -115,14 +115,14 @@ contract PKKTFarm is PKKTRewardManager {
     }
 
     // Update the given pool's PKKT allocation point. Can only be called by the owner.
-    function set(Pool.UpdatePoolParameters _newSetting, bool _withUpdate) external 
+    function set(Pool.UpdatePoolParameters memory _newSetting, bool _withUpdate) external 
     onlyOwner validatePoolById(_newSetting.pid) 
     {
         if (_withUpdate) {
             massUpdatePools();
         }
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_newSetting.pid].allocPoint).add(
-            _allocPoint
+            _newSetting.allocPoint
         );
         poolInfo[_newSetting.pid].allocPoint = _newSetting.allocPoint;
     }
@@ -191,7 +191,7 @@ contract PKKTFarm is PKKTRewardManager {
     }
  
     
-    function _getPoolData(uint256 _poolId, uint256 _getShare) override view returns(PoolData.Data memory){
+    function _getPoolData(uint256 _poolId, bool _getShare) internal override view returns(PoolData.Data memory){
         Pool.PoolInfo storage pool = poolInfo[_poolId];
         return PoolData.Data({
             lastRewardBlock: pool.lastRewardBlock,
@@ -201,7 +201,7 @@ contract PKKTFarm is PKKTRewardManager {
         });
     }
 
-    function _getUserData(uint256 _poolId, uint256 _userAddress) override view returns (UserData.Data memory) {
+    function _getUserData(uint256 _poolId, address _userAddress) internal override view returns(UserData.Data memory) {
         
         Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
 
@@ -212,24 +212,24 @@ contract PKKTFarm is PKKTRewardManager {
         });
     }
 
-    function _getPoolPercentage(PoolData.Data memory _poolData) override view returns(uint256) {
+    function _getPoolPercentage(PoolData.Data memory _poolData) internal override view returns(uint256) {
          Pool.PoolInfo storage pool = poolInfo[_poolData.id];
          return pool.allocPoint.mul(normalizer).div(totalAllocPoint);
     }
  
-    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
+    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) internal override {
         Pool.PoolInfo storage pool = poolInfo[_pid];
         pool.lastRewardBlock = block.number;
         if (_accPKKTPerShare > 0) { 
            pool.accPKKTPerShare = _accPKKTPerShare;
         }
     }
-    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue)  override{
+    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue) internal override{
          Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
          user.pendingReward = _newValue;
     }
 
-    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) override {
+    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) internal override {
          Pool.UserInfo storage user = userInfo[_poolId][_userAddress];
          user.rewardDebt = _newValue;
     }

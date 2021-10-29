@@ -5,10 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol"; 
-import {Vault} from "../libraries/Vault.sol";  
+import {Vault} from "./libraries/Vault.sol";  
+import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./PKKTToken.sol";
 import "./PKKTRewardManager.sol";
-import {PoolData, UserData} from "../libraries/SharedData.sol";  
 
 
 contract PKKTVault is PKKTRewardManager {
@@ -31,7 +31,7 @@ contract PKKTVault is PKKTRewardManager {
      *  EVENTS
      ***********************************************/
  
-    event Deposit(address indexed account, uint256 indexed vid, uint256 amount, bool internal); 
+    event Deposit(address indexed account, uint256 indexed vid, uint256 amount, bool fromWallet); 
 
     event InitiateWithdraw(address indexed account, uint256 indexed vid,uint256 amount);
     
@@ -41,7 +41,7 @@ contract PKKTVault is PKKTRewardManager {
 
     event CompleteWithdraw(address indexed account, uint256 indexed vid, uint256 amount);
 
-    event InitiateSettlement()
+    event InitiateSettlement();
  
 
     /************************************************
@@ -55,15 +55,15 @@ contract PKKTVault is PKKTRewardManager {
         PKKTToken _pkkt, 
         uint256 _pkktPerBlock,
         uint256 _startBlock
-    ) public PKKTRewardManager(_pkkt, _pkktPerBlock, _startBlock,"Vault") {  
+    ) public PKKTRewardManager(_pkkt, "Vault", _pkktPerBlock, _startBlock) {  
 
     }
  
 
     // Add a range of new underlyings to the vault. Can only be called by the owner.
-    function addMany(Pool.VaultSettings[] memory _vaults, bool _withUpdate) external onlyOwner {
+    function addMany(Vault.VaultSettings[] memory _vaults, bool _withUpdate) external onlyOwner {
          for(uint256 i = 0; i < _vaults.length; i++) {
-            IERC20 memory underlying = _vaults[i].underlying;
+            IERC20  underlying = _vaults[i].underlying;
             require(!isAdded[address(underlying)], "Vault already is added"); 
             //here to ensure it's a valid address
             uint256 underlyingSupply = underlying.balanceOf(address(this));
@@ -73,7 +73,7 @@ contract PKKTVault is PKKTRewardManager {
             massUpdatePools();
         } 
         for(uint256 i = 0; i <  _vaults.length; i++) {
-            Pool.VaultSettings memory setting = _vaults[i];
+            Vault.VaultSettings memory setting = _vaults[i];
             uint256 lastRewardBlock =
                 block.number > startBlock ? block.number : startBlock; 
             vaultInfo.push(
@@ -92,7 +92,7 @@ contract PKKTVault is PKKTRewardManager {
     }
     // Add a new underlying  to the vault. Can only be called by the owner.
     // XXX DO NOT add the same underlying token more than once. Rewards will be messed up if you do.
-    function add(Pool.VaultSettings memory _vault,
+    function add(Vault.VaultSettings memory _vault,
         bool _withUpdate
     ) external onlyOwner {
         require(!isAdded[address(_vault.underlying)], "Vault already is added");
@@ -124,14 +124,11 @@ contract PKKTVault is PKKTRewardManager {
      *  DEPOSIT & WITHDRAWALS
      ***********************************************/
 
-    /**
-     * @notice Deposits the `underlying` from msg.sender.
-     * @param amount is the amount of `asset` to deposit
-     */
+ 
     function deposit(uint256 _vid, uint256 _amount) external validatePoolById(_vid) {
         require(_amount > 0, "!amount");
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
 
         // An approve() by the msg.sender is required beforehand
         IERC20(vault.underlying).safeTransferFrom(
@@ -145,34 +142,24 @@ contract PKKTVault is PKKTRewardManager {
         }
         user.pendingAmount = user.pendingAmount.add(_amount);
         vault.totalPending = vault.totalPending.add(_amount);
-        emit Deposit(msg.sender, _vid, _amount, false);
+        emit Deposit(msg.sender, _vid, _amount, true);
     }
   
-    /**
-     * @notice Redeems pending amounts that are owed to the account
-     * @param amount is the number of underlyings to redeem
-     */
+ 
     function redeem(uint256 _vid, uint256 _amount) external validatePoolById(_vid) {
         require(_amount > 0, "!amount");
         _redeem(_vid, _amount, false);
     }
-
-    /**
-     * @notice Redeems the entire pending balance that is owed to the account
-     */
+ 
     function maxRedeem(uint256 _vid) external validatePoolById(_vid) {
         _redeem(_vid, 0, true);
     }
 
-    /**
-     * @notice Redeems amounts that are owed to the account
-     * @param amount is the number of underlyings to redeem, could be 0 when isMax=true
-     * @param isMax is flag for when callers do a max redemption
-     */
+ 
     function _redeem(uint256 _vid, uint256 _amount, bool _isMax) internal {
         
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
  
         _amount = _isMax ? user.pendingAmount : _amount;
         if (_amount == 0) {
@@ -191,32 +178,21 @@ contract PKKTVault is PKKTRewardManager {
 
         emit Redeem(msg.sender, _vid, _amount); 
     }
- 
-    /**
-     * @notice Initiates a withdrawal that can be processed once the round completes
-     * @param amount is the number of underlyings to withdraw
-     */
+  
     function initiateWithdraw(uint256 _vid, uint256 _amount) external validatePoolById(_vid)  {
         _initiateWithdraw(_vid, _amount, false);
    
     }
-
-    /**
-     * @notice Withraws the entire available that is owed to the account
-     */
+ 
     function maxInitiateWithdraw(uint256 _vid) external validatePoolById(_vid) {
         _initiateWithdraw(_vid, 0, true);
     }
 
-    /**
-     * @notice Initiate withdrawal amounts that are owed to the account
-     * @param amount is the number of underlyings to initiate withdrawal, could be 0 when isMax=true
-     * @param isMax is flag for when callers do a max withdrawal
-     */
+ 
     function _initiateWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
         require(_amount > 0, "!amount");
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
 
         uint256 maxAmountForRequest = user.ongoingAmount.sub(user.requestingAmount);
        
@@ -232,31 +208,18 @@ contract PKKTVault is PKKTRewardManager {
 
     }
  
-    /**
-     * @notice Cancel a withdrawal 
-     * @param amount is the number of underlyings to cancel
-     */
     function cancelWithdraw(uint256 _vid, uint256 _amount) external validatePoolById(_vid) {
         _cancelWithdraw(_vid, _amount, false); 
     }
-
-    /**
-     * @notice Cancel the entire withdrawal
-     */
+ 
     function maxCancelWithdraw(uint256 _vid) external validatePoolById(_vid) {
         _cancelWithdraw(_vid, 0, true); 
     }
  
-
-    /**
-     * @notice Cancel withdrawal amounts that are owed to the account
-     * @param amount is the number of underlyings to cancel withdrawal, could be 0 when isMax=true
-     * @param isMax is flag for when callers do a max withdrawal cancellation
-     */
     function _cancelWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
         require(_amount > 0, "!amount");
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
  
        _amount = _isMax ? user.requestingAmount : _amount;
         if (_amount == 0) {
@@ -269,31 +232,20 @@ contract PKKTVault is PKKTRewardManager {
         emit CancelWithdraw(msg.sender, _vid, _amount); 
     }
 
-
-    /**
-     * @notice Completes partially a scheduled withdrawal from a past round.
-     */
+ 
     function completeWithdraw(uint256 _vid, uint256 _amount) external validatePoolById(_vid) {
         _completeWithdraw(_vid, _amount, false); 
   
     }
-    
-    /**
-     * @notice Completes a whole scheduled withdrawal from a past round.
-     */
+ 
     function maxCompleteWithdraw(uint256 _vid) external validatePoolById(_vid) {
         _completeWithdraw(_vid, 0, true);
     }
-
-    /**
-     * @notice Completes a scheduled withdrawal from a past round.
-     * @param amount is the number of underlyings to complete withdrawal, could be 0 when isMax=true
-     * @param isMax is flag for when callers do a max withdrawal completion
-     */
+ 
     function _completeWithdraw(uint256 _vid, uint256 _amount, bool _isMax) internal {
         require(isSettelled, "Settlment not finished yet");
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
  
         _amount = _isMax ? user.maturedAmount : _amount;
         if (_amount == 0) {
@@ -314,31 +266,22 @@ contract PKKTVault is PKKTRewardManager {
 
     }
     
-    /**
-     * @notice revert a scheduled withdrawal from a past round and reput to pending pool 
-     * @param amount is the number of underlyings to revert
-     */
+ 
     function redeposit(uint256 _vid, uint256 _amount) external validatePoolById(_vid) {
        
          _redeposit(_vid, _amount, false); 
     }
 
         
-    /**
-     * @notice revert a whole scheduled withdrawal from a past round and reput to pending pool  
-     */
+ 
     function maxRedeposit(uint256 _vid) external validatePoolById(_vid) {
          _redeposit(_vid, 0, true); 
     } 
  
-    /**
-     * @notice revert a scheduled withdrawal from a past round and reput to pending pool 
-     * @param amount is the number of underlyings to revert, could be 0 when isMax=true
-     * @param isMax is flag for when callers do a max withdrawal reversion
-     */
+ 
     function _redeposit(uint256 _vid, uint256 _amount, bool _isMax) internal {
         Vault.VaultInfo storage vault = vaultInfo[_vid];
-        Vault.VaultUserInfo storage user = userInfo[_vid][msg.sender]; 
+        Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
  
         _amount = _isMax ? user.maturedAmount : _amount;
         if (_amount == 0) {
@@ -352,7 +295,7 @@ contract PKKTVault is PKKTRewardManager {
         //todo:do we need totalPending?
         vault.totalPending = vault.totalPending.add(_amount);
         vault.totalMatured = vault.totalMatured.sub(_amount); 
-        emit Deposit(msg.sender, _vid, _amount, true); 
+        emit Deposit(msg.sender, _vid, _amount, false); 
     }
  
 
@@ -376,7 +319,7 @@ contract PKKTVault is PKKTRewardManager {
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
            
-                updateUserReward(_pid, msg.sender,  
+                updateUserReward(vid, msg.sender,  
                     vault.getUserShare(user.ongoingAmount, maxDecimals), 
                     vault.getUserShare(newUserOngoing, maxDecimals), true); 
                 user.ongoingAmount = newUserOngoing;
@@ -410,7 +353,7 @@ contract PKKTVault is PKKTRewardManager {
     
  
 
-    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) override {
+    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) internal override {
 
         Vault.VaultInfo storage vault = vaultInfo[_pid];
         vault.lastRewardBlock = block.number;
@@ -420,7 +363,7 @@ contract PKKTVault is PKKTRewardManager {
     }
 
 
-    function _getPoolData(uint256 _poolId, uint256 _getShare) override pure returns(PoolData.Data memory){
+    function _getPoolData(uint256 _poolId, bool _getShare) internal override view returns(PoolData.Data memory){
         Vault.VaultInfo storage vault = vaultInfo[_poolId]; 
 
         return PoolData.Data({
@@ -431,7 +374,7 @@ contract PKKTVault is PKKTRewardManager {
         });
     }
 
-    function _getUserData(uint256 _poolId, uint256 _userAddress) override pure returns (UserData.Data memory) {
+    function _getUserData(uint256 _poolId, address _userAddress) internal override view returns (UserData.Data memory) {
         Vault.VaultInfo storage vault = vaultInfo[_poolId]; 
         Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
 
@@ -442,20 +385,22 @@ contract PKKTVault is PKKTRewardManager {
         });
     }
 
-    function _getPoolPercentage(PoolData.Data memory _poolData) override view returns(uint256) {
+    function _getPoolPercentage(PoolData.Data memory _poolData) internal override view returns(uint256) {
          Vault.VaultInfo storage vault = vaultInfo[_poolData.id];  
          return vault.getShare(maxDecimals).mul(normalizer).div(getTotalShare());
     }
 
-     function _clearUserPending(uint256 _poolId, address _userAddress) override{
+    
+    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) internal override {
          Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
-         user.pendingReward = 0;
+         user.rewardDebt = _newValue;
     }
+    function  _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue) internal override{
+         Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
+         user.pendingReward = _newValue;
+    }
+ 
 
-    function _updateUserRewardDebt(uint256 _rewardDebt) override {
-         Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
-         user.rewardDebt = _rewardDebt;
-    }
     function getTotalShare() private view returns(uint256) {
        uint256 totalShares = 0;
        uint256 vaultCount = vaultInfo.length;
@@ -463,6 +408,6 @@ contract PKKTVault is PKKTRewardManager {
            Vault.VaultInfo storage vault = vaultInfo[vid]; 
            totalShares = totalShares.add(vault.getShare(maxDecimals));
        }
-      returns totalShares;
+       return totalShares;
     }
 }

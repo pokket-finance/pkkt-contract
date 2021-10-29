@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PKKTToken.sol";  
-import {PoolData, UserData} from "../libraries/SharedData.sol";  
+import {PoolData, UserData} from "./libraries/SharedData.sol";  
+import "./libraries/Utils.sol";  
+
 
 abstract contract PKKTRewardManager is Ownable {
     using SafeMath for uint256;
@@ -26,7 +28,7 @@ abstract contract PKKTRewardManager is Ownable {
     );
     // A record status of LP pool.
     mapping(address => bool) public isAdded; 
-    string immutable itemName;
+    string itemName;
 
     constructor(
         PKKTToken _pkkt,
@@ -49,11 +51,9 @@ abstract contract PKKTRewardManager is Ownable {
             updatePool(pid);
         }
     }
-
  
-
     modifier validatePoolById(uint256 _pid) {
-        require(_pid < poolLength() , itemName + " doesn't exist");
+        require(_pid < poolLength() , Utils.StringConcat(bytes(itemName), bytes(" doesn't exist")));
         _;
     }
 
@@ -111,7 +111,7 @@ abstract contract PKKTRewardManager is Ownable {
  
        uint256 pendingReward = userData.pendingReward;
        uint256 totalPending = 
-                            userData.shareAmount.mul(pool.accPKKTPerShare)
+                            userData.shareAmount.mul(poolData.accPKKTPerShare)
                                         .div(normalizer)
                                         .sub(userData.rewardDebt)
                                         .add(pendingReward); 
@@ -142,17 +142,17 @@ abstract contract PKKTRewardManager is Ownable {
   
 
     function _getAccPKKTPerShare(PoolData.Data memory _poolData) private view returns(uint256) { 
-        uint256 pkktReward = block.number.sub(poolData.lastRewardBlock).mul(pkktPerBlock).mul(_getPoolPercentage(_poolData));
+        uint256 pkktReward = block.number.sub(_poolData.lastRewardBlock).mul(pkktPerBlock).mul(_getPoolPercentage(_poolData));
        return _poolData.accPKKTPerShare.add(
-                pkktReward.div(poolData.shareAmount)
+                pkktReward.div(_poolData.shareAmount)
             );
     }
 
-    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare)  virtual;
+    function _updatePool(uint256 _pid, uint256 _accPKKTPerShare) internal virtual;
     function poolLength() public virtual view returns (uint256);
-    function _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue) virtual;
-    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) virtual;
-    function _getPoolPercentage(PoolData.Data memory _poolData) virtual view returns(uint256);
-    function _getPoolData(uint256 _poolId, bool _getShare) virtual view returns(PoolData.Data memory);
-    function _getUserData(uint256 _poolId, address _userAddress) virtual view returns(UserData.Data memory);
+    function _updateUserPendingReward(uint256 _poolId, address _userAddress, uint256 _newValue) internal virtual;
+    function _updateUserRewardDebt(uint256 _poolId, address _userAddress, uint256 _newValue) internal virtual;
+    function _getPoolPercentage(PoolData.Data memory _poolData) internal virtual view returns(uint256);
+    function _getPoolData(uint256 _poolId, bool _getShare) internal virtual view returns(PoolData.Data memory);
+    function _getUserData(uint256 _poolId, address _userAddress) internal virtual view returns(UserData.Data memory);
 }
