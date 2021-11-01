@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
@@ -59,6 +60,7 @@ contract PKKTVault is PKKTRewardManager {
 
     }
  
+ 
 
     // Add a range of new underlyings to the vault. Can only be called by the owner.
     function addMany(Vault.VaultSettings[] memory _vaults, bool _withUpdate) external onlyOwner {
@@ -81,7 +83,11 @@ contract PKKTVault is PKKTRewardManager {
                             underlying: setting.underlying, 
                             lastRewardBlock: lastRewardBlock,
                             decimals: setting.decimals,
-                            accPKKTPerShare: 0
+                            accPKKTPerShare: 0, 
+                            totalPending: 0,
+                            totalOngoing: 0,
+                            totalRequesting: 0,
+                            totalMatured: 0
                         })
                     );
             if (maxDecimals < setting.decimals) {
@@ -103,6 +109,8 @@ contract PKKTVault is PKKTRewardManager {
         if (_withUpdate) {
             massUpdatePools();
         }
+  
+
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock; 
         vaultInfo.push(
@@ -110,7 +118,11 @@ contract PKKTVault is PKKTRewardManager {
                         underlying: _vault.underlying, 
                         lastRewardBlock: lastRewardBlock,
                         decimals: _vault.decimals,
-                        accPKKTPerShare: 0
+                        accPKKTPerShare: 0,
+                        totalPending: 0,
+                        totalOngoing: 0,
+                        totalRequesting: 0,
+                        totalMatured: 0
                     })
                 );
         if (maxDecimals < _vault.decimals) {
@@ -131,11 +143,7 @@ contract PKKTVault is PKKTRewardManager {
         Vault.UserInfo storage user = userInfo[_vid][msg.sender]; 
 
         // An approve() by the msg.sender is required beforehand
-        IERC20(vault.underlying).safeTransferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
+        IERC20(vault.underlying).safeTransferFrom(msg.sender, address(this), _amount);
         if (!user.hasDeposit) {
             user.hasDeposit = true;
             userAddresses[_vid].push(msg.sender);
@@ -169,11 +177,7 @@ contract PKKTVault is PKKTRewardManager {
 
         user.pendingAmount = user.pendingAmount.sub(_amount);  
         vault.totalPending = vault.totalPending.sub(_amount);
-        IERC20(vault.underlying).safeTransfer(
-            address(this),
-            msg.sender,
-            _amount
-        ); 
+        IERC20(vault.underlying).safeTransfer(msg.sender, _amount); 
         
 
         emit Redeem(msg.sender, _vid, _amount); 
@@ -254,11 +258,7 @@ contract PKKTVault is PKKTRewardManager {
 
         require(_amount <= user.maturedAmount, "Exceeds available");
     
-        IERC20(vault.underlying).safeTransfer(
-            address(this),
-            msg.sender,
-            _amount
-        ); 
+        IERC20(vault.underlying).safeTransfer(msg.sender, _amount); 
         
         user.maturedAmount = user.maturedAmount.sub(_amount); 
         vault.totalMatured = vault.totalMatured.sub(_amount);
@@ -305,7 +305,7 @@ contract PKKTVault is PKKTRewardManager {
     //todo: add settlement privilege, send coin? review code
     function initiateSettlement(uint256 _pkktPerBlock) external onlyOwner returns(uint256[] memory balanceDiffs) {
         uint256 vaultCount = vaultInfo.length;
-        uint256[] memory diffs = uint256[vaultCount];
+        uint256[] memory diffs = new uint256[](vaultCount);
         for(uint256 vid = 0; vid < vaultCount; vid++){
             Vault.VaultInfo storage vault = vaultInfo[vid];
             address[] storage addresses = userAddresses[vid];  
@@ -330,7 +330,9 @@ contract PKKTVault is PKKTRewardManager {
             vault.totalOngoing = totalOngoing;
             diffs[vid] = diff;
         }
-        
+        if (_pkktPerBlock != pkktPerBlock) {
+            setPKKTPerBlock(_pkktPerBlock);
+        }
         //if positive, send to trader, else trader send back
         return diffs; 
     }
@@ -379,7 +381,7 @@ contract PKKTVault is PKKTRewardManager {
         Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
 
         return UserData.Data({
-            shareAmount: vault.getUserShare(user.amount, maxDecimals),
+            shareAmount: vault.getUserShare(user.ongoingAmount, maxDecimals),
             rewardDebt: user.rewardDebt,
             pendingReward: user.pendingReward
         });

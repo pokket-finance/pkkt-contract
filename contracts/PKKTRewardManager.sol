@@ -58,7 +58,7 @@ abstract contract PKKTRewardManager is Ownable {
     }
 
     //Update number of pkkt per block 
-    function setPKKTPerBlock(uint256 _pkktPerBlock) external onlyOwner {
+    function setPKKTPerBlock(uint256 _pkktPerBlock) public onlyOwner {
         massUpdatePools();
         pkktPerBlock = _pkktPerBlock;
     }
@@ -97,9 +97,9 @@ abstract contract PKKTRewardManager is Ownable {
 
         //Harvest proceeds of all pools for msg.sender
     function harvestAll(uint256[] memory _pids) external {
-       uint256 length = poolLength();
-        for (uint256 pid = 0; pid < length; ++pid) {
-            harvest(pid);
+       uint256 length = _pids.length;
+        for (uint256 i = 0; i < length; ++i) {
+            harvest(_pids[i]);
         }
     }
 

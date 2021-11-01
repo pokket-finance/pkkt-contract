@@ -42,7 +42,7 @@ library Vault {
         uint8 decimals;
     }
     
-    function getShare(VaultInfo storage _vault, uint8 _maxDecimals) external returns(uint256) {
+    function getShare(VaultInfo storage _vault, uint8 _maxDecimals) external view returns(uint256) {
         uint8 extraDecimals = Utils.Uint8Sub(_maxDecimals, _vault.decimals);
         if (extraDecimals > 0) {
             return _vault.totalOngoing.mul(10 ** uint256(extraDecimals));
@@ -52,13 +52,13 @@ library Vault {
         }
     }
 
-    function getUserShare(VaultInfo storage _vault, UserInfo storage _user, uint8 _maxDecimals) external returns(uint256) {
+    function getUserShare(VaultInfo storage _vault, uint256 _userAmount, uint8 _maxDecimals) external view returns(uint256) {
         uint8 extraDecimals = Utils.Uint8Sub(_maxDecimals, _vault.decimals);
         if (extraDecimals > 0) {
-            return _user.ongoingAmount.mul(10 **  uint256(extraDecimals));
+            return _userAmount.mul(10 **  uint256(extraDecimals));
         }
         else {
-            return _user.ongoingAmount;
+            return _userAmount;
         }
     }
     struct VaultSettings {
