@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED 
-pragma solidity 0.6.12;
+// SPDX-License-Identifier: MIT
+pragma solidity =0.8.4;
  
 library PoolData { 
     // Info of each user.

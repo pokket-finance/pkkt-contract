@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED 
-pragma solidity 0.6.12;
+// SPDX-License-Identifier: MIT
+pragma solidity =0.8.4;
  
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
-import "@openzeppelin/contracts/math/SafeMath.sol"; 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import './Utils.sol';
 
 library Vault { 

@@ -1,17 +1,17 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.6.12;
+// SPDX-License-Identifier: MIT
+pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PKKTToken.sol";  
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./libraries/Utils.sol";  
+import "./interfaces/IClaimable.sol"; 
 
 
-abstract contract PKKTRewardManager is Ownable {
+abstract contract PKKTRewardManager is IClaimable, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     uint256 public constant normalizer = 1e12;
@@ -35,7 +35,7 @@ abstract contract PKKTRewardManager is Ownable {
         string memory _itemName,
         uint256 _pkktPerBlock,
         uint256 _startBlock
-    ) public {
+    )  {
         require(address(_pkkt) != address(0) , "Zero address");
         pkkt = _pkkt;
         pkktPerBlock = _pkktPerBlock;
@@ -95,7 +95,8 @@ abstract contract PKKTRewardManager is Ownable {
          _updatePool(_pid, _getAccPKKTPerShare(poolData)); 
     }
 
-        //Harvest proceeds of all pools for msg.sender
+
+    //Harvest proceeds of all pools for msg.sender
     function harvestAll(uint256[] memory _pids) external {
        uint256 length = _pids.length;
         for (uint256 i = 0; i < length; ++i) {
@@ -103,9 +104,15 @@ abstract contract PKKTRewardManager is Ownable {
         }
     }
 
+    function harvestAllPools() override external  {
+        uint256 length = poolLength();
+        for (uint256 i = 0; i < length; ++i) {
+            harvest(i);
+        }
+    }
     //Harvest proceeds msg.sender
     function harvest(uint256 _pid) public validatePoolById(_pid) returns(uint256) {
-       updatePool(_pid); 
+        updatePool(_pid); 
         PoolData.Data memory poolData = _getPoolData(_pid, false);
         UserData.Data memory userData = _getUserData(_pid, msg.sender); 
  

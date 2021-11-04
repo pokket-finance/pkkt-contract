@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity 0.6.12;
+pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract PKKTToken is ERC20, Ownable {
 
+    using SafeMath for uint256; 
     /**
      * @dev A record status of minter.
      */
@@ -22,7 +23,7 @@ contract PKKTToken is ERC20, Ownable {
     event MinterRemoved(address indexed account);
     event MintingAllowanceUpdated(address indexed account, uint256 oldAllowance, uint256 newAllowance);
 
-    constructor(string memory tokenName, string memory symbol, uint256 cap_) public ERC20(tokenName, symbol) {
+    constructor(string memory tokenName, string memory symbol, uint256 cap_) ERC20(tokenName, symbol) {
         minters[msg.sender] = true;
         _cap = cap_;
     }
