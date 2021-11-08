@@ -1,6 +1,7 @@
-/*import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ManualVolOracle_BYTECODE } from "../../constants/constants";
-import ManualVolOracle_ABI from "../../constants/abis/ManualVolOracle.json";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { PKKTTOKEN_BYTECODE } from "../../constants/constants";
+import PKKTTOKEN_ABI from "../../constants/abis/PKKTToken.json";
+require("dotenv").config();  
 
 const main = async ({
   network,
@@ -8,19 +9,21 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  console.log("00 - Deploying ManualVolOracle on", network.name);
+  console.log("00 - Deploying PKKTToken on", network.name);
 
-  const { deployer, keeper } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts();
 
-  await deploy("ManualVolOracle", {
+  await deploy("PokketToken", {
     from: deployer,
     contract: {
-      abi: ManualVolOracle_ABI,
-      bytecode: ManualVolOracle_BYTECODE,
+      abi: PKKTTOKEN_ABI,
+      bytecode: PKKTTOKEN_BYTECODE,
     },
-    args: [keeper],
+    args: [process.env.PKKT_TOKEN_NAME, process.env.PKKT_SYMBOL, process.env.PKKT_CAP],
   });
 };
-main.tags = ["ManualVolOracle"];
+main.tags = ["PokketToken"];
 
-export default main;*/
+export default main;
+
+ 

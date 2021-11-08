@@ -1,12 +1,15 @@
-import "hardhat-gas-reporter";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
-import "@nomiclabs/hardhat-waffle";
 import { task } from "hardhat/config";
-require("dotenv").config();  
- 
- 
+import "@nomiclabs/hardhat-waffle";
+import "hardhat-contract-sizer";
+import "hardhat-log-remover";
+import "hardhat-deploy";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "solidity-coverage";
 import exportDeployments from "./scripts/tasks/exportDeployments";
+
+require("dotenv").config();  
+  
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -15,13 +18,38 @@ import exportDeployments from "./scripts/tasks/exportDeployments";
   paths: {
     deploy: "scripts/deploy",
     deployments: "deployments",
-  },
+  }, 
   networks: {
+    hardhat: {
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        gasLimit: 8e6,
+        blockNumber: 12570201, 
+        accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+      } 
+    },
+    mainnet: {
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
+      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+    },
     ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
       accounts: [`0x${process.env.ROPSTEN_PRIVATE_KEY}`],
     },
   },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+      1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
+      3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
+    },
+    owner: {
+      default: 0,
+      1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
+      3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
+    }
+  },
+
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },

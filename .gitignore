@@ -1,4 +1,9 @@
-artifacts/
-cache/
-node_modules/
-package-lock.json
+node_modules
+
+#Hardhat files
+cache
+artifacts
+.vscode
+.env
+coverage.json
+coverage/
