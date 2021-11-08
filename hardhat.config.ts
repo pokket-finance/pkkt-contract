@@ -6,9 +6,11 @@ import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
+import "@typechain/hardhat";
+import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 
-require("dotenv").config();  
+dotenv.config();  
   
 
 /**

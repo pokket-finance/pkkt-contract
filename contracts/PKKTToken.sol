@@ -27,7 +27,7 @@ contract PKKTToken is ERC20, Ownable {
         minters[msg.sender] = true;
         _cap = cap_;
     }
-    
+     
     function cap() public view returns(uint256) {
         return _cap;
     }

@@ -1,7 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { PKKTTOKEN_BYTECODE } from "../../constants/constants";
 import PKKTTOKEN_ABI from "../../constants/abis/PKKTToken.json";
-require("dotenv").config();  
+import * as dotenv from "dotenv";  
+dotenv.config();  
 
 const main = async ({
   network,
@@ -13,7 +14,7 @@ const main = async ({
 
   const { deployer, owner } = await getNamedAccounts();
 
-  await deploy("PokketToken", {
+  const result = await deploy("PKKTToken", {
     from: deployer,
     contract: {
       abi: PKKTTOKEN_ABI,
@@ -21,8 +22,10 @@ const main = async ({
     },
     args: [process.env.PKKT_TOKEN_NAME, process.env.PKKT_SYMBOL, process.env.PKKT_CAP],
   });
+  
+  console.log(`00 - Deployed PKKTToken on ${network.name} to ${result.address}`); 
 };
-main.tags = ["PokketToken"];
+main.tags = ["PKKTToken"];
 
 export default main;
 
