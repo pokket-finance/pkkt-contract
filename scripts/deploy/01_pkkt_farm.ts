@@ -31,9 +31,9 @@ const main = async ({
   
   console.log(`01 - Deployed PKKTFarm on ${network.name} to ${result.address}`); 
 
-  const pkktVaultMax =  process.env.PKKT_FARM_MAX?.toString() ?? PKKT_FARM_MAX;
-  await pkktTokenContract.addMinter(result.address, BigInt(pkktVaultMax));
-  console.log(`01 - Added PKKTFarm to PKKTToken as minter on ${network.name} with max ${pkktVaultMax}`); 
+  const pkktFarmMax =  process.env.PKKT_FARM_MAX ?? PKKT_FARM_MAX;
+  await pkktTokenContract.addMinter(result.address, BigInt(pkktFarmMax));
+  console.log(`01 - Added PKKTFarm to PKKTToken as minter on ${network.name} with max ${pkktFarmMax}`); 
 
   
   const pkktFarmContract = await ethers.getContractAt("PKKTFarm", result.address);

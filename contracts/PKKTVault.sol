@@ -9,7 +9,6 @@ import {Vault} from "./libraries/Vault.sol";
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./PKKTToken.sol";
 import "./PKKTRewardManager.sol";
-import "./interfaces/IClaimable.sol"; 
 
 
 contract PKKTVault is PKKTRewardManager {
