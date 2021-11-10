@@ -36,8 +36,10 @@ const main = async ({
   console.log(`01 - Added PKKTFarm to PKKTToken as minter on ${network.name} with max ${pkktFarmMax}`); 
 
   
-  const pkktFarmContract = await ethers.getContractAt("PKKTFarm", result.address);
+  const pkktFarmContract = await ethers.getContractAt("PKKTFarm", result.address); 
   await pkktFarmContract.transferOwnership(owner);
+  
+  //revoke the deployer's authority after deployment
   console.log(`01 - Transfer owner of PKKTFarm to ${owner} on ${network.name}`); 
 
   //todo: add lps 

@@ -1,5 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { PKKT_VAULT_MAX } from "../../constants/constants"; 
+import { PKKT_VAULT_MAX, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS,
+USDC_ADDRESS, ROPSTEN_USDC_ADDRESS, DAI_ADDRESS, ROPSTEN_DAI_ADDRESS } from "../../constants/constants"; 
 import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { PKKTVault, PKKTToken } from "../../typechain";
@@ -14,7 +15,7 @@ const main = async ({
   const { deploy } = deployments;
   console.log("02 - Deploying PKKTVault on", network.name);
 
-  const { deployer, owner } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts(); 
 
   const pkktToken = await deployments.get("PKKTToken");
 
@@ -23,7 +24,6 @@ const main = async ({
     contract: "Vault",
     from: deployer,
   });
-  console.log(vault.address);
   const result = await deploy("PKKTVault", {
     from: deployer,
     contract: "PKKTVault" ,
@@ -43,11 +43,32 @@ const main = async ({
 
   
   const pkktVaultContract = await ethers.getContractAt("PKKTVault", result.address);
+
+  const isMainnet = network.name === "mainnet" || network.name == "hardhat"; 
+
+  const vaults = [
+    {
+      underlying: isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+      decimals:6
+    }, 
+    { 
+      underlying: isMainnet ? USDC_ADDRESS : ROPSTEN_USDC_ADDRESS,
+      decimals:6
+    }, 
+    { 
+      underlying: isMainnet ? DAI_ADDRESS : ROPSTEN_DAI_ADDRESS,
+      decimals:18
+    }]; 
+  await pkktVaultContract.addMany(vaults, true);
+
+   for(var i = 0; i < vaults.length; i++) { 
+     const result = await pkktVaultContract.vaultInfo(i);
+     console.log(`02 - Added vault ${result.underlying} (${result.decimals} decimals) on ${network.name}`)
+   } 
+
   await pkktVaultContract.transferOwnership(owner);
-  console.log(`02 - Transfer owner of PKKTFarm to ${owner} on ${network.name}`); 
-
-  //todo: add lps 
-
+  //revoke the deployer's authority after deployment
+  console.log(`02 - Transfer owner of PKKTVault to ${owner} on ${network.name}`); 
 };
 main.tags = ["PKKTVault"];
 

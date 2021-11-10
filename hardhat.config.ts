@@ -41,12 +41,12 @@ dotenv.config();
   },
   namedAccounts: {
     deployer: {
-      default: 0,
+      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
     },
     owner: {
-      default: 0,
+      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
       3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
     }
@@ -73,5 +73,11 @@ dotenv.config();
     },
   },
 };
+task("accounts", "Prints the list of accounts", async (args, hre) => {
+  const accounts = await hre.ethers.getSigners();
 
+  for (const account of accounts) {
+      console.log(await account.getAddress());
+  }
+});
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
