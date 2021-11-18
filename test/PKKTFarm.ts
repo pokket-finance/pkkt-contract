@@ -38,11 +38,11 @@ describe("PKKT Farm", async function () {
         pkktToken = await deployContract("PKKTToken", deployer as Signer, ["PKKTToken","PKKT", CAP.toString()]) as PKKTToken; 
         this.owner = deployer as Signer;  
 
-          lp = await deployContract("ERC20Mock", deployer as Signer, ["LPToken", "LP", "10000000000"]) as ERC20Mock;
+          lp = await deployContract("ERC20Mock", deployer as Signer, ["LPToken", "LP", "10000000000", 18]) as ERC20Mock;
           await lp.transfer(alice.address, "1000");
           await lp.transfer(bob.address, "1000");
           await lp.transfer(carol.address, "1000");
-          lp2 = await deployContract("ERC20Mock", deployer as Signer, ["LPToken2", "LP2", "10000000000"]) as ERC20Mock;
+          lp2 = await deployContract("ERC20Mock", deployer as Signer, ["LPToken2", "LP2", "10000000000", 18]) as ERC20Mock;
           await lp2.transfer(alice.address, "1000");
           await lp2.transfer(bob.address, "1000");
           await lp2.transfer(carol.address, "1000");
@@ -249,8 +249,7 @@ describe("PKKT Farm", async function () {
             assert.equal(alicePkktBal1.toString(), "1333");
             const alicePkktBal2 = await pkktFarm.pendingPKKT(1, alice.address);
             assert.equal(alicePkktBal2.toString(), "1333");
- 
-
+  
         }); 
         
       });  

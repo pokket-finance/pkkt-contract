@@ -24,6 +24,7 @@ contract PKKTVault is PKKTRewardManager {
     
     mapping(uint256 => address[]) userAddresses;
 
+    mapping(uint256 => int256 ) public settlementResult;
     uint8 maxDecimals;
 
 
@@ -40,8 +41,7 @@ contract PKKTVault is PKKTRewardManager {
     event Redeem(address indexed account, uint256 indexed vid, uint256 amount);
 
     event CompleteWithdraw(address indexed account, uint256 indexed vid, uint256 amount);
-
-    event InitiateSettlement();
+ 
  
 
     /************************************************
@@ -56,7 +56,7 @@ contract PKKTVault is PKKTRewardManager {
         uint256 _pkktPerBlock,
         uint256 _startBlock
     ) PKKTRewardManager(_pkkt, "Vault", _pkktPerBlock, _startBlock) {  
-
+        isSettelled = true;
     }
  
  
@@ -302,19 +302,19 @@ contract PKKTVault is PKKTRewardManager {
      *  SETTLEMENT
      ***********************************************/
     //todo: add settlement privilege, send coin? review code
-    function initiateSettlement(uint256 _pkktPerBlock) external onlyOwner returns(uint256[] memory balanceDiffs) {
-        uint256 vaultCount = vaultInfo.length;
-        uint256[] memory diffs = new uint256[](vaultCount);
+    function initiateSettlement(uint256 _pkktPerBlock, address target) external onlyOwner {
+        isSettelled = false;
+        uint256 vaultCount = vaultInfo.length; 
         for(uint256 vid = 0; vid < vaultCount; vid++){
             Vault.VaultInfo storage vault = vaultInfo[vid];
             address[] storage addresses = userAddresses[vid];  
             mapping(address=>Vault.UserInfo) storage users = userInfo[vid];
             uint256 userCount = addresses.length;
-            uint256 diff = 0;
+            int256 diff = 0;
             uint256 totalOngoing = 0;
             for (uint i=0; i < userCount; i++) {
                 Vault.UserInfo storage user = users[addresses[i]];
-                diff = diff.add(user.pendingAmount).sub(user.requestingAmount); 
+                diff = diff + int256(user.pendingAmount) - int256(user.requestingAmount); 
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
            
@@ -327,24 +327,42 @@ contract PKKTVault is PKKTRewardManager {
                 user.requestingAmount = 0; 
             }
             vault.totalOngoing = totalOngoing;
-            diffs[vid] = diff;
+            settlementResult[vid] = diff;
         }
         if (_pkktPerBlock != pkktPerBlock) {
             setPKKTPerBlock(_pkktPerBlock);
         }
-        //if positive, send to trader, else trader send back
-        return diffs; 
+        bool allDone = true;
+        for(uint256 vid = 0; vid < vaultCount; vid++){ 
+           int256 diff2 = settlementResult[vid];
+           if (diff2 < 0) {
+               allDone = false;
+           }
+           else if (diff2 > 0) {
+               Vault.VaultInfo storage vault = vaultInfo[vid];
+               IERC20(vault.underlying).safeTransfer(target, uint256(diff2)); 
+           }
+        }
+        if (allDone) {
+            for(uint256 vid = 0; vid < vaultCount; vid++){  
+                settlementResult[vid] = 0;
+            }
+            isSettelled = true;
+        }
     }
 
-    function finishSettlement() external {
-
+     
+    function finishSettlement() external onlyOwner {
+        require(!isSettelled, "Settlement already finished");
         uint256 length = vaultInfo.length;
         for (uint256 vid = 0; vid < length; vid++) {
            Vault.VaultInfo memory vault = vaultInfo[vid];
            //check if the totalMatured is fullfilled or not
            require(IERC20(vault.underlying).balanceOf(address(this)) >=  vault.totalMatured, "Matured amount not fullfilled");
         }
-
+        for (uint256 vid = 0; vid < length; vid++) {
+            settlementResult[vid] = 0;
+        }
         isSettelled = true;
     }
 
