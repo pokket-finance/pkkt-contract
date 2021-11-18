@@ -9,6 +9,7 @@ import "./PKKTToken.sol";
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./libraries/Utils.sol";  
 import "./interfaces/IClaimable.sol"; 
+import "hardhat/console.sol";
 
 
 abstract contract PKKTRewardManager is IClaimable, Ownable {
@@ -74,14 +75,15 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
         PoolData.Data memory poolData = _getPoolData(_pid, true);
         UserData.Data memory userData = _getUserData(_pid, _user); 
 
-        if (block.number > poolData.lastRewardBlock && poolData.shareAmount != 0) {  
-           uint256 accPKKTPerShare = _getAccPKKTPerShare(poolData);
-           return userData.pendingReward.add(userData.shareAmount.mul(accPKKTPerShare).div(normalizer).sub(userData.rewardDebt)); 
+        uint256 accPKKTPerShare = poolData.accPKKTPerShare; 
+        if (block.number > poolData.lastRewardBlock && poolData.shareAmount != 0) {   
+            accPKKTPerShare = _getAccPKKTPerShare(poolData); 
         } 
-        return 0;
+       
+        return userData.pendingReward.add(userData.shareAmount.mul(accPKKTPerShare).div(normalizer).sub(userData.rewardDebt)); 
     }
     
-       // Update reward variables of the given pool to be up-to-date.
+       // Update reward variables of the given pool to be up-to-date. 
     function updatePool(uint256 _pid) public validatePoolById(_pid) {
         PoolData.Data memory poolData = _getPoolData(_pid, true);
         if (block.number <= poolData.lastRewardBlock) {
@@ -117,12 +119,11 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
         UserData.Data memory userData = _getUserData(_pid, msg.sender); 
  
        uint256 pendingReward = userData.pendingReward;
-       uint256 totalPending = 
-                            userData.shareAmount.mul(poolData.accPKKTPerShare)
+       uint256 totalPending = userData.shareAmount.mul(poolData.accPKKTPerShare)
                                         .div(normalizer)
                                         .sub(userData.rewardDebt)
                                         .add(pendingReward); 
-       _updateUserPendingReward(_pid, msg.sender, 0);        
+       _updateUserPendingReward(_pid, msg.sender, 0);       
        if (totalPending > 0) {
             pkkt.mint(address(this), totalPending);
             pkkt.transfer(msg.sender, totalPending); 

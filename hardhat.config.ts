@@ -26,7 +26,7 @@ dotenv.config();
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
         gasLimit: 8e6,
-        blockNumber: 12570201, 
+        blockNumber: 13600000, 
         accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
       } 
     },
