@@ -174,15 +174,129 @@ describe("PKKT Vault", async function () {
           assert.equal(vaultInfo3.totalRequesting.toString(), "0");  
 
 
-          /*var trader1 = usdt.balanceOf(trader.address);
-          var trader2 = usdc.balanceOf(trader.address);
-          var trader3 = dai.balanceOf(trader.address);
+          var trader1 = await usdt.balanceOf(trader.address);
+          var trader2 = await usdc.balanceOf(trader.address);
+          var trader3 = await dai.balanceOf(trader.address);
           
           assert.equal(trader1.toString(), BigNumber.from(10).mul(USDTMultiplier).toString()); 
           assert.equal(trader2.toString(), BigNumber.from(5).mul(USDCMultiplier).toString()); 
-          assert.equal(trader3.toString(), BigNumber.from(2).mul(DAIMultiplier).toString()); */
+          assert.equal(trader3.toString(), BigNumber.from(2).mul(DAIMultiplier).toString());  
+
+          //mimicing moving forward
+          await advanceBlockTo(1360109);
+           
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(0, BigNumber.from(11).mul(USDTMultiplier))).to.be.revertedWith("Exceeds available");   
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(1, BigNumber.from(6).mul(USDCMultiplier))).to.be.revertedWith("Exceeds available");  
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(2, BigNumber.from(3).mul(DAIMultiplier))).to.be.revertedWith("Exceeds available");  
+          //should allow
+          await pkktVault.connect(alice as Signer).initiateWithdraw(0, BigNumber.from(7).mul(USDTMultiplier)); 
+          await pkktVault.connect(alice as Signer).initiateWithdraw(1, BigNumber.from(3).mul(USDCMultiplier)); 
+          await pkktVault.connect(alice as Signer).initiateWithdraw(2, BigNumber.from(2).mul(DAIMultiplier)); 
+          
+          var usdtVault = await pkktVault.userInfo(0, alice.address);
+          var usdcVault = await pkktVault.userInfo(1, alice.address);
+          var daiVault = await pkktVault.userInfo(2, alice.address);
+
+          assert.equal(usdtVault.requestingAmount.toString(), BigNumber.from(7).mul(USDTMultiplier).toString());
+          assert.equal(usdcVault.requestingAmount.toString(), BigNumber.from(3).mul(USDCMultiplier).toString());
+          assert.equal(daiVault.requestingAmount.toString(), BigNumber.from(2).mul(DAIMultiplier).toString());
+
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(0, BigNumber.from(4).mul(USDTMultiplier))).to.be.revertedWith("Exceeds available");   
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(1, BigNumber.from(3).mul(USDCMultiplier))).to.be.revertedWith("Exceeds available");  
+          await expect(pkktVault.connect(alice as Signer).initiateWithdraw(2, BigNumber.from(1).mul(DAIMultiplier))).to.be.revertedWith("Exceeds available");  
+
+ 
+          await pkktVault.connect(alice as Signer).cancelWithdraw(0, BigNumber.from(1).mul(USDTMultiplier));
+          await pkktVault.connect(alice as Signer).cancelWithdraw(1, BigNumber.from(1).mul(USDCMultiplier));
+          await pkktVault.connect(alice as Signer).cancelWithdraw(2, BigNumber.from(1).mul(DAIMultiplier));
+
+          usdtVault = await pkktVault.userInfo(0, alice.address);
+          usdcVault = await pkktVault.userInfo(1, alice.address);
+          daiVault = await pkktVault.userInfo(2, alice.address);
+
+          assert.equal(usdtVault.requestingAmount.toString(), BigNumber.from(6).mul(USDTMultiplier).toString());
+          assert.equal(usdcVault.requestingAmount.toString(), BigNumber.from(2).mul(USDCMultiplier).toString());
+          assert.equal(daiVault.requestingAmount.toString(), BigNumber.from(1).mul(DAIMultiplier).toString());
+  
+          await pkktVault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(USDTMultiplier));  
+          await pkktVault.connect(alice as Signer).deposit(1, BigNumber.from(2).mul(USDCMultiplier));  
+          await pkktVault.connect(alice as Signer).deposit(2, BigNumber.from(3).mul(DAIMultiplier)); 
+
+          usdtVault = await pkktVault.userInfo(0, alice.address);
+          usdcVault = await pkktVault.userInfo(1, alice.address);
+          daiVault = await pkktVault.userInfo(2, alice.address);
+          assert.equal(usdtVault.pendingAmount.toString(), BigNumber.from(1).mul(USDTMultiplier).toString());
+          assert.equal(usdcVault.pendingAmount.toString(), BigNumber.from(2).mul(USDCMultiplier).toString());
+          assert.equal(daiVault.pendingAmount.toString(), BigNumber.from(3).mul(DAIMultiplier).toString());
+          
+          await pkktVault.initiateSettlement("100", trader.address);  
+
+          settelled = await pkktVault.isSettelled();
+          assert.isFalse(settelled);
+
+          var usdtDiff = await pkktVault.settlementResult(0);
+          var usdcDiff = await pkktVault.settlementResult(1);
+          var daiDiff = await pkktVault.settlementResult(2);
+
+          assert.equal(usdtDiff.toString(), BigNumber.from(-5).mul(USDTMultiplier).toString());
+          assert.equal(usdcDiff.toString(), "0");
+          assert.equal(daiDiff.toString(), BigNumber.from(2).mul(DAIMultiplier).toString());
+
+          trader1 = await usdt.balanceOf(trader.address);
+          trader2 = await usdc.balanceOf(trader.address);
+          trader3 = await dai.balanceOf(trader.address);
+          
+          assert.equal(trader1.toString(), BigNumber.from(10).mul(USDTMultiplier).toString()); 
+          assert.equal(trader2.toString(), BigNumber.from(5).mul(USDCMultiplier).toString()); 
+          assert.equal(trader3.toString(), BigNumber.from(4).mul(DAIMultiplier).toString());  
 
 
+          await expect(pkktVault.finishSettlement()).to.be.revertedWith("Matured amount not fullfilled");   
+          usdtVault = await pkktVault.userInfo(0, alice.address);
+          usdcVault = await pkktVault.userInfo(1, alice.address);
+          daiVault = await pkktVault.userInfo(2, alice.address);
+
+          assert.equal(usdtVault.maturedAmount.toString(), BigNumber.from(6).mul(USDTMultiplier).toString());
+          assert.equal(usdcVault.maturedAmount.toString(), BigNumber.from(2).mul(USDCMultiplier).toString());
+          assert.equal(daiVault.maturedAmount.toString(), BigNumber.from(1).mul(DAIMultiplier).toString());
+          assert.equal(usdtVault.requestingAmount.toString(), "0");
+          assert.equal(usdcVault.requestingAmount.toString(), "0");
+          assert.equal(daiVault.requestingAmount.toString(), "0");
+
+          await usdt.connect(trader as Signer).transfer(pkktVault.address, BigNumber.from(5).mul(USDTMultiplier).toString()); 
+          await pkktVault.finishSettlement(); 
+          await expect(pkktVault.finishSettlement()).to.be.revertedWith("Settlement already finished");   
+
+          var aliceUsdt = await usdt.balanceOf(alice.address);  
+          await pkktVault.connect(alice as Signer).completeWithdraw(0, BigNumber.from(5).mul(USDTMultiplier));
+          await pkktVault.connect(alice as Signer).redeposit(0, BigNumber.from(1).mul(USDTMultiplier)); 
+          var aliceUsdtNew = await usdt.balanceOf(alice.address);  
+          assert.equal(aliceUsdtNew.sub(aliceUsdt).toString(), BigNumber.from(5).mul(USDTMultiplier).toString()); 
+          usdtVault = await pkktVault.userInfo(0, alice.address);
+          assert.equal(usdtVault.pendingAmount.toString(), BigNumber.from(1).mul(USDTMultiplier).toString()); 
+          assert.equal(usdtVault.ongoingAmount.toString(), BigNumber.from(5).mul(USDTMultiplier).toString());
+          assert.equal(usdtVault.maturedAmount.toString(), "0");
+          assert.equal(usdtVault.requestingAmount.toString(), "0");
+
+          var aliceUsdc = await usdc.balanceOf(alice.address);  
+          await pkktVault.connect(alice as Signer).maxCompleteWithdraw(1); 
+          var aliceUsdcNew = await usdc.balanceOf(alice.address);  
+          assert.equal(aliceUsdcNew.sub(aliceUsdc).toString(), BigNumber.from(2).mul(USDCMultiplier).toString());  
+          usdcVault = await pkktVault.userInfo(1, alice.address);
+          assert.equal(usdcVault.pendingAmount.toString(), "0"); 
+          assert.equal(usdcVault.ongoingAmount.toString(),  BigNumber.from(5).mul(USDCMultiplier).toString());
+          assert.equal(usdcVault.maturedAmount.toString(), "0");
+          assert.equal(usdcVault.requestingAmount.toString(), "0");
+
+          var aliceDai = await dai.balanceOf(alice.address);  
+          await pkktVault.connect(alice as Signer).maxRedeposit(2); 
+          var aliceDaiNew = await dai.balanceOf(alice.address);  
+          assert.equal(aliceDaiNew.sub(aliceDai).toString(), "0");  
+          usdcVault = await pkktVault.userInfo(2, alice.address);
+          assert.equal(usdcVault.pendingAmount.toString(), BigNumber.from(1).mul(DAIMultiplier).toString()); 
+          assert.equal(usdcVault.ongoingAmount.toString(),  BigNumber.from(4).mul(DAIMultiplier).toString());
+          assert.equal(usdcVault.maturedAmount.toString(), "0");
+          assert.equal(usdcVault.requestingAmount.toString(), "0");
         });
       });  
    
