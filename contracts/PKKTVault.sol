@@ -9,6 +9,7 @@ import {Vault} from "./libraries/Vault.sol";
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./PKKTToken.sol";
 import "./PKKTRewardManager.sol";
+import "hardhat/console.sol";
 
 
 contract PKKTVault is PKKTRewardManager {
@@ -147,7 +148,7 @@ contract PKKTVault is PKKTRewardManager {
             user.hasDeposit = true;
             userAddresses[_vid].push(msg.sender);
         }
-        user.pendingAmount = user.pendingAmount.add(_amount);
+        user.pendingAmount = user.pendingAmount.add(_amount); 
         vault.totalPending = vault.totalPending.add(_amount);
         emit Deposit(msg.sender, _vid, _amount, true);
     }
@@ -312,21 +313,26 @@ contract PKKTVault is PKKTRewardManager {
             uint256 userCount = addresses.length;
             int256 diff = 0;
             uint256 totalOngoing = 0;
+            uint256 totalMatured = 0; 
             for (uint i=0; i < userCount; i++) {
-                Vault.UserInfo storage user = users[addresses[i]];
+                Vault.UserInfo storage user = users[addresses[i]]; 
                 diff = diff + int256(user.pendingAmount) - int256(user.requestingAmount); 
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
-           
+                
                 updateUserReward(vid, msg.sender,  
                     vault.getUserShare(user.ongoingAmount, maxDecimals), 
                     vault.getUserShare(newUserOngoing, maxDecimals), true); 
                 user.ongoingAmount = newUserOngoing;
                 user.pendingAmount = 0;
                 user.maturedAmount =  user.maturedAmount.add(user.requestingAmount);
+                totalMatured = totalMatured.add(user.maturedAmount);
                 user.requestingAmount = 0; 
             }
-            vault.totalOngoing = totalOngoing;
+            vault.totalOngoing = totalOngoing; 
+            vault.totalPending = 0;
+            vault.totalRequesting = 0;
+            vault.totalMatured  = totalMatured;
             settlementResult[vid] = diff;
         }
         if (_pkktPerBlock != pkktPerBlock) {
