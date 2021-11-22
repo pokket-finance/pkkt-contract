@@ -298,6 +298,72 @@ describe("PKKT Vault", async function () {
           assert.equal(usdcVault.maturedAmount.toString(), "0");
           assert.equal(usdcVault.requestingAmount.toString(), "0");
         });
+
+        it("should allow harvest pkkt reward", async function () {
+          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000]) as PKKTVault;
+          await pkktToken.addMinter(pkktVault.address, MAX);
+          await pkktVault.addMany([
+            { underlying: usdt.address, decimals: USDTDecimals},  
+            { underlying: usdc.address, decimals: USDCDecimals},
+            { underlying: dai.address, decimals: DAIDecimals}
+          ], true); 
+
+          await usdt.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDTMultiplier));  
+          await pkktVault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(USDTMultiplier)); 
+          await usdc.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDCMultiplier));  
+          await pkktVault.connect(alice as Signer).deposit(1, BigNumber.from(5).mul(USDCMultiplier)); 
+          await dai.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(DAIMultiplier));  
+          await pkktVault.connect(alice as Signer).deposit(2, BigNumber.from(2).mul(DAIMultiplier)); 
+
+          await usdt.connect(bob as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDTMultiplier));  
+          await pkktVault.connect(bob as Signer).deposit(0, BigNumber.from(20).mul(USDTMultiplier)); 
+          await usdc.connect(bob as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDCMultiplier));  
+          await pkktVault.connect(bob as Signer).deposit(1, BigNumber.from(10).mul(USDCMultiplier)); 
+          await dai.connect(bob as Signer).approve(pkktVault.address, BigNumber.from(100).mul(DAIMultiplier));  
+          await pkktVault.connect(bob as Signer).deposit(2, BigNumber.from(4).mul(DAIMultiplier)); 
+
+
+          await advanceBlockTo(13601199);
+          //settlement at 13601200, the reward will be calculated 
+          await pkktVault.initiateSettlement("200", trader.address);
+
+          await advanceBlockTo(13601299);
+          //settlement at 13601300, the reward will be calculated 
+          await pkktVault.initiateSettlement("100", trader.address);
+ 
+         
+          var alicePkkt = (await pkktVault.pendingPKKT(0, alice.address)).
+          add(await pkktVault.pendingPKKT(1, alice.address)).
+          add(await pkktVault.pendingPKKT(2, alice.address));
+
+          //we lose some precision, 6666.666 should be better
+          assert.equal(alicePkkt.toString(), "6665");
+          
+          var bobPkkt = (await pkktVault.pendingPKKT(0, bob.address)).
+          add(await pkktVault.pendingPKKT(1, bob.address)).
+          add(await pkktVault.pendingPKKT(2, bob.address));
+
+          //we lose some precision, 13333.333 should be better
+          assert.equal(bobPkkt.toString(), "13332");
+
+          
+          await pkktVault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(USDTMultiplier)); 
+          await advanceBlockTo(13601399);
+          //settlement at 13601300, the reward will be calculated 
+          await pkktVault.initiateSettlement("100", trader.address);
+          
+          //todo: fix overflow issue
+
+          //6665 + 20/61*100*100
+          var aliceReward = await pkktVault.connect(alice as Signer).harvestAllPools();
+
+          //13332 + 41/61*100*100
+          var bobReward = await pkktVault.connect(bob as Signer).harvestAllPools();
+          
+          console.log( `${aliceReward.toString()} ${bobReward.toString()}`);
+            
+        });
+
       });  
    
   });

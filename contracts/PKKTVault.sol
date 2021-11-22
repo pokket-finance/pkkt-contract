@@ -302,8 +302,8 @@ contract PKKTVault is PKKTRewardManager {
     /************************************************
      *  SETTLEMENT
      ***********************************************/
-    //todo: add settlement privilege, send coin? review code
     function initiateSettlement(uint256 _pkktPerBlock, address target) external onlyOwner {
+        massUpdatePools();
         isSettelled = false;
         uint256 vaultCount = vaultInfo.length; 
         for(uint256 vid = 0; vid < vaultCount; vid++){
@@ -321,8 +321,7 @@ contract PKKTVault is PKKTRewardManager {
                 totalOngoing = totalOngoing.add(newUserOngoing);
                 
                 updateUserReward(vid, msg.sender,  
-                    vault.getUserShare(user.ongoingAmount, maxDecimals), 
-                    vault.getUserShare(newUserOngoing, maxDecimals), true); 
+                    user.ongoingAmount, newUserOngoing, true); 
                 user.ongoingAmount = newUserOngoing;
                 user.pendingAmount = 0;
                 user.maturedAmount =  user.maturedAmount.add(user.requestingAmount);
@@ -333,7 +332,7 @@ contract PKKTVault is PKKTRewardManager {
             vault.totalPending = 0;
             vault.totalRequesting = 0;
             vault.totalMatured  = totalMatured;
-            settlementResult[vid] = diff;
+            settlementResult[vid] = diff; 
         }
         if (_pkktPerBlock != pkktPerBlock) {
             setPKKTPerBlock(_pkktPerBlock);
@@ -382,6 +381,7 @@ contract PKKTVault is PKKTRewardManager {
 
         Vault.VaultInfo storage vault = vaultInfo[_pid];
         vault.lastRewardBlock = block.number;
+         
         if (_accPKKTPerShare > 0) { 
            vault.accPKKTPerShare = _accPKKTPerShare;
         }
@@ -389,29 +389,26 @@ contract PKKTVault is PKKTRewardManager {
 
 
     function _getPoolData(uint256 _poolId, bool _getShare) internal override view returns(PoolData.Data memory){
-        Vault.VaultInfo storage vault = vaultInfo[_poolId]; 
-
+        Vault.VaultInfo storage vault = vaultInfo[_poolId];  
         return PoolData.Data({
             lastRewardBlock: vault.lastRewardBlock,
-            accPKKTPerShare: vault.accPKKTPerShare,
-            shareAmount: _getShare ? vault.getShare(maxDecimals) : 0,
+            accPKKTPerShare: vault.accPKKTPerShare, 
+            shareAmount: _getShare ? vault.totalOngoing : 0,
             id: _poolId
         });
     }
 
-    function _getUserData(uint256 _poolId, address _userAddress) internal override view returns (UserData.Data memory) {
-        Vault.VaultInfo storage vault = vaultInfo[_poolId]; 
-        Vault.UserInfo storage user = userInfo[_poolId][_userAddress];
-
+    function _getUserData(uint256 _poolId, address _userAddress) internal override view returns (UserData.Data memory) { 
+        Vault.UserInfo storage user = userInfo[_poolId][_userAddress]; 
         return UserData.Data({
-            shareAmount: vault.getUserShare(user.ongoingAmount, maxDecimals),
+            shareAmount: user.ongoingAmount,
             rewardDebt: user.rewardDebt,
             pendingReward: user.pendingReward
         });
     }
 
     function _getPoolPercentage(PoolData.Data memory _poolData) internal override view returns(uint256) {
-         Vault.VaultInfo storage vault = vaultInfo[_poolData.id];  
+         Vault.VaultInfo storage vault = vaultInfo[_poolData.id];    
          return vault.getShare(maxDecimals).mul(normalizer).div(getTotalShare());
     }
 
@@ -433,6 +430,7 @@ contract PKKTVault is PKKTRewardManager {
            Vault.VaultInfo storage vault = vaultInfo[vid]; 
            totalShares = totalShares.add(vault.getShare(maxDecimals));
        }
+       //console.log("TotalShare: %d", totalShares);
        return totalShares;
     }
 }

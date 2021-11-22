@@ -52,15 +52,7 @@ library Vault {
         }
     }
 
-    function getUserShare(VaultInfo storage _vault, uint256 _userAmount, uint8 _maxDecimals) external view returns(uint256) {
-        uint8 extraDecimals = Utils.Uint8Sub(_maxDecimals, _vault.decimals);
-        if (extraDecimals > 0) {
-            return _userAmount.mul(10 **  uint256(extraDecimals));
-        }
-        else {
-            return _userAmount;
-        }
-    }
+ 
     struct VaultSettings {
         
         IERC20 underlying; 

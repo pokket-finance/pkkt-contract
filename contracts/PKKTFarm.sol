@@ -213,7 +213,7 @@ contract PKKTFarm is PKKTRewardManager {
     }
 
     function _getPoolPercentage(PoolData.Data memory _poolData) internal override view returns(uint256) {
-         Pool.PoolInfo storage pool = poolInfo[_poolData.id];
+         Pool.PoolInfo storage pool = poolInfo[_poolData.id];  
          return pool.allocPoint.mul(normalizer).div(totalAllocPoint);
     }
  

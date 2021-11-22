@@ -15,7 +15,7 @@ import "hardhat/console.sol";
 abstract contract PKKTRewardManager is IClaimable, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
-    uint256 public constant normalizer = 1e12;
+    uint256 public constant normalizer = 1e18;
     // The PKKT TOKEN!
     PKKTToken public immutable pkkt; 
     uint256 public pkktPerBlock;
@@ -74,12 +74,11 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
     {
         PoolData.Data memory poolData = _getPoolData(_pid, true);
         UserData.Data memory userData = _getUserData(_pid, _user); 
-
-        uint256 accPKKTPerShare = poolData.accPKKTPerShare; 
-        if (block.number > poolData.lastRewardBlock && poolData.shareAmount != 0) {   
-            accPKKTPerShare = _getAccPKKTPerShare(poolData); 
-        } 
        
+        uint256 accPKKTPerShare = poolData.accPKKTPerShare;  
+        if (block.number > poolData.lastRewardBlock && poolData.shareAmount > 0) {   
+            accPKKTPerShare = _getAccPKKTPerShare(poolData); 
+        }  
         return userData.pendingReward.add(userData.shareAmount.mul(accPKKTPerShare).div(normalizer).sub(userData.rewardDebt)); 
     }
     
@@ -89,11 +88,10 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
         if (block.number <= poolData.lastRewardBlock) {
             return;
         } 
-        if (poolData.shareAmount == 0) {
+        if (poolData.shareAmount == 0) { 
              _updatePool(_pid, 0); 
             return;
-        } 
- 
+        }  
          _updatePool(_pid, _getAccPKKTPerShare(poolData)); 
     }
 
@@ -149,9 +147,9 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
 
   
 
-    function _getAccPKKTPerShare(PoolData.Data memory _poolData) private view returns(uint256) { 
-        uint256 pkktReward = block.number.sub(_poolData.lastRewardBlock).mul(pkktPerBlock).mul(_getPoolPercentage(_poolData));
-       return _poolData.accPKKTPerShare.add(
+    function _getAccPKKTPerShare(PoolData.Data memory _poolData) private view returns(uint256) {  
+        uint256 pkktReward = block.number.sub(_poolData.lastRewardBlock).mul(pkktPerBlock).mul(_getPoolPercentage(_poolData)); 
+        return _poolData.accPKKTPerShare.add(
                 pkktReward.div(_poolData.shareAmount)
             );
     }

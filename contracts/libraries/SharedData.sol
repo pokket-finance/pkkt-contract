@@ -6,7 +6,7 @@ library PoolData {
     struct Data { 
         uint256 lastRewardBlock;
         uint256 accPKKTPerShare;
-        uint256 shareAmount;
+        uint256 shareAmount; 
         uint256 id;
     }
  
