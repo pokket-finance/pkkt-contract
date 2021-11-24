@@ -58,6 +58,5 @@ library Vault {
         IERC20 underlying; 
         uint8 decimals;
     }
-
-     
+ 
 }
