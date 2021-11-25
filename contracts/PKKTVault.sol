@@ -313,14 +313,13 @@ contract PKKTVault is PKKTRewardManager {
             uint256 userCount = addresses.length;
             int256 diff = 0;
             uint256 totalOngoing = 0;
-            uint256 totalMatured = 0; 
+            uint256 totalMatured = 0;
             for (uint i=0; i < userCount; i++) {
                 Vault.UserInfo storage user = users[addresses[i]]; 
                 diff = diff + int256(user.pendingAmount) - int256(user.requestingAmount); 
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
-                
-                updateUserReward(vid, msg.sender,  
+                updateUserReward(vid, addresses[i],  
                     user.ongoingAmount, newUserOngoing, true); 
                 user.ongoingAmount = newUserOngoing;
                 user.pendingAmount = 0;
