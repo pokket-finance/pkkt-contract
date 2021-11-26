@@ -369,6 +369,13 @@ describe("PKKT Vault", async function () {
 
           await expect(pkktVault.initiateSettlement("100")).to.be.reverted;
 
+          await expect(pkktVault.connect(alice as Signer).grantRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address)).to.be.reverted;
+          assert.isNotTrue(
+            await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address),
+            "Non-admin granted trader role"
+          );
+          await expect(pkktVault.initiateSettlement("100")).to.be.reverted;
+
           await pkktVault.revokeRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address);
           assert.isNotTrue(
             await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address),
