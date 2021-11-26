@@ -380,7 +380,8 @@ contract PKKTVault is PKKTRewardManager, AccessControl {
     }
 
     //Update number of pkkt per block 
-    function setPKKTPerBlock(uint256 _pkktPerBlock) public override onlyRole(TRADER_ROLE) {
+    function setPKKTPerBlock(uint256 _pkktPerBlock) public override {
+        require(hasRole(TRADER_ROLE, msg.sender) || owner() == msg.sender, "Only the owner or trader can set PKKT per block.");
         massUpdatePools();
         pkktPerBlock = _pkktPerBlock;
     }
