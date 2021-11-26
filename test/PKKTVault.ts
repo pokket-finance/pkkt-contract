@@ -384,6 +384,18 @@ describe("PKKT Vault", async function () {
           await pkktVault.connect(trader as Signer).initiateSettlement("100");
         });
 
+        it("should only allow the trader and owner to set PKKT per block", async () => {
+          pkktVault = await deployContract("PKKTVault", { signer: deployer as Signer, libraries: { Vault: vault.address } }, [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
+
+          await expect(pkktVault.connect(alice as Signer).setPKKTPerBlock("200")).to.be.revertedWith("Only the owner or trader can set PKKT per block.");
+
+          await pkktVault.setPKKTPerBlock("200");
+          assert(await pkktVault.pkktPerBlock(), "200");
+
+          await pkktVault.connect(trader as Signer).setPKKTPerBlock("100");
+          assert(await pkktVault.pkktPerBlock, "100");
+        });
+
       });  
    
   });
