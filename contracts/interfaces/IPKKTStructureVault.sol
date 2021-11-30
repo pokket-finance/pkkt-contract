@@ -4,15 +4,12 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureVault {
     //deposit eth
-    function depositETH() external payable;
+    function depositETH(StructureData.StableCoin _convertedCoin) external payable;
     //deposit other erc20 coin, take wbtc
     function deposit(uint256 _amount, StructureData.StableCoin _convertedCoin) external;
 
     //redeem unsettled amount
-    function redeem(uint256 _amount) external;
-
-    //redeem all unsettled amount 
-    function  maxRedeem() external; 
+    function redeem(uint256 _amount) external; 
 
     function getPendingAsset() external view returns (uint256);   
 

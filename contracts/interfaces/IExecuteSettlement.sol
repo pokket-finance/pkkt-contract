@@ -7,10 +7,10 @@ interface IExecuteSettlement {
 
    function setMaturedVault(IMaturedVault _vault) external;
    //calculate the maturity   
-   function calculateMaturity(uint256 assetPrice) external;
+   function closePrevious(uint256 _assetPrice) external;
 
    //close pending vault and autoroll if capacity is enough based on the maturity result
-   function closeAndCommit() external; 
+   function commitCurrent() external; 
 
    function rollToNext(StructureData.VaultParameters memory _vaultParameters) external;
 }
