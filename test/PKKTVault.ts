@@ -147,7 +147,7 @@ describe("PKKT Vault", async function () {
           assert.equal(vaultInfo1.totalRequesting.toString(), "0");  
           assert.equal(vaultInfo2.totalRequesting.toString(), "0"); 
           assert.equal(vaultInfo3.totalRequesting.toString(), "0");  
-          await pkktVault.connect(trader as Signer).initiateSettlement("100");  
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);  
           /*const diff1 = await pkktVault.settlementResult[0];
           assert.equal(diff1.toString(), BigNumber.from(10).mul(USDTMultiplier).toString());
           const diff2 = await pkktVault.settlementResult[0];
@@ -229,7 +229,7 @@ describe("PKKT Vault", async function () {
           assert.equal(usdcVault.pendingAmount.toString(), BigNumber.from(2).mul(USDCMultiplier).toString());
           assert.equal(daiVault.pendingAmount.toString(), BigNumber.from(3).mul(DAIMultiplier).toString());
           
-          await pkktVault.connect(trader as Signer).initiateSettlement("100");  
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);  
 
           settelled = await pkktVault.isSettelled();
           assert.isFalse(settelled);
@@ -325,11 +325,11 @@ describe("PKKT Vault", async function () {
 
           await advanceBlockTo(13601199);
           //settlement at 13601200, the reward will be calculated 
-          await pkktVault.connect(trader as Signer).initiateSettlement("200");
+          await pkktVault.connect(trader as Signer).initiateSettlement("200", trader.address);
 
           await advanceBlockTo(13601299);
           //settlement at 13601300, the reward will be calculated 
-          await pkktVault.connect(trader as Signer).initiateSettlement("100");
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
  
          
           var alicePkkt = (await pkktVault.pendingPKKT(0, alice.address)).
@@ -350,7 +350,7 @@ describe("PKKT Vault", async function () {
           await pkktVault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(USDTMultiplier)); 
           await advanceBlockTo(13601399);
           //settlement at 13601300, the reward will be calculated 
-          await pkktVault.connect(trader as Signer).initiateSettlement("100");
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
           
           //todo: fix overflow issue
 
@@ -367,28 +367,28 @@ describe("PKKT Vault", async function () {
         it("should allow granting and revoking of trader role", async () => {
           pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
 
-          await expect(pkktVault.initiateSettlement("100")).to.be.reverted;
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
 
           await expect(pkktVault.connect(alice as Signer).grantRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address)).to.be.reverted;
           assert.isNotTrue(
             await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address),
             "Non-admin granted trader role"
           );
-          await expect(pkktVault.initiateSettlement("100")).to.be.reverted;
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
 
           await pkktVault.revokeRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address);
           assert.isNotTrue(
             await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address),
             "Trader role was not revoked."
           );
-          await expect(pkktVault.initiateSettlement("100")).to.be.reverted;
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
 
           await pkktVault.grantRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address);
           assert.isTrue(
             await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address),
             "Trader role was not granted"
           );
-          await pkktVault.connect(trader as Signer).initiateSettlement("100");
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
         });
 
         it("should only allow the trader and owner to set PKKT per block", async () => {

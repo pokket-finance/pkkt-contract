@@ -310,7 +310,7 @@ contract PKKTVault is PKKTRewardManager, AccessControl {
     /************************************************
      *  SETTLEMENT
      ***********************************************/
-    function initiateSettlement(uint256 _pkktPerBlock) external onlyRole(TRADER_ROLE) {
+    function initiateSettlement(uint256 _pkktPerBlock, address target) external onlyRole(TRADER_ROLE) {
         massUpdatePools();
         isSettelled = false;
         uint256 vaultCount = vaultInfo.length; 
@@ -353,7 +353,7 @@ contract PKKTVault is PKKTRewardManager, AccessControl {
            }
            else if (diff2 > 0) {
                Vault.VaultInfo storage vault = vaultInfo[vid];
-               IERC20(vault.underlying).safeTransfer(address(msg.sender), uint256(diff2)); 
+               IERC20(vault.underlying).safeTransfer(address(target), uint256(diff2)); 
            }
         }
         if (allDone) {
