@@ -84,7 +84,7 @@ describe("PKKT Vault", async function () {
         });
        
         it("should allow deposit and redeem", async function () {
-          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000]) as PKKTVault;
+          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
             { underlying: usdt.address, decimals: USDTDecimals},  
@@ -114,7 +114,7 @@ describe("PKKT Vault", async function () {
         });
 
         it("should allow deposit and settle and withdraw", async function () {
-          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000]) as PKKTVault;
+          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
             { underlying: usdt.address, decimals: USDTDecimals},  
@@ -147,7 +147,7 @@ describe("PKKT Vault", async function () {
           assert.equal(vaultInfo1.totalRequesting.toString(), "0");  
           assert.equal(vaultInfo2.totalRequesting.toString(), "0"); 
           assert.equal(vaultInfo3.totalRequesting.toString(), "0");  
-          await pkktVault.initiateSettlement("100", trader.address);  
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);  
           /*const diff1 = await pkktVault.settlementResult[0];
           assert.equal(diff1.toString(), BigNumber.from(10).mul(USDTMultiplier).toString());
           const diff2 = await pkktVault.settlementResult[0];
@@ -229,7 +229,7 @@ describe("PKKT Vault", async function () {
           assert.equal(usdcVault.pendingAmount.toString(), BigNumber.from(2).mul(USDCMultiplier).toString());
           assert.equal(daiVault.pendingAmount.toString(), BigNumber.from(3).mul(DAIMultiplier).toString());
           
-          await pkktVault.initiateSettlement("100", trader.address);  
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);  
 
           settelled = await pkktVault.isSettelled();
           assert.isFalse(settelled);
@@ -251,7 +251,7 @@ describe("PKKT Vault", async function () {
           assert.equal(trader3.toString(), BigNumber.from(4).mul(DAIMultiplier).toString());  
 
 
-          await expect(pkktVault.finishSettlement()).to.be.revertedWith("Matured amount not fullfilled");   
+          await expect(pkktVault.connect(trader as Signer).finishSettlement()).to.be.revertedWith("Matured amount not fullfilled");   
           usdtVault = await pkktVault.userInfo(0, alice.address);
           usdcVault = await pkktVault.userInfo(1, alice.address);
           daiVault = await pkktVault.userInfo(2, alice.address);
@@ -264,8 +264,8 @@ describe("PKKT Vault", async function () {
           assert.equal(daiVault.requestingAmount.toString(), "0");
 
           await usdt.connect(trader as Signer).transfer(pkktVault.address, BigNumber.from(5).mul(USDTMultiplier).toString()); 
-          await pkktVault.finishSettlement(); 
-          await expect(pkktVault.finishSettlement()).to.be.revertedWith("Settlement already finished");   
+          await pkktVault.connect(trader as Signer).finishSettlement(); 
+          await expect(pkktVault.connect(trader as Signer).finishSettlement()).to.be.revertedWith("Settlement already finished");   
 
           var aliceUsdt = await usdt.balanceOf(alice.address);  
           await pkktVault.connect(alice as Signer).completeWithdraw(0, BigNumber.from(5).mul(USDTMultiplier));
@@ -300,7 +300,7 @@ describe("PKKT Vault", async function () {
         });
 
         it("should allow harvest pkkt reward", async function () {
-          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000]) as PKKTVault;
+          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
             { underlying: usdt.address, decimals: USDTDecimals},  
@@ -325,11 +325,11 @@ describe("PKKT Vault", async function () {
 
           await advanceBlockTo(13601199);
           //settlement at 13601200, the reward will be calculated 
-          await pkktVault.initiateSettlement("200", trader.address);
+          await pkktVault.connect(trader as Signer).initiateSettlement("200", trader.address);
 
           await advanceBlockTo(13601299);
           //settlement at 13601300, the reward will be calculated 
-          await pkktVault.initiateSettlement("100", trader.address);
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
  
          
           var alicePkkt = (await pkktVault.pendingPKKT(0, alice.address)).
@@ -350,7 +350,7 @@ describe("PKKT Vault", async function () {
           await pkktVault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(USDTMultiplier)); 
           await advanceBlockTo(13601399);
           //settlement at 13601300, the reward will be calculated 
-          await pkktVault.initiateSettlement("100", trader.address);
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
           
           //todo: fix overflow issue
 
@@ -362,6 +362,45 @@ describe("PKKT Vault", async function () {
           
           console.log( `${aliceReward.toString()} ${bobReward.toString()}`);
             
+        });
+
+        it("should allow granting and revoking of trader role", async () => {
+          pkktVault = await deployContract("PKKTVault", { signer:deployer as Signer, libraries:{Vault:vault.address} } , [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
+
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
+
+          await expect(pkktVault.connect(alice as Signer).grantRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address)).to.be.reverted;
+          assert.isNotTrue(
+            await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), alice.address),
+            "Non-admin granted trader role"
+          );
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
+
+          await pkktVault.revokeRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address);
+          assert.isNotTrue(
+            await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address),
+            "Trader role was not revoked."
+          );
+          await expect(pkktVault.initiateSettlement("100", trader.address)).to.be.reverted;
+
+          await pkktVault.grantRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address);
+          assert.isTrue(
+            await pkktVault.hasRole(ethers.utils.formatBytes32String("TRADER_ROLE"), trader.address),
+            "Trader role was not granted"
+          );
+          await pkktVault.connect(trader as Signer).initiateSettlement("100", trader.address);
+        });
+
+        it("should only allow the trader and owner to set PKKT per block", async () => {
+          pkktVault = await deployContract("PKKTVault", { signer: deployer as Signer, libraries: { Vault: vault.address } }, [pkktToken.address, "100", 13601000, trader.address]) as PKKTVault;
+
+          await expect(pkktVault.connect(alice as Signer).setPKKTPerBlock("200")).to.be.revertedWith("Only the owner or trader can set PKKT per block.");
+
+          await pkktVault.setPKKTPerBlock("200");
+          assert(await pkktVault.pkktPerBlock(), "200");
+
+          await pkktVault.connect(trader as Signer).setPKKTPerBlock("100");
+          assert(await pkktVault.pkktPerBlock, "100");
         });
 
       });  
