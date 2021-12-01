@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {Vault} from "./libraries/Vault.sol";  
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./PKKTToken.sol";
@@ -13,7 +13,7 @@ import "./PKKTRewardManager.sol";
 import "hardhat/console.sol";
 
 
-contract PKKTVault is PKKTRewardManager, AccessControl {
+contract PKKTVault is PKKTRewardManager, AccessControlUpgradeable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256; 
     using Vault for Vault.VaultInfo;
@@ -52,23 +52,23 @@ contract PKKTVault is PKKTRewardManager, AccessControl {
      *  CONSTRUCTOR & INITIALIZATION
      ***********************************************/
 
-    /**
-     * @notice Initializes the contract with immutable variables
-     */
-    constructor(
-        PKKTToken _pkkt, 
-        uint256 _pkktPerBlock,
-        uint256 _startBlock,
-        address trader
-    ) PKKTRewardManager(_pkkt, "Vault", _pkktPerBlock, _startBlock) {
+    /// @notice Initializes base contract with immutable variables
+    /// @param _pkkt address of PKKT contract which can mint and burn PKKT tokens
+    /// @param _startBlock block number when PKKT mining starts
+    constructor(PKKTToken _pkkt, uint256 _startBlock) PKKTRewardManager(_pkkt, _startBlock) { }
+
+    /// @notice Initializes the contract with storage variables
+    /// @param _pkktPerBlock total number of PKKT rewarded to users
+    /// @param trader address of trader who manages settlements
+    function initialize(uint256 _pkktPerBlock, address trader) public initializer {
+        PKKTRewardManager.initialize("Vault", _pkktPerBlock);
+        AccessControlUpgradeable.__AccessControl_init();
         // Contract deployer will be able to grant and revoke trading role
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        // Address capable of initiating and finalizing settlement
+        // Address capable of initiating and finizalizing settlement
         _setupRole(TRADER_ROLE, trader);
         isSettelled = true;
     }
- 
- 
 
     // Add a range of new underlyings to the vault. Can only be called by the owner.
     function addMany(Vault.VaultSettings[] memory _vaults, bool _withUpdate) external onlyOwner {

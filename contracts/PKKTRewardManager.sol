@@ -4,7 +4,7 @@ pragma solidity =0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./PKKTToken.sol";  
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./libraries/Utils.sol";  
@@ -12,13 +12,28 @@ import "./interfaces/IClaimable.sol";
 import "hardhat/console.sol";
 
 
-abstract contract PKKTRewardManager is IClaimable, Ownable {
+abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    /**********************************************
+    *  NON UPGRADABLE STORAGE
+    ***********************************************/
+
+    uint256 public pkktPerBlock;
+    // A record status of LP pool.
+    mapping(address => bool) public isAdded; 
+    string itemName;
+
+    // TODO: Research whether or not we need a uint256[30] private __gap here for safety
+
+    /**********************************************
+    *  IMMUTABLES AND CONSTANTS
+    ***********************************************/
+
     uint256 public constant normalizer = 1e18;
     // The PKKT TOKEN!
-    PKKTToken public immutable pkkt; 
-    uint256 public pkktPerBlock;
+    PKKTToken public immutable pkkt;
     // The block number when PKKT mining starts.
     uint256 public immutable startBlock;
 
@@ -27,20 +42,22 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
         uint256 indexed pid,
         uint256 amount
     );
-    // A record status of LP pool.
-    mapping(address => bool) public isAdded; 
-    string itemName;
 
-    constructor(
-        PKKTToken _pkkt,
-        string memory _itemName,
-        uint256 _pkktPerBlock,
-        uint256 _startBlock
-    )  {
-        require(address(_pkkt) != address(0) , "Zero address");
+    /// @notice Initializes the contract with immutable variables
+    /// @param _pkkt address of contract for minting and burning PKKT tokens
+    /// @param _startBlock block number when PKKT mining starts
+    constructor(PKKTToken _pkkt, uint256 _startBlock) {
+        require(address(_pkkt) != address(0), "Zero address");
         pkkt = _pkkt;
-        pkktPerBlock = _pkktPerBlock;
         startBlock = _startBlock;
+    }
+
+    /// @notice Initializes the contract with storage variables
+    /// @param _itemName name of underlying storage ex: "Vault" or "Pool"
+    /// @param _pkktPerBlock total number of PKKT rewarded to users per block
+    function initialize(string memory _itemName, uint256 _pkktPerBlock) internal initializer {
+        OwnableUpgradeable.__Ownable_init();
+        pkktPerBlock = _pkktPerBlock;
         itemName = _itemName;
     }
 
