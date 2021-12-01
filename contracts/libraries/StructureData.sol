@@ -6,39 +6,32 @@ library StructureData {
 //the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)
 //for hodl, if the asset price is higher than the strike price, the option would be executed, it's a put option
 //for alpha vol, if the price is lower than the strike price, the option would be executed, it's a call option
-    struct VaultParameters {
-         uint256 quota;
-         uint256 strikePriceRatio;
-         uint256 interestRate;
-         bool callOrPut;
-         uint256 strikePrice;
+    struct OptionParameters {
+         uint256 quota;  
+         uint8 pricePrecision;
+         uint8 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4
+         uint8 interestRate; //take, 0.01% is represented as 1, precision is 4
      }
 
-    struct VaultState {
+    struct OptionState {
          uint256 round;
          uint256 totalAmount; 
-         uint256 assetPrice;
-         bool converted;
+         uint256 strikePrice;
+         uint256 underlyingPrice;
+         uint8 interestRate; //take, 0.01% is represented as 1, precision is 4
+         uint8 pricePrecision; 
+         bool executed; 
     }
-    
-    enum StableCoin {
-         None,
-         USDT,
-         USDC,
-         DAI,
-         BUSD
-    }
+ 
 
-    enum VaultType {
-        Hodl,
-        AlphaVol
+    enum OptionType {
+        HodlBooster,
+        VolAlpha
     }
 
     struct UserState {
         uint256 pendingAsset; //for current round
-        uint256 ongoingAsset; //for previous round
-        StableCoin currentConvertedCoin;
-        StableCoin previousConvertedCoin; 
+        uint256 ongoingAsset; //for previous round 
     }
 
 }

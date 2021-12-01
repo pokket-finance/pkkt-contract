@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity =0.8.4;
+import {StructureData} from "../libraries/StructureData.sol";
+ 
+interface IPKKTStructureOption {
+    //deposit eth
+    function depositETH() external payable;
+
+    //deposit other erc20 coin, take wbtc or stable coin
+    function deposit(uint256 _amount) external;
+
+    //redeem unsettled amount
+    function redeem(uint256 _amount) external; 
+
+    function getPendingAsset() external view returns (uint256);   
+
+    function getOngoingAsset() external view returns (uint256);
+
+    //used to render the history at client side, reading the minting transactions of a specific address,
+    //for each transaction, read the blockheight and call this method to get the result
+    //the blockheight is the the height when the round is committed 
+    function getRoundData(uint256 _blockHeight) external view returns(StructureData.VaultState);
+
+ 
+}
