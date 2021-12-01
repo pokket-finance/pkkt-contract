@@ -67,7 +67,8 @@ describe("PKKT Farm", async function () {
         });
     
         it("should allow emergency withdraw", async function () {
-          pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, "100", 13600100]) as PKKTFarm;
+          pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, 13600100]) as PKKTFarm;
+          pkktFarm.initialize("100");
           await pkktToken.addMinter(pkktFarm.address, MAX);
           await pkktFarm.add({ lpToken: lp.address, allocPoint: BigNumber.from(100) }, true); 
           await lp.connect(bob as Signer).approve(pkktFarm.address, "1000"); 
@@ -80,7 +81,8 @@ describe("PKKT Farm", async function () {
         });
         
         it("should not distribute pkkts if no one deposit", async function () {
-            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, "100", 13600100]) as PKKTFarm;
+            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, 13600100]) as PKKTFarm;
+            pkktFarm.initialize("100");
             await pkktToken.addMinter(pkktFarm.address, MAX);
             await pkktFarm.add({ lpToken: lp.address, allocPoint: BigNumber.from(100) }, true);  
             await lp.connect(bob as Signer).approve(pkktFarm.address, "1000"); 
@@ -108,7 +110,8 @@ describe("PKKT Farm", async function () {
           }); 
 
           it("should distribute pkkts properly for each staker", async function () { 
-            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, "100", 13600200]) as PKKTFarm;
+            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, 13600200]) as PKKTFarm;
+            pkktFarm.initialize("100");
             await pkktToken.addMinter(pkktFarm.address, MAX);
             await pkktFarm.add({ lpToken: lp.address, allocPoint: BigNumber.from(100) }, true);  
 
@@ -175,7 +178,8 @@ describe("PKKT Farm", async function () {
           });  
         it("should give proper pkkts allocation to each pool", async function () {
             // 100 per block farming rate starting at block 300
-            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, "100", 13600300]) as PKKTFarm;
+            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, 13600300]) as PKKTFarm;
+            pkktFarm.initialize("100");
             await pkktToken.addMinter(pkktFarm.address, MAX); 
             await lp.connect(alice as Signer).approve(pkktFarm.address, "1000");
             await lp2.connect(bob as Signer).approve(pkktFarm.address, "1000"); 
@@ -206,7 +210,8 @@ describe("PKKT Farm", async function () {
 
         it("should give ppkt token from all pool if harvest all", async function () {
             // 100 per block farming rate starting at block 100 with bonus until block 1000
-            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, "100", 13600400]) as PKKTFarm;
+            pkktFarm = await deployContract("PKKTFarm", deployer as Signer, [pkktToken.address, 13600400]) as PKKTFarm;
+            pkktFarm.initialize("100");
             await pkktToken.addMinter(pkktFarm.address, MAX); 
             await lp.connect(alice as Signer).approve(pkktFarm.address, "1000");
             await lp2.connect(alice as Signer).approve(pkktFarm.address, "1000");
@@ -255,5 +260,3 @@ describe("PKKT Farm", async function () {
       });  
    
   });
-
-  
