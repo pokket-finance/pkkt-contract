@@ -24,25 +24,33 @@ const main = async ({
     contract: "Vault",
     from: deployer,
   });
-  const result = await deploy("PKKTVault", {
+
+  // For now we pass in the deployer as the trader
+  // TODO actually pass in the trader address
+  const pkktVault = await deploy("PKKTVault", {
     from: deployer,
-    contract: "PKKTVault" ,
-    args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK],
-    libraries: {
-        Vault: vault.address,
+    proxy: {
+      proxyContract: "OpenZeppelinTransparentProxy",
+      execute: {
+        methodName: 'initialize',
+        args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, deployer],
       },
+    },
+    libraries: {
+      Vault: vault.address,
+    },
   });
   
-  console.log(`02 - Deployed PKKTVault on ${network.name} to ${result.address}`); 
+  console.log(`02 - Deployed PKKTVault on ${network.name} to ${pkktVault.address}`); 
 
   
   const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
   const pkktVaultMax =  process.env.PKKT_FARM_MAX?? PKKT_VAULT_MAX;
-  await pkktTokenContract.addMinter(result.address, BigInt(pkktVaultMax));
+  await pkktTokenContract.addMinter(pkktVault.address, BigInt(pkktVaultMax));
   console.log(`02 - Added PKKTVault to PKKTToken as minter on ${network.name} with max ${pkktVaultMax}`); 
 
   
-  const pkktVaultContract = await ethers.getContractAt("PKKTVault", result.address);
+  const pkktVaultContract = await ethers.getContractAt("PKKTVault", pkktVault.address);
 
   const isMainnet = network.name === "mainnet" || network.name == "hardhat"; 
 

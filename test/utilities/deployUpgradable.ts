@@ -7,7 +7,7 @@ import {
 } from "@nomiclabs/hardhat-ethers/types";
  
 
-export async function deployUpgradeableContract (name: string, signerOrOptions?: Signer | FactoryOptions, args?: Array<any>): Promise<Contract> {
+export async function deployUpgradeableContract (name: string, signerOrOptions?: Signer  | FactoryOptions, args?: Array<any>): Promise<Contract> {
     const factory: ContractFactory = await ethers.getContractFactory(name, signerOrOptions);
     const ctr: Contract = await upgrades.deployProxy(factory, [...(args || [])], { unsafeAllow: ['delegatecall'], unsafeAllowLinkedLibraries: true });
     await ctr.deployed();
