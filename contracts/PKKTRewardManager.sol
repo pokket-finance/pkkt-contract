@@ -59,7 +59,7 @@ abstract contract PKKTRewardManager is IClaimable, Ownable {
     }
 
     //Update number of pkkt per block 
-    function setPKKTPerBlock(uint256 _pkktPerBlock) public onlyOwner {
+    function setPKKTPerBlock(uint256 _pkktPerBlock) public virtual onlyOwner {
         massUpdatePools();
         pkktPerBlock = _pkktPerBlock;
     }

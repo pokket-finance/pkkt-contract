@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import {Vault} from "./libraries/Vault.sol";  
 import {PoolData, UserData} from "./libraries/SharedData.sol";  
 import "./PKKTToken.sol";
@@ -12,7 +13,7 @@ import "./PKKTRewardManager.sol";
 import "hardhat/console.sol";
 
 
-contract PKKTVault is PKKTRewardManager {
+contract PKKTVault is PKKTRewardManager, AccessControl {
     using SafeERC20 for IERC20;
     using SafeMath for uint256; 
     using Vault for Vault.VaultInfo;
@@ -27,6 +28,8 @@ contract PKKTVault is PKKTRewardManager {
 
     mapping(uint256 => int256 ) public settlementResult;
     uint8 maxDecimals;
+
+    bytes32 public constant TRADER_ROLE = keccak256("TRADER_ROLE");
 
 
     /************************************************
@@ -55,8 +58,13 @@ contract PKKTVault is PKKTRewardManager {
     constructor(
         PKKTToken _pkkt, 
         uint256 _pkktPerBlock,
-        uint256 _startBlock
-    ) PKKTRewardManager(_pkkt, "Vault", _pkktPerBlock, _startBlock) {  
+        uint256 _startBlock,
+        address trader
+    ) PKKTRewardManager(_pkkt, "Vault", _pkktPerBlock, _startBlock) {
+        // Contract deployer will be able to grant and revoke trading role
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        // Address capable of initiating and finalizing settlement
+        _setupRole(TRADER_ROLE, trader);
         isSettelled = true;
     }
  
@@ -302,7 +310,7 @@ contract PKKTVault is PKKTRewardManager {
     /************************************************
      *  SETTLEMENT
      ***********************************************/
-    function initiateSettlement(uint256 _pkktPerBlock, address target) external onlyOwner {
+    function initiateSettlement(uint256 _pkktPerBlock, address target) external onlyRole(TRADER_ROLE) {
         massUpdatePools();
         isSettelled = false;
         uint256 vaultCount = vaultInfo.length; 
@@ -313,14 +321,13 @@ contract PKKTVault is PKKTRewardManager {
             uint256 userCount = addresses.length;
             int256 diff = 0;
             uint256 totalOngoing = 0;
-            uint256 totalMatured = 0; 
+            uint256 totalMatured = 0;
             for (uint i=0; i < userCount; i++) {
                 Vault.UserInfo storage user = users[addresses[i]]; 
                 diff = diff + int256(user.pendingAmount) - int256(user.requestingAmount); 
                 uint256 newUserOngoing = user.ongoingAmount.add(user.pendingAmount).sub(user.requestingAmount); //it must be possitive 
                 totalOngoing = totalOngoing.add(newUserOngoing);
-                
-                updateUserReward(vid, msg.sender,  
+                updateUserReward(vid, addresses[i],  
                     user.ongoingAmount, newUserOngoing, true); 
                 user.ongoingAmount = newUserOngoing;
                 user.pendingAmount = 0;
@@ -345,7 +352,7 @@ contract PKKTVault is PKKTRewardManager {
            }
            else if (diff2 > 0) {
                Vault.VaultInfo storage vault = vaultInfo[vid];
-               IERC20(vault.underlying).safeTransfer(target, uint256(diff2)); 
+               IERC20(vault.underlying).safeTransfer(address(target), uint256(diff2)); 
            }
         }
         if (allDone) {
@@ -357,7 +364,7 @@ contract PKKTVault is PKKTRewardManager {
     }
 
      
-    function finishSettlement() external onlyOwner {
+    function finishSettlement() external onlyRole(TRADER_ROLE) {
         require(!isSettelled, "Settlement already finished");
         uint256 length = vaultInfo.length;
         for (uint256 vid = 0; vid < length; vid++) {
@@ -369,6 +376,13 @@ contract PKKTVault is PKKTRewardManager {
             settlementResult[vid] = 0;
         }
         isSettelled = true;
+    }
+
+    //Update number of pkkt per block 
+    function setPKKTPerBlock(uint256 _pkktPerBlock) public override {
+        require(hasRole(TRADER_ROLE, msg.sender) || owner() == msg.sender, "Only the owner or trader can set PKKT per block.");
+        massUpdatePools();
+        pkktPerBlock = _pkktPerBlock;
     }
 
     function poolLength() public override view returns (uint256) {
