@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.4;
-import {IMaturedVault} from "./IMaturedVault.sol";
 import {StructureData} from "../libraries/StructureData.sol";
 
 interface IExecuteSettlement {
 
-   function setMaturedVault(IMaturedVault _vault) external;
-   //calculate the maturity   
-   function closePrevious(uint256 _underlyingPrice, uint256 _pricePrecision) external;
+   //function setPool(IStructurePool _pool) external;
+   //calculate the result of on going option    
+   function closePrevious(uint256 _underlyingPrice) external;
 
-   //close pending vault and autoroll if capacity is enough based on the maturity result
+   //close pending option and autoroll if capacity is enough based on the maturity result
    function commitCurrent(address _traderAddress) external; 
 
-   function rollToNext(StructureData.VaultParameters memory _vaultParameters) external;
+    //open a new option
+   function rollToNext(StructureData.OptionParameters memory _optionParameters) external;
+ 
+   function getRequest() external view returns(StructureData.Request[] memory);
+   //finish the settlement once all requestedcoins are sent
+   function finishSettlement() external;
 
-   
 }

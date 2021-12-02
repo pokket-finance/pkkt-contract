@@ -9,7 +9,7 @@ library StructureData {
     struct OptionParameters {
          uint256 quota;  
          uint8 pricePrecision;
-         uint8 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4
+         int8 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4
          uint8 interestRate; //take, 0.01% is represented as 1, precision is 4
      }
 
@@ -32,6 +32,11 @@ library StructureData {
     struct UserState {
         uint256 pendingAsset; //for current round
         uint256 ongoingAsset; //for previous round 
+    }
+
+    struct Request {
+        uint256 amount;
+        address contractAddress; //0 for eth
     }
 
 }

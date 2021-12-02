@@ -19,7 +19,7 @@ interface IPKKTStructureOption {
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed 
-    function getRoundData(uint256 _blockHeight) external view returns(StructureData.VaultState);
+    function getRoundData(uint256 _blockHeight) external view returns(StructureData.OptionState memory);
 
  
 }

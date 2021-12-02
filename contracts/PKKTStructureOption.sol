@@ -11,16 +11,14 @@ import "hardhat/console.sol";
  
 import {StructureData} from "./libraries/StructureData.sol";     
 import "./interfaces/IPKKTStructureOption.sol";
-import "./interfaces/IExecuteSettlement.sol";
-import "./interfaces/IMaturedVault.sol";
-
+import "./interfaces/IExecuteSettlement.sol"; 
 abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     uint256 public constant PERIOD = 7 days;
-    uint8 private assetAmountDecimals;
-    uint8 private stableCoinAmountDecimals;
+    uint8 internal assetAmountDecimals;
+    uint8 internal stableCoinAmountDecimals;
       
     address public immutable asset;
     address public immutable stableCoin;
@@ -33,8 +31,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
      mapping(uint256=>StructureData.OptionState) public optionStates;
      address[] public ongoingUserAddresses;
      address[] public pendingUserAddresses;
-     mapping(address=>StructureData.UserState) public userStates;
-     IMaturedVault internal vault; 
+     mapping(address=>StructureData.UserState) public userStates; 
      bool public underSettlement;
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
@@ -58,6 +55,8 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
     function decimals() public view override returns (uint8) {
         return assetAmountDecimals;
     }
+
+
     //deposit eth
     function depositETH() external payable override {
        require(!underSettlement, "Being settled");
@@ -72,14 +71,13 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         require(currentRound > 0, "!Started");
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
-        _depositFor(_amount);
-        //todo: transfer to vault
+        _depositFor(_amount); 
         IERC20(asset).safeTransferFrom(msg.sender, address(this), _amount);
     }
  
   
     function _depositFor(uint256 _amount) private { 
-        StructrureData.OptionState storage optionState = optionStates[currentRound];
+        StructureData.OptionState storage optionState = optionStates[currentRound];
         require(optionState.totalAmount.add(_amount) <= optionParameters.quota);
         StructureData.UserState storage userState =  userStates[msg.sender]; 
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
@@ -96,7 +94,6 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
          StructureData.UserState storage userState =  userStates[msg.sender]; 
          require(userState.pendingAsset >= _amount, "Exceeds available");
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
-         //todo: transfer from vault
         if (isEth) {
             payable(msg.sender).transfer(_amount);
         }
@@ -119,34 +116,36 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed  
-    function getRoundData(uint256 _blockHeight) external view override returns(StructureData.VaultState) {
+    function getRoundData(uint256 _blockHeight) external view override returns(StructureData.OptionState memory) {
         return optionStates[optionHeights[_blockHeight]];
-    }
- 
+    } 
+
    function closePrevious(uint256 _underlyingPrice) external override {
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice;
         //return when there is no previous round
         if (currentRound <= 1) return;
         StructureData.OptionState storage previousOptionState = optionStates[currentRound - 1];
-        (uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed) = 
-        _calculateMaturity(_underlyingPrice, _pricePrecision, previousOptionState);  
+        (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed) = 
+        _calculateMaturity(_underlyingPrice, previousOptionState);  
         previousOptionState.executed = executed;
+        maturedAssetAmount = maturedAssetAmount_;
+        maturedStableCoinAmount = maturedStableCoinAmount_;
         delete ongoingUserAddresses;
    }
    
    uint256 private maturedAssetAmount;
    uint256 private maturedStableCoinAmount;
-   function _calculateMaturity(uint256 _underlyingPrice, uint256 _pricePrecision, StructureData.OptionState memory _optionState) 
+   uint256 private requestingAssetAmount;
+   uint256 private requestingStableCoinAmount;
+   function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) 
    internal virtual returns(uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed); 
  
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent(address _traderAddress) external override {
-         
+   function commitCurrent(address _traderAddress) external override { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
         optionState.underlyingPrice = previousUnderlyingPrice; 
-        //todo: calculate strike price
-
+        optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(10**4 + int256(optionParameters.strikePriceRatio))).div(10**4);  
         optionState.interestRate = optionParameters.interestRate;
         optionState.pricePrecision = optionParameters.pricePrecision;
         //mint for the current option
@@ -165,40 +164,87 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
 
         //send trader the coins
         if (maturedAssetAmount <= optionState.totalAmount) {
+            requestingAssetAmount = 0;
             uint256 toSend = optionState.totalAmount.sub(maturedAssetAmount);
-            if (toSend > 0) {
-
-               //todo: send from vault and consider eth
+            if (toSend > 0) { 
                //if balance is not correct, would result in error
-               IERC20(asset).safeTransferFrom(address(this), _traderAddress, toSend);
+                if (isEth) {
+                    payable(_traderAddress).transfer(toSend);
+                }
+                else { 
+                    IERC20(asset).safeTransfer(_traderAddress, toSend); 
+                } 
             }
         } 
         else { 
-           uint256 toRequest = maturedAssetAmount.sub(optionState.totalAmount);
-           //todo: record the missing balance and trigger event to ask trader to send back
+           requestingAssetAmount = maturedAssetAmount.sub(optionState.totalAmount); 
         }
-        if (maturedStableCoinAmount > 0) {
-            //todo: record the missing balance and trigger event to ask trader to send back
-        }
-
-        
+        requestingStableCoinAmount = maturedStableCoinAmount;
         optionHeights[currentRound] = block.number; //commit current option at current block
    }
- 
+      
    
    function rollToNext(StructureData.OptionParameters memory _optionParameters) external override { 
         currentRound = currentRound + 1;
         optionParameters = _optionParameters;  
-        StructureData.OptionState currentOption =  
+        StructureData.OptionState memory currentOption =  
         StructureData.OptionState({
                             round: currentRound,
                             totalAmount: 0,
                             interestRate:  _optionParameters.interestRate,
-                            pricePrecision: _optionParameters.pricePrecision
+                            pricePrecision: _optionParameters.pricePrecision,
+                            strikePrice: 0,
+                            underlyingPrice: 0,
+                            executed: false
                         });
         optionStates[currentRound] = currentOption;
         underSettlement = false;
     }
  
- 
+    function getRequest() external override view returns(StructureData.Request[] memory){
+        if (requestingAssetAmount == 0 && requestingStableCoinAmount == 0) {
+            return new StructureData.Request[](0);
+        }
+        if (requestingAssetAmount == 0) {
+            StructureData.Request[] memory results = new StructureData.Request[](1);
+            results[0] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin});
+            return results;
+        } 
+        if (requestingStableCoinAmount == 0) {
+            StructureData.Request[] memory results = new StructureData.Request[](1);
+            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset});
+            return results;
+        }
+        else {
+           
+           StructureData.Request[] memory results = new StructureData.Request[](2);
+            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset});
+            results[1] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin});
+            return results;
+        }
+    }
+
+    function getBalance(bool _asset) internal returns(uint256) {
+       if (_asset) {
+          if (isEth) {
+              return address(this).balance;
+          }
+          else{
+              
+             return IERC20(asset).balanceOf(address(this));
+          }
+       }
+       else{
+           return IERC20(stableCoin).balanceOf(address(this));
+       }
+    }
+    function finishSettlement() external override {
+       
+        require(requestingAssetAmount == 0 || getBalance(true) >=  requestingAssetAmount, 
+           "Matured Asset not filled");       
+        require(requestingStableCoinAmount == 0 || getBalance(false) >=  requestingStableCoinAmount, 
+           "Matured Stable Coin not filled"); 
+        requestingAssetAmount = 0;
+        requestingStableCoinAmount = 0;
+    }
 }

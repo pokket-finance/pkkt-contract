@@ -6,25 +6,22 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; 
 import {StructureData} from "./libraries/StructureData.sol";  
-import "./PKKTStructureOption.sol";
-import "./interfaces/IMaturedVault.sol";
+import "./PKKTStructureOption.sol"; 
 import "hardhat/console.sol";
 contract PKKTHodlBoosterOption is PKKTStructureOption {
     
     using SafeERC20 for IERC20;
-    using SafeMath for uint256; 
-    address public immutable StableCoin;  
+    using SafeMath for uint256;  
 
   constructor(
         string memory name,
         string memory symbol,
-        uint256 _underlyingDecimals,
-        uint256 _stableCoinDecimals,
         address _underlying,
-        address _stableCoin 
+        address _stableCoin,
+        uint8 _underlyingDecimals,
+        uint8 _stableCoinDecimals
     ) PKKTStructureOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals) {  
-         
-        StableCoin = _stableCoin;
+          
     }
 
      function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
@@ -39,7 +36,7 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
            div(10**4).div(10**_optionState.pricePrecision);
         }
         else {
-          maturedAssetAmount = previousVaultState.totalAmount.mul(multipler).div(10**4);
+          maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(10**4);
         }
 
 

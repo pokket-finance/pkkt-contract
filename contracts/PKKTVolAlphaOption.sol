@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; 
 import {StructureData} from "./libraries/StructureData.sol";  
-import "./PKKTStructureVault.sol";
+import "./PKKTStructureOption.sol";
 import "hardhat/console.sol";
+/*
 contract PKKTVolAlphaVault is PKKTStructureVault {
     
     using SafeERC20 for IERC20;
@@ -23,4 +24,4 @@ contract PKKTVolAlphaVault is PKKTStructureVault {
     ) PKKTStructureVault(name, symbol, decimals, _stableCoin) {  
          underlying = _underlying;
     }
-}
+}*/
