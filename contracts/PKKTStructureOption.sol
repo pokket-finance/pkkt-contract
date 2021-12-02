@@ -24,6 +24,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
     event OpenOption(uint256 indexed round);
 
     uint256 public constant PERIOD = 7 days;
+    uint256 public constant RATIOMULTIPLIER = 10000;
     uint8 internal assetAmountDecimals;
     uint8 internal stableCoinAmountDecimals;
       
@@ -42,7 +43,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
      mapping(address=>uint256) public maturedAsset; 
      mapping(address=>uint256) public maturedStableCoin;
      bool public underSettlement;
-
+     
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
@@ -189,7 +190,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
    function commitCurrent(address _traderAddress) external override { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
         optionState.underlyingPrice = previousUnderlyingPrice; 
-        optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(10**4 + int256(optionParameters.strikePriceRatio))).div(10**4);  
+        optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(int256(RATIOMULTIPLIER) + int256(optionParameters.strikePriceRatio))).div(RATIOMULTIPLIER);  
         optionState.interestRate = optionParameters.interestRate;
         optionState.pricePrecision = optionParameters.pricePrecision;
         //mint for the current option

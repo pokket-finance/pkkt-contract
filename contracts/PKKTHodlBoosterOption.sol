@@ -28,15 +28,15 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
      returns(uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed) {
         maturedAssetAmount = 0;
         maturedStableCoinAmount = 0;
-        uint256 multipler = uint256(10**4).add(_optionState.interestRate);
+        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate);
         bool shouldConvert = _optionState.strikePrice > _underlyingPrice; 
         if (shouldConvert) { 
            maturedStableCoinAmount = 
            _optionState.totalAmount.mul(_optionState.strikePrice).mul(multipler).mul(10**stableCoinAmountDecimals).
-           div(10**4).div(10**_optionState.pricePrecision);
+           div(RATIOMULTIPLIER).div(10**_optionState.pricePrecision);
         }
         else {
-          maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(10**4);
+          maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
         }
 
 
