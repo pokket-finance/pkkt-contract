@@ -16,6 +16,13 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+
+    event Deposit(address indexed account, uint256 indexed round,uint256 amount);
+    event Redeem(address indexed account, uint256 indexed round,uint256 amount);
+    event CloseOption(uint256 indexed round);
+    event CommitOption(uint256 indexed round);
+    event OpenOption(uint256 indexed round);
+
     uint256 public constant PERIOD = 7 days;
     uint8 internal assetAmountDecimals;
     uint8 internal stableCoinAmountDecimals;
@@ -32,7 +39,10 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
      address[] public ongoingUserAddresses;
      address[] public pendingUserAddresses;
      mapping(address=>StructureData.UserState) public userStates; 
+     mapping(address=>uint256) public maturedAsset; 
+     mapping(address=>uint256) public maturedStableCoin;
      bool public underSettlement;
+
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
@@ -56,6 +66,40 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         return assetAmountDecimals;
     }
 
+    function withraw(uint256 _amount, bool _stableCoin) external override {
+       require(_stableCoin || requestingAssetAmount == 0, "Matured Asset not filled");
+       require(!_stableCoin || requestingStableCoinAmount == 0, "Matured Stable Coin not filled");
+       require(!underSettlement, "Being settled");
+       require(currentRound > 1, "!No Matured");
+       require(_amount > 0, "!amount"); 
+       if (_stableCoin) {
+            uint256 stableCoinAmount = maturedStableCoin[msg.sender];
+            require(stableCoinAmount >= _amount, "Exceed available"); 
+            maturedStableCoin[msg.sender] = stableCoinAmount.sub(_amount);
+            IERC20(stableCoin).safeTransfer(msg.sender, _amount); 
+       }
+       else { 
+            uint256 assetAmount = maturedAsset[msg.sender];
+            require(assetAmount >= _amount, "Exceed available"); 
+            maturedAsset[msg.sender] = assetAmount.sub(_amount);
+            if (isEth) {
+                payable(msg.sender).transfer(_amount);
+            }
+            else { 
+                IERC20(asset).safeTransfer(msg.sender, _amount); 
+            } 
+       }
+    }
+
+    function redeposit(uint256 _amount) external override {
+       require(!underSettlement, "Being settled");
+       require(currentRound > 1, "!No Matured");
+       require(_amount > 0, "!amount"); 
+       uint256 maturedAmount = maturedAsset[msg.sender];
+       require(maturedAmount >= _amount, "Exceed available");
+       maturedAsset[msg.sender] = maturedAmount.sub(_amount);
+       _depositFor(_amount);
+    }
 
     //deposit eth
     function depositETH() external payable override {
@@ -82,7 +126,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         StructureData.UserState storage userState =  userStates[msg.sender]; 
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
-        //todo: trigger event
+        emit Deposit(msg.sender, currentRound, _amount);
     }
 
 
@@ -100,6 +144,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         else { 
             IERC20(asset).safeTransfer(msg.sender, _amount); 
         }
+        emit Redeem(msg.sender, currentRound, _amount);
     }
 
  
@@ -129,13 +174,12 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed) = 
         _calculateMaturity(_underlyingPrice, previousOptionState);  
         previousOptionState.executed = executed;
-        maturedAssetAmount = maturedAssetAmount_;
-        maturedStableCoinAmount = maturedStableCoinAmount_;
+        requestingAssetAmount = maturedAssetAmount_;
+        requestingStableCoinAmount = maturedStableCoinAmount_;
         delete ongoingUserAddresses;
+        emit CloseOption(currentRound - 1);
    }
-   
-   uint256 private maturedAssetAmount;
-   uint256 private maturedStableCoinAmount;
+    
    uint256 private requestingAssetAmount;
    uint256 private requestingStableCoinAmount;
    function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) 
@@ -163,9 +207,8 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         delete pendingUserAddresses; 
 
         //send trader the coins
-        if (maturedAssetAmount <= optionState.totalAmount) {
-            requestingAssetAmount = 0;
-            uint256 toSend = optionState.totalAmount.sub(maturedAssetAmount);
+        if (requestingAssetAmount <= optionState.totalAmount) {
+            uint256 toSend = optionState.totalAmount.sub(requestingAssetAmount);
             if (toSend > 0) { 
                //if balance is not correct, would result in error
                 if (isEth) {
@@ -175,12 +218,13 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
                     IERC20(asset).safeTransfer(_traderAddress, toSend); 
                 } 
             }
+            requestingAssetAmount = 0;
         } 
         else { 
-           requestingAssetAmount = maturedAssetAmount.sub(optionState.totalAmount); 
-        }
-        requestingStableCoinAmount = maturedStableCoinAmount;
+           requestingAssetAmount = requestingAssetAmount.sub(optionState.totalAmount); 
+        } 
         optionHeights[currentRound] = block.number; //commit current option at current block
+        emit CommitOption(currentRound);
    }
       
    
@@ -199,6 +243,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
                         });
         optionStates[currentRound] = currentOption;
         underSettlement = false;
+        emit OpenOption(currentRound);
     }
  
     function getRequest() external override view returns(StructureData.Request[] memory){
@@ -224,7 +269,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         }
     }
 
-    function getBalance(bool _asset) internal returns(uint256) {
+    function getBalance(bool _asset) internal view returns(uint256) {
        if (_asset) {
           if (isEth) {
               return address(this).balance;
@@ -246,5 +291,9 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
            "Matured Stable Coin not filled"); 
         requestingAssetAmount = 0;
         requestingStableCoinAmount = 0;
+    }
+
+    function allSettled() external override view returns(bool){
+        return requestingAssetAmount == 0 && requestingStableCoinAmount == 0;
     }
 }

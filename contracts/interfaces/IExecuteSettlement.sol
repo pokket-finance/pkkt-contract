@@ -18,4 +18,6 @@ interface IExecuteSettlement {
    //finish the settlement once all requestedcoins are sent
    function finishSettlement() external;
 
+   function allSettled() external view returns(bool);
+
 }

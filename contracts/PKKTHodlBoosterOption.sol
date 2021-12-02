@@ -46,11 +46,11 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
             StructureData.UserState storage userState = userStates[userAddress]; 
             if (!shouldConvert) { 
                 uint256 assetAmount = maturedAssetAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
-                //todo: record to vault
+                maturedAsset[userAddress] = maturedAsset[userAddress].add(assetAmount); 
             }
             else {  
                uint256 stableCoinAmount = maturedStableCoinAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
-               //todo: record to vault
+               maturedStableCoin[userAddress] = maturedStableCoin[userAddress].add(stableCoinAmount);
             } 
          }
          return (maturedAssetAmount, maturedStableCoinAmount, shouldConvert);

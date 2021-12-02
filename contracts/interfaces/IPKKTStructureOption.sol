@@ -16,6 +16,10 @@ interface IPKKTStructureOption {
 
     function getOngoingAsset() external view returns (uint256);
 
+    function withraw(uint256 _amount, bool _stableCoin) external;
+
+    function redeposit(uint256 _amount) external;
+
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed 
