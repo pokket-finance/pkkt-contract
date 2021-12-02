@@ -2,6 +2,7 @@
 pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+//import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -24,6 +25,10 @@ abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
     // A record status of LP pool.
     mapping(address => bool) public isAdded; 
     string itemName;
+    // The PKKT TOKEN!
+    PKKTToken public pkkt;
+    // The block number when PKKT mining starts.
+    uint256 public startBlock;
 
     // TODO: Research whether or not we need a uint256[30] private __gap here for safety
 
@@ -32,10 +37,7 @@ abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
     ***********************************************/
 
     uint256 public constant normalizer = 1e18;
-    // The PKKT TOKEN!
-    PKKTToken public immutable pkkt;
-    // The block number when PKKT mining starts.
-    uint256 public immutable startBlock;
+
 
     event RewardsHarvested(
         address indexed user,
@@ -43,22 +45,16 @@ abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
         uint256 amount
     );
 
-    /// @notice Initializes the contract with immutable variables
-    /// @param _pkkt address of contract for minting and burning PKKT tokens
-    /// @param _startBlock block number when PKKT mining starts
-    constructor(PKKTToken _pkkt, uint256 _startBlock) {
-        require(address(_pkkt) != address(0), "Zero address");
-        pkkt = _pkkt;
-        startBlock = _startBlock;
-    }
-
     /// @notice Initializes the contract with storage variables
     /// @param _itemName name of underlying storage ex: "Vault" or "Pool"
     /// @param _pkktPerBlock total number of PKKT rewarded to users per block
-    function initialize(string memory _itemName, uint256 _pkktPerBlock) internal initializer {
+    function initialize(PKKTToken _pkkt, string memory _itemName, uint256 _pkktPerBlock, uint256 _startBlock) internal initializer {
+        require(address(_pkkt) != address(0), "Zero address");
         OwnableUpgradeable.__Ownable_init();
+        pkkt = _pkkt;
         pkktPerBlock = _pkktPerBlock;
         itemName = _itemName;
+        startBlock = _startBlock;
     }
 
  
@@ -133,15 +129,15 @@ abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
         PoolData.Data memory poolData = _getPoolData(_pid, false);
         UserData.Data memory userData = _getUserData(_pid, msg.sender); 
  
-       uint256 pendingReward = userData.pendingReward;
-       uint256 totalPending = userData.shareAmount.mul(poolData.accPKKTPerShare)
+        uint256 pendingReward = userData.pendingReward;
+        uint256 totalPending = userData.shareAmount.mul(poolData.accPKKTPerShare)
                                         .div(normalizer)
                                         .sub(userData.rewardDebt)
                                         .add(pendingReward); 
-       _updateUserPendingReward(_pid, msg.sender, 0);       
-       if (totalPending > 0) {
+        _updateUserPendingReward(_pid, msg.sender, 0);
+        if (totalPending > 0) {
             pkkt.mint(address(this), totalPending);
-            pkkt.transfer(msg.sender, totalPending); 
+            pkkt.transfer(msg.sender, totalPending);
         }
         _updateUserRewardDebt(_pid, msg.sender, userData.shareAmount.mul(poolData.accPKKTPerShare).div(normalizer)); 
         emit RewardsHarvested(msg.sender, _pid, totalPending);

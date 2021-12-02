@@ -3,6 +3,7 @@ pragma solidity =0.8.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+//import {SafeERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {Pool} from "./libraries/Pool.sol"; 
@@ -19,7 +20,7 @@ contract PKKTFarm is PKKTRewardManager {
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => Pool.UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
+    uint256 public totalAllocPoint;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -29,15 +30,11 @@ contract PKKTFarm is PKKTRewardManager {
         uint256 amount
     );
 
-    /// @notice Initializes base contract with immutable variables
-    /// @param _pkkt address of PKKT contract which can mint and burn PKKT tokens
-    /// @param _startBlock block number when PKKT mining starts
-    constructor(PKKTToken _pkkt, uint256 _startBlock) PKKTRewardManager(_pkkt, _startBlock) { }
-
     /// @notice Initializes the contract with storage variables
     /// @param _pkktPerBlock total number of PKKT rewarded to users
-    function initialize(uint256 _pkktPerBlock) public initializer {
-        PKKTRewardManager.initialize("Pool", _pkktPerBlock);
+    function initialize(PKKTToken _pkkt, uint256 _pkktPerBlock, uint256 _startBlock) public initializer {
+        PKKTRewardManager.initialize(_pkkt, "Pool", _pkktPerBlock, _startBlock);
+        totalAllocPoint = 0;
     }
 
   
