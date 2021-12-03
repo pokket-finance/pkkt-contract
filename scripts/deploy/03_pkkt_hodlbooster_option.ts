@@ -1,5 +1,5 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { PKKT_VAULT_MAX, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS } from "../../constants/constants"; 
+import { NULL_ADDRESS, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS, WBTC_ADDRESS, ROPSTEN_WBTC_ADDRESS} from "../../constants/constants"; 
 import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { PKKTHodlBoosterOption } from "../../typechain";
@@ -25,7 +25,7 @@ const main = async ({
   const result = await deploy("PKKTHodlBoosterOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption" ,
-    args: ["ETH-USDC-HodlBooster", "ETHUSDCHodlBooster", "0x0", 
+    args: ["ETH-USDC-HodlBooster", "ETHUSDCHodlBooster", NULL_ADDRESS, 
     isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6],
     libraries: {
       StructureData: structureData.address,
@@ -37,6 +37,23 @@ const main = async ({
   await hodlBoosterOptionContract.transferOwnership(owner);
   console.log(`03 - Transfer owner of ETH-USDC-HodlBooster to ${owner} on ${network.name}`); 
 
+
+  console.log("03 - Deploying WBTC-USDC-HodlBooster on", network.name);
+  const result2 = await deploy("PKKTHodlBoosterOption", {
+    from: deployer,
+    contract: "PKKTHodlBoosterOption" ,
+    args: ["WBTC-USDC-HodlBooster", "WBTCUSDCHodlBooster", 
+    isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
+    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6],
+    libraries: {
+      StructureData: structureData.address,
+    },
+  });
+  
+  console.log(`03 - Deployed WBTC-USDC-HodlBooster on ${network.name} to ${result2.address}`); 
+  const hodlBoosterOptionContract2 = await ethers.getContractAt("PKKTHodlBoosterOption", result2.address);
+  await hodlBoosterOptionContract2.transferOwnership(owner);
+  console.log(`03 - Transfer owner of WBTC-USDC-HodlBooster to ${owner} on ${network.name}`);
    
 };
 main.tags = ["PKKTHodlBoosterOption"];
