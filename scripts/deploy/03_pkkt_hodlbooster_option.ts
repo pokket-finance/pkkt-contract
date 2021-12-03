@@ -12,7 +12,7 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  console.log("03 - Deploying ETH-USDC-HodlBooster on", network.name);
+  console.log("03 - Deploying ETH-USDT-HodlBooster on", network.name);
 
   const { deployer, owner } = await getNamedAccounts(); 
  
@@ -25,24 +25,24 @@ const main = async ({
   const result = await deploy("PKKTHodlBoosterOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption" ,
-    args: ["ETH-USDC-HodlBooster", "ETHUSDCHodlBooster", NULL_ADDRESS, 
+    args: ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, 
     isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6],
     libraries: {
       StructureData: structureData.address,
     },
   });
   
-  console.log(`03 - Deployed ETH-USDC-HodlBooster on ${network.name} to ${result.address}`); 
+  console.log(`03 - Deployed ETH-USDT-HodlBooster on ${network.name} to ${result.address}`); 
   const hodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", result.address);
   await hodlBoosterOptionContract.transferOwnership(owner);
-  console.log(`03 - Transfer owner of ETH-USDC-HodlBooster to ${owner} on ${network.name}`); 
+  console.log(`03 - Transfer owner of ETH-USDT-HodlBooster to ${owner} on ${network.name}`); 
 
 
-  console.log("03 - Deploying WBTC-USDC-HodlBooster on", network.name);
+  console.log("03 - Deploying WBTC-USDT-HodlBooster on", network.name);
   const result2 = await deploy("PKKTHodlBoosterOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption" ,
-    args: ["WBTC-USDC-HodlBooster", "WBTCUSDCHodlBooster", 
+    args: ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", 
     isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
     isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6],
     libraries: {
@@ -50,10 +50,10 @@ const main = async ({
     },
   });
   
-  console.log(`03 - Deployed WBTC-USDC-HodlBooster on ${network.name} to ${result2.address}`); 
+  console.log(`03 - Deployed WBTC-USDT-HodlBooster on ${network.name} to ${result2.address}`); 
   const hodlBoosterOptionContract2 = await ethers.getContractAt("PKKTHodlBoosterOption", result2.address);
   await hodlBoosterOptionContract2.transferOwnership(owner);
-  console.log(`03 - Transfer owner of WBTC-USDC-HodlBooster to ${owner} on ${network.name}`);
+  console.log(`03 - Transfer owner of WBTC-USDT-HodlBooster to ${owner} on ${network.name}`);
    
 };
 main.tags = ["PKKTHodlBoosterOption"];
