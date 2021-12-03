@@ -15,7 +15,7 @@ const main = async ({
   const { deploy } = deployments;
   console.log("02 - Deploying PKKTVault on", network.name);
 
-  const { deployer, owner } = await getNamedAccounts(); 
+  const { deployer, owner, trader } = await getNamedAccounts(); 
 
   const pkktToken = await deployments.get("PKKTToken");
 
@@ -27,7 +27,7 @@ const main = async ({
   const result = await deploy("PKKTVault", {
     from: deployer,
     contract: "PKKTVault" ,
-    args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK],
+    args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, trader],
     libraries: {
         Vault: vault.address,
       },
