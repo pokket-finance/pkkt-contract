@@ -123,7 +123,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
   
     function _depositFor(uint256 _amount) private { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
-        require(optionState.totalAmount.add(_amount) <= optionParameters.quota);
+        require(optionState.totalAmount.add(_amount) <= optionParameters.quota, "Not enough quota");
         StructureData.UserState storage userState =  userStates[msg.sender]; 
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
