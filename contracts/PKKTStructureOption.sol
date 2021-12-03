@@ -12,7 +12,7 @@ import "hardhat/console.sol";
 import {StructureData} from "./libraries/StructureData.sol";     
 import "./interfaces/IPKKTStructureOption.sol";
 import "./interfaces/IExecuteSettlement.sol"; 
-abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSettlement {
+abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -166,7 +166,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         return optionStates[optionHeights[_blockHeight]];
     } 
 
-   function closePrevious(uint256 _underlyingPrice) external override {
+   function closePrevious(uint256 _underlyingPrice) external override onlyOwner {
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice;
         //return when there is no previous round
@@ -187,7 +187,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
    internal virtual returns(uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed); 
  
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent(address _traderAddress) external override { 
+   function commitCurrent(address _traderAddress) external override onlyOwner { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
         optionState.underlyingPrice = previousUnderlyingPrice; 
         optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(int256(RATIOMULTIPLIER) + int256(optionParameters.strikePriceRatio))).div(RATIOMULTIPLIER);  
@@ -229,7 +229,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
    }
       
    
-   function rollToNext(StructureData.OptionParameters memory _optionParameters) external override { 
+   function rollToNext(StructureData.OptionParameters memory _optionParameters) external override onlyOwner { 
         currentRound = currentRound + 1;
         optionParameters = _optionParameters;  
         StructureData.OptionState memory currentOption =  
@@ -247,7 +247,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
         emit OpenOption(currentRound);
     }
  
-    function getRequest() external override view returns(StructureData.Request[] memory){
+    function getRequest() external override view onlyOwner returns(StructureData.Request[] memory){
         if (requestingAssetAmount == 0 && requestingStableCoinAmount == 0) {
             return new StructureData.Request[](0);
         }
@@ -284,7 +284,7 @@ abstract contract PKKTStructureOption is ERC20, IPKKTStructureOption, IExecuteSe
            return IERC20(stableCoin).balanceOf(address(this));
        }
     }
-    function finishSettlement() external override {
+    function finishSettlement() external override onlyOwner {
        
         require(requestingAssetAmount == 0 || getBalance(true) >=  requestingAssetAmount, 
            "Matured Asset not filled");       
