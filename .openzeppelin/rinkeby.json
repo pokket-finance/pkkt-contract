@@ -1,0 +1,2910 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0xFDC4474886A0b10CDe0F031f30D04793718634c9",
+    "txHash": "0x441c6fdead99ff9e754f8f571f3488f217612ac0c0625292bc303e0b3991eeff",
+    "deployTransaction": {
+      "hash": "0x441c6fdead99ff9e754f8f571f3488f217612ac0c0625292bc303e0b3991eeff",
+      "type": 2,
+      "accessList": [],
+      "blockHash": null,
+      "blockNumber": null,
+      "transactionIndex": null,
+      "confirmations": 0,
+      "from": "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
+      "gasPrice": {
+        "type": "BigNumber",
+        "hex": "0x3d8150d9"
+      },
+      "maxPriorityFeePerGas": {
+        "type": "BigNumber",
+        "hex": "0x323964a6"
+      },
+      "maxFeePerGas": {
+        "type": "BigNumber",
+        "hex": "0x3d8150d9"
+      },
+      "gasLimit": {
+        "type": "BigNumber",
+        "hex": "0x0762b4"
+      },
+      "to": null,
+      "value": {
+        "type": "BigNumber",
+        "hex": "0x00"
+      },
+      "nonce": 61,
+      "data": "0x608060405234801561001057600080fd5b50600080546001600160a01b031916339081178255604051909182917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908290a350610759806100616000396000f3fe60806040526004361061007b5760003560e01c80639623609d1161004e5780639623609d1461011157806399a88ec414610124578063f2fde38b14610144578063f3b7dead146101645761007b565b8063204e1c7a14610080578063715018a6146100bc5780637eff275e146100d35780638da5cb5b146100f3575b600080fd5b34801561008c57600080fd5b506100a061009b366004610515565b610184565b6040516001600160a01b03909116815260200160405180910390f35b3480156100c857600080fd5b506100d1610215565b005b3480156100df57600080fd5b506100d16100ee366004610554565b610292565b3480156100ff57600080fd5b506000546001600160a01b03166100a0565b6100d161011f36600461058c565b61031c565b34801561013057600080fd5b506100d161013f366004610554565b6103ad565b34801561015057600080fd5b506100d161015f366004610515565b610405565b34801561017057600080fd5b506100a061017f366004610515565b6104ef565b6000806000836001600160a01b03166040516101aa90635c60da1b60e01b815260040190565b600060405180830381855afa9150503d80600081146101e5576040519150601f19603f3d011682016040523d82523d6000602084013e6101ea565b606091505b5091509150816101f957600080fd5b8080602001905181019061020d9190610538565b949350505050565b6000546001600160a01b031633146102485760405162461bcd60e51b815260040161023f906106c0565b60405180910390fd5b600080546040516001600160a01b03909116907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908390a3600080546001600160a01b0319169055565b6000546001600160a01b031633146102bc5760405162461bcd60e51b815260040161023f906106c0565b6040516308f2839760e41b81526001600160a01b038281166004830152831690638f283970906024015b600060405180830381600087803b15801561030057600080fd5b505af1158015610314573d6000803e3d6000fd5b505050505050565b6000546001600160a01b031633146103465760405162461bcd60e51b815260040161023f906106c0565b60405163278f794360e11b81526001600160a01b03841690634f1ef286903490610376908690869060040161065d565b6000604051808303818588803b15801561038f57600080fd5b505af11580156103a3573d6000803e3d6000fd5b5050505050505050565b6000546001600160a01b031633146103d75760405162461bcd60e51b815260040161023f906106c0565b604051631b2ce7f360e11b81526001600160a01b038281166004830152831690633659cfe6906024016102e6565b6000546001600160a01b0316331461042f5760405162461bcd60e51b815260040161023f906106c0565b6001600160a01b0381166104945760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161023f565b600080546040516001600160a01b03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a3600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000806000836001600160a01b03166040516101aa906303e1469160e61b815260040190565b600060208284031215610526578081fd5b81356105318161070b565b9392505050565b600060208284031215610549578081fd5b81516105318161070b565b60008060408385031215610566578081fd5b82356105718161070b565b915060208301356105818161070b565b809150509250929050565b6000806000606084860312156105a0578081fd5b83356105ab8161070b565b925060208401356105bb8161070b565b9150604084013567ffffffffffffffff808211156105d7578283fd5b818601915086601f8301126105ea578283fd5b8135818111156105fc576105fc6106f5565b604051601f8201601f19908116603f01168101908382118183101715610624576106246106f5565b8160405282815289602084870101111561063c578586fd5b82602086016020830137856020848301015280955050505050509250925092565b600060018060a01b038416825260206040818401528351806040850152825b818110156106985785810183015185820160600152820161067c565b818111156106a95783606083870101525b50601f01601f191692909201606001949350505050565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b634e487b7160e01b600052604160045260246000fd5b6001600160a01b038116811461072057600080fd5b5056fea2646970667358221220d849f96f3086b9f82cdcf665adb8c697ace05638da1c7c16ab2d26293717af6764736f6c63430008020033",
+      "r": "0xe4a3357211a03ed940aaa1b0425c7dbeab3d315ac55a0abb5c4e75e99ac39f43",
+      "s": "0x3b5318946a9d3ab8bd17a7b70d3fa7a5d44fa3ae707972c66edbaaefa26b09fd",
+      "v": 0,
+      "creates": "0xFDC4474886A0b10CDe0F031f30D04793718634c9",
+      "chainId": 4
+    }
+  },
+  "proxies": [
+    {
+      "address": "0x2F9AbEBaEdF65A3c40d95b5CfcefC6bef49be656",
+      "txHash": "0xe64db6a504c5a034ad0b155e497305bbcae0821ce7647f23f12bd2ba79ab74b3",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x06808dDE282fa080b3A54FeF89c271d93f87caAB",
+      "txHash": "0x4a67964d4011d566500f3cd9f141eec9fe006d387424e27f9075897c98b9036a",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xf0602F28Ac39299bE872ed689C7225C56e13866e",
+      "txHash": "0x3a09e35fb121a32fb69502860af0bf4c1860ecd8479c6c2ba019ec3c24ad0d91",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xE2D2C01fE84b7CAa2942fA6822ebeFd2c80d6e4c",
+      "txHash": "0x072e8d34cbdd09db2062eb6ebc03134bcad0111ec7e1586060188faa0a622140",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x74F92aeA312AaA8cd7F86a48AFA92eBFD54154cf",
+      "txHash": "0xae95099cdc008ef90e82460141361d0c455452ba040b586560886cda9a9c7a31",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x23129A27D751C3dE9D32141f79cf121F4b837ED9",
+      "txHash": "0x47292e9f1efcd25878c114550fc24e227203ce83860d6d3604b5d84d1a52c40e",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x122256Ada1c1C80F87739ba8d89fa2D6B6A0bef8",
+      "txHash": "0xbc14299b80d4d6a383f8a98324f8aa1bd10b052868b7d058f917ff1dc6c6c592",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xfC6e573B63b2c173E06aB1Dda0369D2432078cc0",
+      "txHash": "0x3c6df1839e10426fbe649dd938eb11b372c8555b881d4940b7bb896bcfc674b1",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9E8De13355AfbEBd468b3900c177D8703934F2B1",
+      "txHash": "0x9feffdf2c068e5fb3368ff713496d76ab5edb9090f575ddeae707d1b2f9b4776",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xF9fc077b98c6e42A983A14D4b6156B58e0989dC5",
+      "txHash": "0xea323c79e337975e4805ded691a636273d80890465fddfd05cdf5494dcb95f87",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x1886A6a1A170a6A0A3F6627A633E1a57a2219b25",
+      "txHash": "0xd6ead08d6e52b8c3d0f137da9d4a8b6520f63d88e1dc52daf1fe062040c6b79c",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xc66Acd42a313750f67E17472ccF0c15E867Ba8EB",
+      "txHash": "0x39ea73f217b72eb9f3283594bcd8516e9953b20b0a57bad6e0fc4108fb0106db",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xfBCFa4B4972Ac18A92b034Ada06CBE58B2181D3e",
+      "txHash": "0x7932cb0d457665c10985d195db4d0930f86d7c0f9136c1a71a9c0cf45a5d4149",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xF5824200847563247371bA1a4A13b221c50717dB",
+      "txHash": "0x9b91655214630402befed5f7006c64e7e1039360e9f94ce3c4c7fc70890b1179",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x5c7249d6E2253fc3ce8369EC8D9D28298adb045E",
+      "txHash": "0x971e37b6fe26255b03d619ad1d675925fcca357747b1e3a5a32d5767db547271",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x363281879058fbD08b00Bc8BcC623177437CB523",
+      "txHash": "0x183a10877cf7f1fdc239192eee74ec278c18ad2763b74a8e943b4f0441fcb8f8",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x9e390D482b321AAb459b2d9E32CB0850C75AC17c",
+      "txHash": "0x2f86781abda6fb4815d929de57ff6ed5447c051034b3365b7154a124e163e1d8",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x3a21AfF5C9DBfDC0E1826Ce12bAB1145C7D354Ea",
+      "txHash": "0x4e858a274524ef0a05e01a5513eca5cf965951851a096c0873d4d8d703c61b02",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x8eE5A882B65D0Ab1C6a85B739f9b3DE4aD63f38b",
+      "txHash": "0x718517fd6d35b853ceda884ea08ba02f24804d39a6e39e809788fa3cc09e90fe",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x1C4D93A511ca7eBf43aFe9801D3fb5F136A70075",
+      "txHash": "0x1e3dd85b025d80e3a1fb5939ac60b48c48bf168625f775db38c6931b3f62843f",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x2D9f012bD6b6AAcbee4a3a6785e186ca46F44a0A",
+      "txHash": "0x582f15cc034659f3b9ba6e36954adf12f81fd69a30a581e3cb1c9445ca9f0001",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x13aA43920492c78a437B88C5DD3E3133a3B179b8",
+      "txHash": "0xf6ac30379c50e7fc31bb5d0ffeeb6975ec048015228f4b660be75bc40412c4e6",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x67B83F3e466338142c1bCA1beC309B465250Cab8",
+      "txHash": "0x32f2790d0ca66990ec6edcce15b8bec19690fdf580cf8474775731db58115b37",
+      "kind": "transparent"
+    },
+    {
+      "address": "0xc156a94fbC0c633d270e7D7559DD2E45Fc6A9769",
+      "txHash": "0x5a781b9756306656f12c447361a111b304ad4eb1d46dbf968f2603e88f1aee17",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x430Ae5D7D6e5d8BA1Ad47857CAFF8E5fe760053f",
+      "txHash": "0xd4c94139eb4dad7f42c3d78269af9104965bc68ad3539436eb28fc37aec5c582",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "c4572807b09ad76e424539a97220ee28b6f9ab597565d4f2c27cb2d6a940ec6a": {
+      "address": "0x173E64912f2d23a28Dc797b04691f51427863eDc",
+      "txHash": "0x836253fd0ce947fba22e346bcadc246d9a46fc7b9b885fc7502014e3994a82b4",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)5466",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "PKKTFarm",
+            "label": "poolInfo",
+            "type": "t_array(t_struct(PoolInfo)7279_storage)dyn_storage",
+            "src": "contracts/PKKTFarm.sol:18"
+          },
+          {
+            "contract": "PKKTFarm",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)7269_storage))",
+            "src": "contracts/PKKTFarm.sol:20"
+          },
+          {
+            "contract": "PKKTFarm",
+            "label": "totalAllocPoint",
+            "type": "t_uint256",
+            "src": "contracts/PKKTFarm.sol:22"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(PoolInfo)7279_storage)dyn_storage": {
+            "label": "struct Pool.PoolInfo[]"
+          },
+          "t_struct(PoolInfo)7279_storage": {
+            "label": "struct Pool.PoolInfo",
+            "members": [
+              {
+                "label": "lpToken",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "allocPoint",
+                "type": "t_uint256"
+              },
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)7269_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Pool.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)7269_storage)": {
+            "label": "mapping(address => struct Pool.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)7269_storage": {
+            "label": "struct Pool.UserInfo",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)5466": {
+            "label": "contract PKKTToken"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "8dfdcf9805e8e12007380338fa707f3038e52a6c39d16a7621a5a94b575df6ae": {
+      "address": "0x8220BA972C3337501239Be0C94df2cb55fBE2B45",
+      "txHash": "0xfe1f983d3851812f917e92359ade60a35795bccc9e09362e5cd5eeda586fa063",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "c83e43bf1f94a3ed6322791cb139b65f77d577f84abc1a0ae5a45c586b08acaf": {
+      "address": "0xe7cC705881f13c088fc3357aB86300690cFC7677",
+      "txHash": "0xd4fa2f26b5c399285074593600ca731004d76f04f5f44cea45d9528ba57c1797",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "5a8b087a653f6614de5c7b59c1c13cc991ecfd3dcf2ace3f617e100eb2094883": {
+      "address": "0x386b01Ba82d39CA98fcE14C25aab4e413E60232e",
+      "txHash": "0xad51b2486c87b49c987785b63719708b78d05861568ccb5d39b1a951757aaa67",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "72aeeb5252b47267dc972b629350a2abcf9dd053e3f162c08b6fc7bdcef45f5e": {
+      "address": "0xFE4974A43E4575fbE0db94d565c78306Ea94120c",
+      "txHash": "0x729c5b30b53e32916a1ad45697be5a423fdda4efd523f7eeb3029445976805b3",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "eb19b2996ea12ac90f824c7dfe3fef0f874ad88a5cfa6f67902cae110b2e38a2": {
+      "address": "0xb086f9897b587e72C20C6265099991e8b2e829Dc",
+      "txHash": "0xb27ca6c9dafe3d7cff3dc587f9c090f7c70bf0916553cb7f46c9efce43ed1bcf",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "ea16688f313212e1491d5312a940b551c010cccd3042ca65e9ddcd3ec8cc9d93": {
+      "address": "0x401A3162D2235973b97c563972375252C5F2C47d",
+      "txHash": "0xd1de9303b5e74dc5d201ee9bf1c01bf8e624a46c80c6763c26a89c7643317ab8",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "d33904dc1c6bafa03deac21620215624f779e17368de0b7cd1f674e72f463f94": {
+      "address": "0xf7e576fa2f90eC8Eb86ad2D0972736ED478eE9EF",
+      "txHash": "0xa392aec37def309d0a6eb043bd8fb7973731fb4de570a18238133c24f8925fc9",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "3ad8c3da511720575fd72a94b425095ec5fc86d8cf64b8c6432c8de408481e41": {
+      "address": "0x5618BC0b67a1d9D6c86579197A3Da0Ae3ebbD04A",
+      "txHash": "0xce5151a399ccc18f9079793f00da1749c92084d459cc15edaa09f10fc38e47c9",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "700f836bdfb07536e02ac91986b8c79238af39f635e21a502f8a823f01e4d821": {
+      "address": "0x64464aE3C7955D5955fec8DF6875B8b1AdC24319",
+      "txHash": "0xfde69e0902b2fb545f5f6fedf75e1f4726c4db3cf9fd489089055a3061c43b39",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)4476",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "vaultInfo",
+            "type": "t_array(t_struct(VaultInfo)6473_storage)dyn_storage",
+            "src": "contracts/PKKTVault.sol:22"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "isSettelled",
+            "type": "t_bool",
+            "src": "contracts/PKKTVault.sol:24"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))",
+            "src": "contracts/PKKTVault.sol:26"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "userAddresses",
+            "type": "t_mapping(t_uint256,t_array(t_address)dyn_storage)",
+            "src": "contracts/PKKTVault.sol:28"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "settlementResult",
+            "type": "t_mapping(t_uint256,t_int256)",
+            "src": "contracts/PKKTVault.sol:30"
+          },
+          {
+            "contract": "PKKTVault",
+            "label": "maxDecimals",
+            "type": "t_uint8",
+            "src": "contracts/PKKTVault.sol:31"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(VaultInfo)6473_storage)dyn_storage": {
+            "label": "struct Vault.VaultInfo[]"
+          },
+          "t_struct(VaultInfo)6473_storage": {
+            "label": "struct Vault.VaultInfo",
+            "members": [
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalPending",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalOngoing",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalRequesting",
+                "type": "t_uint256"
+              },
+              {
+                "label": "totalMatured",
+                "type": "t_uint256"
+              },
+              {
+                "label": "underlying",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "decimals",
+                "type": "t_uint8"
+              }
+            ]
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)6455_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Vault.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)6455_storage)": {
+            "label": "mapping(address => struct Vault.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)6455_storage": {
+            "label": "struct Vault.UserInfo",
+            "members": [
+              {
+                "label": "pendingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "ongoingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "requestingAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "maturedAmount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingPKKTReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              },
+              {
+                "label": "hasDeposit",
+                "type": "t_bool"
+              }
+            ]
+          },
+          "t_mapping(t_uint256,t_array(t_address)dyn_storage)": {
+            "label": "mapping(uint256 => address[])"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_mapping(t_uint256,t_int256)": {
+            "label": "mapping(uint256 => int256)"
+          },
+          "t_int256": {
+            "label": "int256"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)4476": {
+            "label": "contract PKKTToken"
+          }
+        }
+      }
+    },
+    "ab62b4451618e4c14a7560346cf45ef821cb858975bf79b3d22e74a41e4fcb24": {
+      "address": "0xCA9293Af389a746637a3816f74C7f272d0732B67",
+      "txHash": "0xfb41cd6e193c0d7ea80d5b0231b6fc9ed04225f94d282fd234fb316cb671c8a3",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkktPerBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:24"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "isAdded",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts/PKKTRewardManager.sol:26"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "itemName",
+            "type": "t_string_storage",
+            "src": "contracts/PKKTRewardManager.sol:27"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "pkkt",
+            "type": "t_contract(PKKTToken)5466",
+            "src": "contracts/PKKTRewardManager.sol:29"
+          },
+          {
+            "contract": "PKKTRewardManager",
+            "label": "startBlock",
+            "type": "t_uint256",
+            "src": "contracts/PKKTRewardManager.sol:31"
+          },
+          {
+            "contract": "PKKTFarmV2Test",
+            "label": "poolInfo",
+            "type": "t_array(t_struct(PoolInfo)7279_storage)dyn_storage",
+            "src": "contracts/PKKTFarmV2Test.sol:20"
+          },
+          {
+            "contract": "PKKTFarmV2Test",
+            "label": "userInfo",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)7269_storage))",
+            "src": "contracts/PKKTFarmV2Test.sol:22"
+          },
+          {
+            "contract": "PKKTFarmV2Test",
+            "label": "totalAllocPoint",
+            "type": "t_uint256",
+            "src": "contracts/PKKTFarmV2Test.sol:24"
+          }
+        ],
+        "types": {
+          "t_array(t_struct(PoolInfo)7279_storage)dyn_storage": {
+            "label": "struct Pool.PoolInfo[]"
+          },
+          "t_struct(PoolInfo)7279_storage": {
+            "label": "struct Pool.PoolInfo",
+            "members": [
+              {
+                "label": "lpToken",
+                "type": "t_contract(IERC20)1611"
+              },
+              {
+                "label": "allocPoint",
+                "type": "t_uint256"
+              },
+              {
+                "label": "lastRewardBlock",
+                "type": "t_uint256"
+              },
+              {
+                "label": "accPKKTPerShare",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_contract(IERC20)1611": {
+            "label": "contract IERC20"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(UserInfo)7269_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct Pool.UserInfo))"
+          },
+          "t_mapping(t_address,t_struct(UserInfo)7269_storage)": {
+            "label": "mapping(address => struct Pool.UserInfo)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserInfo)7269_storage": {
+            "label": "struct Pool.UserInfo",
+            "members": [
+              {
+                "label": "amount",
+                "type": "t_uint256"
+              },
+              {
+                "label": "rewardDebt",
+                "type": "t_uint256"
+              },
+              {
+                "label": "pendingReward",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_contract(PKKTToken)5466": {
+            "label": "contract PKKTToken"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    }
+  }
+}
