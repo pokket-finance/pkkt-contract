@@ -1,7 +1,8 @@
 import { ethers, upgrades } from "hardhat";
-import { BigNumber } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import * as dotenv from "dotenv";  
 import { ContractFactory } from "@ethersproject/contracts";
+import { deployContract } from "../test/utilities/deploy";
 dotenv.config();
 
 const WEI = BigNumber.from(10).pow(18);
@@ -23,6 +24,18 @@ async function main() {
     );
     // This is really the proxy address
     console.log(`PKKTFarm deployed to ${pkktFarm.address}`);
+
+    const [deployer] = await ethers.getSigners();
+
+    const vault = await deployContract("Vault", deployer as Signer);
+    const PKKTVault = await ethers.getContractFactory("PKKTVault", { signer:deployer as Signer, libraries: { Vault: vault.address } });
+    console.log("Deploying PKKTVault");
+    const pkktVault = await upgrades.deployProxy(
+        PKKTVault as ContractFactory,
+        [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, deployer.address],
+        { unsafeAllow: ['delegatecall'], unsafeAllowLinkedLibraries: true }
+    );
+    console.log(`PKKTVault deployed to ${pkktVault.address}`);
 }
 
 main()
