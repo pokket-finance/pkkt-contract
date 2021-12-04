@@ -15,7 +15,7 @@ const main = async ({
   const { deploy } = deployments;
   console.log("02 - Deploying PKKTVault on", network.name);
 
-  const { deployer, owner } = await getNamedAccounts(); 
+  const { deployer, owner, trader } = await getNamedAccounts(); 
 
   const pkktToken = await deployments.get("PKKTToken");
 
@@ -24,33 +24,25 @@ const main = async ({
     contract: "Vault",
     from: deployer,
   });
-
-  // For now we pass in the deployer as the trader
-  // TODO actually pass in the trader address
-  const pkktVault = await deploy("PKKTVault", {
+  const result = await deploy("PKKTVault", {
     from: deployer,
-    proxy: {
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        methodName: 'initialize',
-        args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, deployer],
-      },
-    },
+    contract: "PKKTVault" ,
+    args: [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, trader],
     libraries: {
-      Vault: vault.address,
-    },
+        Vault: vault.address,
+      },
   });
   
-  console.log(`02 - Deployed PKKTVault on ${network.name} to ${pkktVault.address}`); 
+  console.log(`02 - Deployed PKKTVault on ${network.name} to ${result.address}`); 
 
   
   const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
   const pkktVaultMax =  process.env.PKKT_FARM_MAX?? PKKT_VAULT_MAX;
-  await pkktTokenContract.addMinter(pkktVault.address, BigInt(pkktVaultMax));
+  await pkktTokenContract.addMinter(result.address, BigInt(pkktVaultMax));
   console.log(`02 - Added PKKTVault to PKKTToken as minter on ${network.name} with max ${pkktVaultMax}`); 
 
   
-  const pkktVaultContract = await ethers.getContractAt("PKKTVault", pkktVault.address);
+  const pkktVaultContract = await ethers.getContractAt("PKKTVault", result.address);
 
   const isMainnet = network.name === "mainnet" || network.name == "hardhat"; 
 
@@ -81,5 +73,3 @@ const main = async ({
 main.tags = ["PKKTVault"];
 
 export default main;
-
- 
