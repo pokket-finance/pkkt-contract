@@ -21,7 +21,7 @@ dotenv.config();
   paths: {
     deploy: "scripts/deploy",
     deployments: "deployments",
-  }, 
+  },
   networks: {
     hardhat: {
       forking: {
@@ -39,12 +39,19 @@ dotenv.config();
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
       accounts: [`0x${process.env.ROPSTEN_PRIVATE_KEY}`],
     },
+    rinkeby: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
+      gas: 2100000,
+      gasPrice: 8000000000,
+    },
   },
   namedAccounts: {
     deployer: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
+      "rinkeby": "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
