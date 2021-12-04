@@ -10,4 +10,4 @@ coverage/
 typechain
 
 # Openzeppelin local project deployment files
-.openzeppelin
+.openzeppelin/unknown-*.json
