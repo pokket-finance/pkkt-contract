@@ -7,6 +7,7 @@ import { PKKTVault, PKKTToken } from "../../typechain";
 import * as dotenv from "dotenv";
 import { deployContract } from "../../test/utilities/deploy";
 import { deployUpgradeableContract } from "../../test/utilities/deployUpgradable";
+import { DefenderRelayProvider, DefenderRelaySigner } from "defender-relay-client/lib/ethers";
 dotenv.config();  
 
 const main = async ({
@@ -22,14 +23,16 @@ const main = async ({
   const pkktToken = await deployments.get("PKKTToken");
 
   const [deployer] = await ethers.getSigners();
+  // const credentials = { apiKey: "", apiSecret:"" };
+  // const provider = new DefenderRelayProvider(credentials);
+  // const deployer = new DefenderRelaySigner(credentials, provider, { speed: "fast" });
   const vault = await deployContract("Vault", deployer as Signer);
-
   // For now deployer will have access to the trader role
   // TODO change trader from from deployer to actual trader
   const pkktVault = await deployUpgradeableContract(
     "PKKTVault",
     { signer:deployer as Signer, libraries: { Vault: vault.address } },
-    [pkktToken.address, "100", 13603000, deployer.address]
+    [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, (await deployer.getAddress())]
   );
   console.log(`02 - Deployed PKKTVault on ${network.name} to ${pkktVault.address}`); 
 };
