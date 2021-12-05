@@ -51,7 +51,7 @@ dotenv.config();
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
-      "rinkeby": "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
+      "rinkeby": "Insert Address Here",
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
