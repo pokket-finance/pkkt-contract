@@ -21,8 +21,6 @@ const main = async ({
 
   const pkktToken = await deployments.get("PKKTToken");
 
-  const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
-
   const [deployer] = await ethers.getSigners();
 
   const pkktFarm = await deployUpgradeableContract(
@@ -30,8 +28,12 @@ const main = async ({
     deployer as Signer,
     [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK]
   );
-  
   console.log(`01 - Deployed PKKTFarm on ${network.name} to ${pkktFarm.address}`);
+
+  const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
+  const pkktFarmMax = process.env.PKKT_FARM_MAX ?? PKKT_FARM_MAX;
+  await pkktTokenContract.addMinter(pkktFarm.address, BigInt(pkktFarmMax));
+  console.log(`01 - Added PKKTFarm to PKKTToken as minter on ${network.name} with max ${pkktFarmMax}`);
 };
 main.tags = ["PKKTFarm"];
 

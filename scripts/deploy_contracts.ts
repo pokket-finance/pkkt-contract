@@ -32,7 +32,7 @@ async function main() {
     console.log("Deploying PKKTVault");
     const pkktVault = await upgrades.deployProxy(
         PKKTVault as ContractFactory,
-        [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, deployer.address],
+        [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, process.env.TRADER_ADDRESS],
         { unsafeAllow: ['delegatecall'], unsafeAllowLinkedLibraries: true }
     );
     console.log(`PKKTVault deployed to ${pkktVault.address}`);

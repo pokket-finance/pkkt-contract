@@ -11,8 +11,7 @@ import "@openzeppelin/hardhat-upgrades";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 
-dotenv.config();  
-  
+dotenv.config();
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -51,7 +50,7 @@ dotenv.config();
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
-      "rinkeby": "Insert Address Here",
+      "rinkeby": "Insert address here",
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",

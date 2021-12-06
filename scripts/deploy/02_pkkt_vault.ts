@@ -28,13 +28,18 @@ const main = async ({
   // const deployer = new DefenderRelaySigner(credentials, provider, { speed: "fast" });
   const vault = await deployContract("Vault", deployer as Signer);
   // For now deployer will have access to the trader role
-  // TODO change trader from from deployer to actual trader
+  const traderAddress = process.env.TRADER_ADDRESS ?? (await deployer.getAddress());
   const pkktVault = await deployUpgradeableContract(
     "PKKTVault",
     { signer:deployer as Signer, libraries: { Vault: vault.address } },
-    [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, (await deployer.getAddress())]
+    [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK, traderAddress]
   );
   console.log(`02 - Deployed PKKTVault on ${network.name} to ${pkktVault.address}`); 
+
+  const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
+  const pkktVaultMax = process.env.PKKT_FARM_MAX ?? PKKT_VAULT_MAX;
+  await pkktTokenContract.addMinter(pkktVault.address, BigInt(pkktVaultMax));
+  console.log(`02 - Added PKKTVault to PKKTToken as minter on ${network.name} with max ${pkktVaultMax}`);
 };
 main.tags = ["PKKTVault"];
 
