@@ -139,6 +139,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
          StructureData.UserState storage userState =  userStates[msg.sender]; 
          require(userState.pendingAsset >= _amount, "Exceeds available");
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
+         StructureData.OptionState storage optionState = optionStates[currentRound];
+         optionState.totalAmount = optionState.totalAmount.sub(_amount);
         if (isEth) {
             payable(msg.sender).transfer(_amount);
         }
