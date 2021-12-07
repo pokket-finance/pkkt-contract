@@ -31,12 +31,11 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
         uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate);
         bool shouldConvert = _optionState.strikePrice < _underlyingPrice; 
         
-       //console.log("%s %d %d", name(), _optionState.strikePrice, _underlyingPrice);
-        if (shouldConvert) { 
-           _maturedStableCoinAmount = 
-           _optionState.totalAmount.mul(_optionState.strikePrice).mul(multipler).mul(10**stableCoinAmountDecimals).
-           div(RATIOMULTIPLIER).div(10**_optionState.pricePrecision);
-          //console.log("%s %d", name(),maturedStableCoinAmount);
+        // console.log("%s %d %d", name(), _optionState.strikePrice, _underlyingPrice);
+        if (shouldConvert) {  
+           _maturedStableCoinAmount = _optionState.totalAmount.mul(_optionState.strikePrice).mul(multipler).mul(10**stableCoinAmountDecimals).
+           div(RATIOMULTIPLIER).div(10**(_optionState.pricePrecision + assetAmountDecimals));
+           //console.log("%s %d %d", name(), _optionState.totalAmount, multipler);
         }
         else {
           _maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
@@ -54,7 +53,7 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
             }
             else {  
                uint256 stableCoinAmount = _maturedStableCoinAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
-               maturedStableCoin[userAddress] = maturedStableCoin[userAddress].add(stableCoinAmount);
+               maturedStableCoin[userAddress] = maturedStableCoin[userAddress].add(stableCoinAmount); 
                 
             } 
          }

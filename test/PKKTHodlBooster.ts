@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { assert, expect } from "chai";
+import { assert, Assertion, expect } from "chai";
 import { Contract } from "@ethersproject/contracts"; 
 import { BigNumber, Signer } from "ethers";
 
@@ -43,7 +43,7 @@ describe("PKKT Hodl Booster", async function () {
         beforeEach(async function () {
         
           this.owner = deployer as Signer;  
-          usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000).mul(USDTMultiplier), USDTDecimals]) as ERC20Mock;
+          usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000000).mul(USDTMultiplier), USDTDecimals]) as ERC20Mock;
           wbtc = await  deployContract("ERC20Mock", deployer as Signer, ["Wrapped BTC", "WBTC", BigNumber.from(100).mul(WBTCMultiplier), WBTCDecimals]) as ERC20Mock;
            
           ethHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
@@ -331,7 +331,61 @@ describe("PKKT Hodl Booster", async function () {
           await expect(ethHodlBooster.connect(bob as Signer).withraw(1, false)).to.be.revertedWith("Exceed available");   
           await expect(ethHodlBooster.connect(bob as Signer).withraw(1, true)).to.be.revertedWith("Exceed available");  
 
+          //for btc, we just redeposit
+          //0.5*1.02 = 0.51
+          await wbtcHodlBooster.connect(bob as Signer).redeposit(BigNumber.from(51).mul(WBTCMultiplier).div(100)); 
+          await expect(wbtcHodlBooster.connect(bob as Signer).redeposit(1)).to.be.revertedWith("Exceed available");  
+          
+          //2 * 1.02
+          await expect(wbtcHodlBooster.connect(alice as Signer).redeposit(BigNumber.from(204).mul(WBTCMultiplier).div(100))).to.be.revertedWith("Not enough quota");   
+          //deposit 1
+          await wbtcHodlBooster.connect(alice as Signer).redeposit(BigNumber.from(1).mul(WBTCMultiplier)); 
 
+          var traderBtcBalance = await wbtc.balanceOf(trader.address);
+          await wbtcHodlBooster.closePrevious(btcPrice*1.2); //72000usdt  
+          
+          //don't support withdraw during settlement
+          await expect(wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(204).mul(WBTCMultiplier).div(100), false)).to.be.revertedWith("Being settled");   
+
+          await wbtcHodlBooster.commitCurrent(trader.address); //strike price 79200usdt
+          var traderBtcBalance2 = await wbtc.balanceOf(trader.address);
+          //1.51btc was sent to trader
+          assert.equal(traderBtcBalance2.sub(traderBtcBalance).toString(), BigNumber.from(151).mul(WBTCMultiplier).div(100).toString());
+
+          const parameters7 = {
+            quota: BigNumber.from(3).mul(WBTCMultiplier), //3btc
+            pricePrecision: WBTCPicePrecision,
+            strikePriceRatio: 0.1 * RationMultipler, //10% up
+            interestRate: 0.015 * RationMultipler, //1.5% per week
+          };
+          await wbtcHodlBooster.rollToNext(parameters7); 
+
+          round = await wbtcHodlBooster.currentRound();
+          assert.equal(round.toString(), "4");   
+
+
+          await expect(wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(1).mul(USDTMultiplier), true)).to.be.revertedWith("Matured Stable Coin not filled");   
+          var request3 = await wbtcHodlBooster.getRequest();
+          assert.equal(request3.length, 1);
+          //2*1.01*69300 
+          assert.equal(request3[0].amount.toString(), BigNumber.from(139986).mul(USDTMultiplier).toString());
+          assert.equal(request3[0].contractAddress, usdt.address);
+          settled = await wbtcHodlBooster.allSettled();
+          assert.isFalse(settled); 
+
+          usdt.transfer(trader.address, BigNumber.from(139986).mul(USDTMultiplier));
+          //send usdt back
+          await usdt.connect(trader as Signer).transfer(wbtcHodlBooster.address, request3[0].amount); 
+          await wbtcHodlBooster.finishSettlement();
+          var usdtBalance = await usdt.balanceOf(bob.address);
+          await wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(69993).mul(USDTMultiplier), true);
+          var usdtBalance2 = await usdt.balanceOf(bob.address);
+          assert.equal(usdtBalance2.sub(usdtBalance).toString(), request3[0].amount.div(2).toString());
+
+          await expect(wbtcHodlBooster.connect(alice as Signer).withraw(BigNumber.from(204).mul(WBTCMultiplier).div(100), false)).to.be.revertedWith("Exceed available");   
+          await wbtcHodlBooster.connect(alice as Signer).withraw(BigNumber.from(104).mul(WBTCMultiplier).div(100), false);
+          await wbtcHodlBooster.connect(alice as Signer).withraw(BigNumber.from(69993).mul(USDTMultiplier), true);
+          
         });
       });  
    

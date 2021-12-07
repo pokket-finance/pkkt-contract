@@ -297,7 +297,6 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
        }
     }
     function finishSettlement() external override onlyOwner {
-       console.log("%s %d %d", name(), requestingAssetAmount,  getBalance(true));
         require(requestingAssetAmount == 0 || getBalance(true) >=  maturedAssetAmount, 
            "Matured Asset not filled");       
         require(requestingStableCoinAmount == 0 || getBalance(false) >=  maturedStableCoinAmount, 
