@@ -20,7 +20,7 @@ const WBTCDecimals = 8;
 const USDTMultiplier = BigNumber.from(10).pow(USDTDecimals);  
 const ETHMultiplier = BigNumber.from(10).pow(ETHDecimals);  
 const WBTCMultiplier = BigNumber.from(10).pow(WBTCDecimals);   
-const ETHPicePrecision = 4;
+const ETHPricePrecision = 4;
 const WBTCPicePrecision = 4;
 const RationMultipler = 10000;
 
@@ -73,11 +73,11 @@ describe("PKKT Hodl Booster", async function () {
            
           await expect(ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)})).to.be.revertedWith("!Started");   
           await expect(wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier))).to.be.revertedWith("!Started");  
-          const ethPrice = 4000 * (10**ETHPicePrecision);
+          const ethPrice = 4000 * (10**ETHPricePrecision);
           await ethHodlBooster.closePrevious(ethPrice); //4000usdt
           const parameters1 = {
             quota: BigNumber.from(10).mul(ETHMultiplier), //10eth
-            pricePrecision: ETHPicePrecision,
+            pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
             interestRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
@@ -165,13 +165,12 @@ describe("PKKT Hodl Booster", async function () {
           assert.equal(pendingBtc.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
           optionState = await wbtcHodlBooster.optionStates(round); 
           assert.equal(optionState.totalAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
-        }); 
-        /*
+        });
         it("should allow settlement", async function () {
-          const ethPrice = 4000 * (10**ETHPicePrecision);
+          const ethPrice = 4000 * (10**ETHPricePrecision);
           const parameters1 = {
             quota: BigNumber.from(10).mul(ETHMultiplier), //10eth
-            pricePrecision: ETHPicePrecision,
+            pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
             interestRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
@@ -188,12 +187,11 @@ describe("PKKT Hodl Booster", async function () {
           }; 
           await wbtcHodlBooster.rollToNext(parameters2); 
           
-          //round 1:
-          //10 eth
+          //eth round 1: 10 eth
           await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(4).mul(ETHMultiplier)});  
           await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(6).mul(ETHMultiplier)}); 
 
-          //2.5 btc
+          //wbtc round 1: 2.5 btc
           await wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));  
           await wbtcHodlBooster.connect(bob as Signer).deposit(BigNumber.from(5).mul(WBTCMultiplier).div(10));
 
@@ -205,18 +203,20 @@ describe("PKKT Hodl Booster", async function () {
           assert.isTrue(settled);
 
           await ethHodlBooster.closePrevious(ethPrice); //4000usdt  
-          await ethHodlBooster.commitCurrent(trader.address); //strike price 4400usdt
+           //eth round 1:strike price 4400usdt
+          await ethHodlBooster.commitCurrent(trader.address);  
           const parameters3 = {
             quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
-            pricePrecision: ETHPicePrecision,
+            pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
             interestRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };
           await ethHodlBooster.rollToNext(parameters3);  
           
-          await wbtcHodlBooster.closePrevious(btcPrice); //60000usdt  
-          await wbtcHodlBooster.commitCurrent(trader.address); //strike price 66000usdt
+          await wbtcHodlBooster.closePrevious(btcPrice); //60000usdt   
+           //wbtc round 1:strike price 66000usdt
+          await wbtcHodlBooster.commitCurrent(trader.address);  
           const parameters4 = {
             quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
             pricePrecision: WBTCPicePrecision,
@@ -230,36 +230,40 @@ describe("PKKT Hodl Booster", async function () {
           settled = await wbtcHodlBooster.allSettled();
           assert.isTrue(settled);
 
-          //round 2:
-          //2 eth
-          await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});  
-          await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)}); 
-          
-          //2 btc
-          await wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));  
-          await wbtcHodlBooster.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
-          
-          await ethHodlBooster.closePrevious(ethPrice*1.01); //4040usdt  
-          await ethHodlBooster.commitCurrent(trader.address); //strike price 4444usdt
-          const parameters5 = {
-            quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
-            pricePrecision: ETHPicePrecision,
-            strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.01 * RationMultipler, //1% per week
-            callOrPut: true
-          };
-          await ethHodlBooster.rollToNext(parameters5);
+          //from round 2 to 8
+          for(var i = 0; i < 6; i++){
+            //eth round 2+i: 2 eth
+            await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});  
+            await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)}); 
+            
+            //wbtc round2+i: 2 btc
+            await wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));  
+            await wbtcHodlBooster.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
+            
+            await ethHodlBooster.closePrevious(ethPrice*1.01); //4040usdt  
+            //eth round 2+i: strike price 4444usdt
+            await ethHodlBooster.commitCurrent(trader.address); //strike price 4444usdt
+            const parameters5 = {
+              quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
+              pricePrecision: ETHPricePrecision,
+              strikePriceRatio: 0.1 * RationMultipler, //10% up
+              interestRate: 0.01 * RationMultipler, //1% per week
+              callOrPut: true
+            };
+            await ethHodlBooster.rollToNext(parameters5);
 
-          await wbtcHodlBooster.closePrevious(btcPrice*1.05); //63000usdt  
-          await wbtcHodlBooster.commitCurrent(trader.address); //strike price 69300usdt
-          const parameters6 = {
-            quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
-            pricePrecision: WBTCPicePrecision,
-            strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.005 * RationMultipler, //0.5% per week
-            callOrPut: true
-          };
-          await wbtcHodlBooster.rollToNext(parameters6); 
+            await wbtcHodlBooster.closePrevious(btcPrice*1.05); //63000usdt  
+            //wbtc round 2+i: strike price 69300usdt
+            await wbtcHodlBooster.commitCurrent(trader.address); 
+            const parameters6 = {
+              quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
+              pricePrecision: WBTCPicePrecision,
+              strikePriceRatio: 0.1 * RationMultipler, //10% up
+              interestRate: 0.005 * RationMultipler, //0.5% per week
+              callOrPut: true
+            };
+            await wbtcHodlBooster.rollToNext(parameters6); 
+          }
 
           //we have something matured
           settled = await ethHodlBooster.allSettled();
@@ -267,7 +271,7 @@ describe("PKKT Hodl Booster", async function () {
           settled = await wbtcHodlBooster.allSettled();
           assert.isFalse(settled);
           var round = await ethHodlBooster.currentRound();
-          assert.equal(round.toString(), "3");   
+          assert.equal(round.toString(), "8");   
           var request = await ethHodlBooster.getRequest();
           assert.equal(request.length, 1);
 
@@ -276,7 +280,7 @@ describe("PKKT Hodl Booster", async function () {
           assert.equal(request[0].contractAddress, NULL_ADDRESS);
 
           round = await wbtcHodlBooster.currentRound();
-          assert.equal(round.toString(), "3");   
+          assert.equal(round.toString(), "8");   
           var request2 = await wbtcHodlBooster.getRequest();
           assert.equal(request2.length, 1);
           //2.5*1.02-2
@@ -370,7 +374,7 @@ describe("PKKT Hodl Booster", async function () {
           await wbtcHodlBooster.rollToNext(parameters7); 
 
           round = await wbtcHodlBooster.currentRound();
-          assert.equal(round.toString(), "4");   
+          assert.equal(round.toString(), "9");   
 
 
           await expect(wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(1).mul(USDTMultiplier), true)).to.be.revertedWith("Matured Stable Coin not filled");   
@@ -395,7 +399,7 @@ describe("PKKT Hodl Booster", async function () {
           await wbtcHodlBooster.connect(alice as Signer).withraw(BigNumber.from(104).mul(WBTCMultiplier).div(100), false);
           await wbtcHodlBooster.connect(alice as Signer).withraw(BigNumber.from(69993).mul(USDTMultiplier), true);
           
-        }); */
+        }); 
       });  
    
   });

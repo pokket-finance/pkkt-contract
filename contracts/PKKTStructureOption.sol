@@ -184,14 +184,15 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice;
         //return when there is no previous matured round
-        if (currentRound <= StructureData.MATUREROUND) return;
-        StructureData.OptionState storage previousOptionState = optionStates[currentRound - StructureData.MATUREROUND];
+        if (currentRound < StructureData.MATUREROUND) return;
+        uint maturedRound = currentRound - StructureData.MATUREROUND + 1;
+        StructureData.OptionState storage previousOptionState = optionStates[maturedRound];
         (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed_) = 
         _calculateMaturity(_underlyingPrice, previousOptionState);  
         previousOptionState.executed = executed_;
         maturedAssetAmount = requestingAssetAmount = maturedAssetAmount_;
         maturedStableCoinAmount = requestingStableCoinAmount = maturedStableCoinAmount_; 
-        emit CloseOption(currentRound - StructureData.MATUREROUND);
+        emit CloseOption(maturedRound);
    }
  
    uint256 private requestingAssetAmount;
@@ -221,8 +222,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
             if(userState.pendingAsset != 0) {  
                 //transfer each user a share of the option to trigger transfer event
                 _transfer(address(this), userAddress, userState.pendingAsset);
-            }
-            userState.SetOngoingAsset(userState.pendingAsset);
+            } 
+            userState.SetOngoingAsset(userState.pendingAsset); 
             userState.pendingAsset = 0;
          }
 

@@ -33,7 +33,7 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
         uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate);
         //todo: check callOrPut
         bool shouldConvert = _optionState.strikePrice < _underlyingPrice; 
-        
+      
         // console.log("%s %d %d", name(), _optionState.strikePrice, _underlyingPrice);
         if (shouldConvert) {  
            _maturedStableCoinAmount = _optionState.totalAmount.mul(_optionState.strikePrice).mul(multipler).mul(10**stableCoinAmountDecimals).
@@ -50,7 +50,8 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
         for (uint i=0; i < userCount; i++) {
             address userAddress = usersInvolved[i];
             StructureData.UserState storage userState = userStates[userAddress]; 
-            uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 1);
+            //since the onGoingAsset for current round is not filled yet, we make 5 instead of 6 backward
+            uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 2); 
             if (ongoingAsset == 0) continue;
             if (!shouldConvert) { 
                 uint256 assetAmount = _maturedAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
