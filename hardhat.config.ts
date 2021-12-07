@@ -58,6 +58,11 @@ dotenv.config();
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
       3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
+    },
+    trader: { 
+      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
+      3: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
     }
   },
 
