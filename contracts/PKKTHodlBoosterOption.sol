@@ -20,8 +20,9 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
         address _underlying,
         address _stableCoin,
         uint8 _underlyingDecimals,
-        uint8 _stableCoinDecimals
-    ) PKKTStructureOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals) {  
+        uint8 _stableCoinDecimals,
+        address _vaultAddress
+    ) PKKTStructureOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals, _vaultAddress) {  
           
     }
 

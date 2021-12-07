@@ -3,6 +3,10 @@ pragma solidity =0.8.4;
 import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
+
+    
+    function vaultAddress() external view returns(address);
+
     //deposit eth
     function depositETH() external payable;
 
