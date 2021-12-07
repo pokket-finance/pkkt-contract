@@ -14,7 +14,8 @@ interface IPKKTStructureOption {
 
     function getPendingAsset() external view returns (uint256);   
 
-    function getOngoingAsset() external view returns (uint256);
+    //0 for latest, 6 for 7 days ago
+    function getOngoingAsset(uint8 _backwardRound) external view returns (uint256);
 
     function withraw(uint256 _amount, bool _stableCoin) external;
 

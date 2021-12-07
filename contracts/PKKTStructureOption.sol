@@ -16,14 +16,14 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    using StructureData for StructureData.UserState;
 
     event Deposit(address indexed account, uint256 indexed round,uint256 amount);
     event Redeem(address indexed account, uint256 indexed round,uint256 amount);
     event CloseOption(uint256 indexed round);
     event CommitOption(uint256 indexed round);
     event OpenOption(uint256 indexed round);
-
-    uint256 public constant PERIOD = 7 days;
+ 
     uint256 public constant RATIOMULTIPLIER = 10000;
     uint8 internal assetAmountDecimals;
     uint8 internal stableCoinAmountDecimals;
@@ -37,8 +37,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
      uint256 public previousUnderlyingPrice;
      mapping(uint256=>uint256) public optionHeights;
      mapping(uint256=>StructureData.OptionState) public optionStates;
-     address[] public ongoingUserAddresses;
-     address[] public pendingUserAddresses;
+     address[] public usersInvolved;  
      mapping(address=>StructureData.UserState) public userStates; 
      mapping(address=>uint256) public maturedAsset; 
      mapping(address=>uint256) public maturedStableCoin;
@@ -108,6 +107,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
        require(currentRound > 0, "!Started");
        require(isEth, "!ETH");
        require(msg.value > 0, "!value"); 
+       
+        //todo: convert to weth and  transfer to a centralized place
        _depositFor(msg.value);
     }
     //deposit other erc20 coin, take wbtc
@@ -117,6 +118,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
         _depositFor(_amount); 
+        //todo: transfer to a centralized place
         IERC20(asset).safeTransferFrom(msg.sender, address(this), _amount);
     }
  
@@ -125,8 +127,10 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         StructureData.OptionState storage optionState = optionStates[currentRound];
         require(optionState.totalAmount.add(_amount) <= optionParameters.quota, "Not enough quota");
         StructureData.UserState storage userState =  userStates[msg.sender]; 
-        if (userState.pendingAsset == 0) { 
-            pendingUserAddresses.push(msg.sender);
+        //first time added
+        if (!userState.hasState) { 
+            userState.hasState = true;
+            usersInvolved.push(msg.sender);
         }
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
@@ -145,6 +149,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
          StructureData.OptionState storage optionState = optionStates[currentRound];
          optionState.totalAmount = optionState.totalAmount.sub(_amount);
+         //todo: withdraw from centralized vault
         if (isEth) {
             payable(msg.sender).transfer(_amount);
         }
@@ -160,9 +165,9 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
          return userState.pendingAsset;
     }
 
-    function getOngoingAsset() external view override returns (uint256) { 
+    function getOngoingAsset(uint8 _backwardRound) external view override returns (uint256) { 
          StructureData.UserState storage userState =  userStates[msg.sender]; 
-         return userState.ongoingAsset;
+         return userState.GetOngoingAsset(_backwardRound);
     }
  
     //used to render the history at client side, reading the minting transactions of a specific address,
@@ -173,20 +178,22 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
     } 
 
    function closePrevious(uint256 _underlyingPrice) external override onlyOwner {
+        require(requestingAssetAmount == 0, "Matured Asset not filled");
+        require(requestingStableCoinAmount == 0, "Matured Stable Coin not filled");
+        require(!underSettlement, "Being settled");
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice;
-        //return when there is no previous round
-        if (currentRound <= 1) return;
-        StructureData.OptionState storage previousOptionState = optionStates[currentRound - 1];
+        //return when there is no previous matured round
+        if (currentRound <= StructureData.MATUREROUND) return;
+        StructureData.OptionState storage previousOptionState = optionStates[currentRound - StructureData.MATUREROUND];
         (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed_) = 
         _calculateMaturity(_underlyingPrice, previousOptionState);  
         previousOptionState.executed = executed_;
         maturedAssetAmount = requestingAssetAmount = maturedAssetAmount_;
-        maturedStableCoinAmount = requestingStableCoinAmount = maturedStableCoinAmount_;
-        delete ongoingUserAddresses;
-        emit CloseOption(currentRound - 1);
+        maturedStableCoinAmount = requestingStableCoinAmount = maturedStableCoinAmount_; 
+        emit CloseOption(currentRound - StructureData.MATUREROUND);
    }
-    
+ 
    uint256 private requestingAssetAmount;
    uint256 private requestingStableCoinAmount;
    uint256 private maturedAssetAmount;
@@ -196,6 +203,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
  
    //close pending option and autoroll if capacity is enough based on the maturity result
    function commitCurrent(address _traderAddress) external override onlyOwner {  
+        require(underSettlement, "Not being settled");
         //return when there is no previous round
         //console.log("CommitCurrent: %s %d", name(), currentRound);
         if (currentRound <= 0) return;
@@ -206,19 +214,17 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         optionState.pricePrecision = optionParameters.pricePrecision;
         //mint for the current option
         _mint(address(this), optionState.totalAmount);
-        uint256 userCount = pendingUserAddresses.length;
+        uint256 userCount = usersInvolved.length;
         for (uint i=0; i < userCount; i++) {
-            address userAddress = pendingUserAddresses[i];
+            address userAddress = usersInvolved[i];
             StructureData.UserState storage userState = userStates[userAddress]; 
-            if(userState.pendingAsset != 0) { 
-                ongoingUserAddresses.push(userAddress); 
+            if(userState.pendingAsset != 0) {  
                 //transfer each user a share of the option to trigger transfer event
                 _transfer(address(this), userAddress, userState.pendingAsset);
             }
-            userState.ongoingAsset =  userState.pendingAsset;
+            userState.SetOngoingAsset(userState.pendingAsset);
             userState.pendingAsset = 0;
          }
-        delete pendingUserAddresses; 
 
         //send trader the coins
         if (requestingAssetAmount <= optionState.totalAmount) {
@@ -253,7 +259,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
                             pricePrecision: _optionParameters.pricePrecision,
                             strikePrice: 0,
                             underlyingPrice: 0,
-                            executed: false
+                            executed: false,
+                            callOrPut: _optionParameters.callOrPut
                         });
         optionStates[currentRound] = currentOption;
         underSettlement = false;
