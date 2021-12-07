@@ -10,6 +10,8 @@ import "@typechain/hardhat";
 import "@openzeppelin/hardhat-upgrades";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
+import transferOwnership from "./scripts/tasks/transferOwnership";
+import prepareUpgrade from "./scripts/tasks/prepareUpgrade";
 
 dotenv.config();
 
@@ -50,7 +52,7 @@ dotenv.config();
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
-      "rinkeby": "Insert address here",
+      "rinkeby": "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -88,3 +90,11 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
   }
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
+
+task("transfer-ownership", "Transfers Proxy Admin ownership to the given account address.", transferOwnership)
+  .addParam("account", "Address of new Proxy admin owner");
+
+task("prepare-upgrade", "Prepares the given proxy to upgrade to the new implementation contract", prepareUpgrade)
+  .addParam("address", "Proxy address of the contract we want to upgrade")
+  .addParam("name", "The name of the new implementation contract to upgrade to");
+
