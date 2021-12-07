@@ -28,7 +28,7 @@ const main = async ({
   // const deployer = new DefenderRelaySigner(credentials, provider, { speed: "fast" });
   const vault = await deployContract("Vault", deployer as Signer);
   // For now deployer will have access to the trader role
-  const traderAddress = process.env.TRADER_ADDRESS ?? (await deployer.getAddress());
+  const traderAddress = process.env.TRADER_ADDRESS || (await deployer.getAddress());
   const pkktVault = await deployUpgradeableContract(
     "PKKTVault",
     { signer:deployer as Signer, libraries: { Vault: vault.address } },
