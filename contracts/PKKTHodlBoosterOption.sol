@@ -25,18 +25,23 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
     }
 
      function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
-     returns(uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed) {
-        maturedAssetAmount = 0;
-        maturedStableCoinAmount = 0;
+     returns(uint256 _maturedAssetAmount, uint256 _maturedStableCoinAmount, bool _executed) {
+        _maturedAssetAmount = 0;
+        _maturedStableCoinAmount = 0;
         uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate);
-        bool shouldConvert = _optionState.strikePrice > _underlyingPrice; 
+        bool shouldConvert = _optionState.strikePrice < _underlyingPrice; 
+        
+       //console.log("%s %d %d", name(), _optionState.strikePrice, _underlyingPrice);
         if (shouldConvert) { 
-           maturedStableCoinAmount = 
+           _maturedStableCoinAmount = 
            _optionState.totalAmount.mul(_optionState.strikePrice).mul(multipler).mul(10**stableCoinAmountDecimals).
            div(RATIOMULTIPLIER).div(10**_optionState.pricePrecision);
+          //console.log("%s %d", name(),maturedStableCoinAmount);
         }
         else {
-          maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
+          _maturedAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
+          
+          //console.log("%s %d", name(),maturedAssetAmount);
         }
 
 
@@ -45,14 +50,14 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
             address userAddress = ongoingUserAddresses[i];
             StructureData.UserState storage userState = userStates[userAddress]; 
             if (!shouldConvert) { 
-                uint256 assetAmount = maturedAssetAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
+                uint256 assetAmount = _maturedAssetAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
                 maturedAsset[userAddress] = maturedAsset[userAddress].add(assetAmount); 
             }
             else {  
-               uint256 stableCoinAmount = maturedStableCoinAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
+               uint256 stableCoinAmount = _maturedStableCoinAmount.mul(userState.ongoingAsset).div(_optionState.totalAmount);
                maturedStableCoin[userAddress] = maturedStableCoin[userAddress].add(stableCoinAmount);
             } 
          }
-         return (maturedAssetAmount, maturedStableCoinAmount, shouldConvert);
+         return (_maturedAssetAmount, _maturedStableCoinAmount, shouldConvert);
      }
 }

@@ -174,22 +174,27 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         //return when there is no previous round
         if (currentRound <= 1) return;
         StructureData.OptionState storage previousOptionState = optionStates[currentRound - 1];
-        (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed) = 
+        (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed_) = 
         _calculateMaturity(_underlyingPrice, previousOptionState);  
-        previousOptionState.executed = executed;
-        requestingAssetAmount = maturedAssetAmount_;
-        requestingStableCoinAmount = maturedStableCoinAmount_;
+        previousOptionState.executed = executed_;
+        maturedAssetAmount = requestingAssetAmount = maturedAssetAmount_;
+        maturedStableCoinAmount = requestingStableCoinAmount = maturedStableCoinAmount_;
         delete ongoingUserAddresses;
         emit CloseOption(currentRound - 1);
    }
     
    uint256 private requestingAssetAmount;
    uint256 private requestingStableCoinAmount;
+   uint256 private maturedAssetAmount;
+   uint256 private maturedStableCoinAmount;
    function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) 
-   internal virtual returns(uint256 maturedAssetAmount, uint256 maturedStableCoinAmount, bool executed); 
+   internal virtual returns(uint256 _maturedAssetAmount, uint256 _maturedStableCoinAmount, bool _executed); 
  
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent(address _traderAddress) external override onlyOwner { 
+   function commitCurrent(address _traderAddress) external override onlyOwner {  
+        //return when there is no previous round
+        //console.log("CommitCurrent: %s %d", name(), currentRound);
+        if (currentRound <= 0) return;
         StructureData.OptionState storage optionState = optionStates[currentRound];
         optionState.underlyingPrice = previousUnderlyingPrice; 
         optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(int256(RATIOMULTIPLIER) + int256(optionParameters.strikePriceRatio))).div(RATIOMULTIPLIER);  
@@ -278,7 +283,6 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
               return address(this).balance;
           }
           else{
-              
              return IERC20(asset).balanceOf(address(this));
           }
        }
@@ -287,15 +291,18 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
        }
     }
     function finishSettlement() external override onlyOwner {
-       
-        require(requestingAssetAmount == 0 || getBalance(true) >=  requestingAssetAmount, 
+       console.log("%s %d %d", name(), requestingAssetAmount,  getBalance(true));
+        require(requestingAssetAmount == 0 || getBalance(true) >=  maturedAssetAmount, 
            "Matured Asset not filled");       
-        require(requestingStableCoinAmount == 0 || getBalance(false) >=  requestingStableCoinAmount, 
+        require(requestingStableCoinAmount == 0 || getBalance(false) >=  maturedStableCoinAmount, 
            "Matured Stable Coin not filled"); 
         requestingAssetAmount = 0;
         requestingStableCoinAmount = 0;
     }
-
+    event Received(address, uint);
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
     function allSettled() external override view returns(bool){
         return requestingAssetAmount == 0 && requestingStableCoinAmount == 0;
     }

@@ -3,8 +3,7 @@ pragma solidity =0.8.4;
 import {StructureData} from "../libraries/StructureData.sol";
 
 interface IExecuteSettlement {
-
-   //function setPool(IStructurePool _pool) external;
+ 
    //calculate the result of on going option    
    function closePrevious(uint256 _underlyingPrice) external;
 
@@ -13,7 +12,7 @@ interface IExecuteSettlement {
 
     //open a new option
    function rollToNext(StructureData.OptionParameters memory _optionParameters) external;
- 
+  
    function getRequest() external view returns(StructureData.Request[] memory);
    //finish the settlement once all requestedcoins are sent
    function finishSettlement() external;
