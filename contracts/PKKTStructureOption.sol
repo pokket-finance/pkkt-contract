@@ -125,8 +125,12 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         StructureData.OptionState storage optionState = optionStates[currentRound];
         require(optionState.totalAmount.add(_amount) <= optionParameters.quota, "Not enough quota");
         StructureData.UserState storage userState =  userStates[msg.sender]; 
+        if (userState.pendingAsset == 0) { 
+            pendingUserAddresses.push(msg.sender);
+        }
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
+        
         emit Deposit(msg.sender, currentRound, _amount);
     }
 
@@ -206,9 +210,11 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         for (uint i=0; i < userCount; i++) {
             address userAddress = pendingUserAddresses[i];
             StructureData.UserState storage userState = userStates[userAddress]; 
-            ongoingUserAddresses.push(userAddress); 
-            //transfer each user a share of the option to trigger transfer event
-            _transfer(address(this), userAddress, userState.pendingAsset);
+            if(userState.pendingAsset != 0) { 
+                ongoingUserAddresses.push(userAddress); 
+                //transfer each user a share of the option to trigger transfer event
+                _transfer(address(this), userAddress, userState.pendingAsset);
+            }
             userState.ongoingAsset =  userState.pendingAsset;
             userState.pendingAsset = 0;
          }

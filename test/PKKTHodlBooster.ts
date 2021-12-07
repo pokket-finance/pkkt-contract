@@ -7,12 +7,9 @@ import { deployContract } from "./utilities/deploy";
 import {advanceBlockTo} from "./utilities/timer"; 
 import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { NULL_ADDRESS } from "../constants/constants";
+import { NULL_ADDRESS,WEI,GWEI } from "../constants/constants";
  
- 
-
-const WEI = BigNumber.from(10).pow(18);
-
+  
 const CAP = BigNumber.from(1000).mul(WEI);
 
 const MAX = BigNumber.from(500).mul(WEI);
@@ -189,8 +186,8 @@ describe("PKKT Hodl Booster", async function () {
           
           //round 1:
           //10 eth
-          await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});  
-          await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)}); 
+          await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(4).mul(ETHMultiplier)});  
+          await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(6).mul(ETHMultiplier)}); 
 
           //2.5 btc
           await wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));  
@@ -298,7 +295,43 @@ describe("PKKT Hodl Booster", async function () {
           var btcBalance = await wbtc.balanceOf(wbtcHodlBooster.address); 
           assert.equal(ethBalance.toString(), BigNumber.from(1025).mul(ETHMultiplier).div(100).toString());
           assert.equal(btcBalance.toString(), BigNumber.from(255).mul(WBTCMultiplier).div(100).toString());
+
+          //4*1.025 
+          var aliceMaturedEth = await ethHodlBooster.maturedAsset(alice.address);
+          var aliceMaturedUST = await ethHodlBooster.maturedStableCoin(alice.address); 
+          assert.equal(aliceMaturedEth.toString(), BigNumber.from(41).mul(ETHMultiplier).div(10).toString()); 
+          assert.equal(aliceMaturedUST.toString(), "0");
           
+          var ethBalance = await ethers.provider.getBalance(alice.address);   
+          var tx = await ethHodlBooster.connect(alice as Signer).withraw(BigNumber.from(4).mul(ETHMultiplier), false); 
+          var gasUsed = (await tx.wait()).gasUsed.mul(GWEI); 
+          tx = await ethHodlBooster.connect(alice as Signer).withraw(BigNumber.from(1).mul(ETHMultiplier).div(10), false); 
+          var gasUsed2 = (await tx.wait()).gasUsed.mul(GWEI);  
+          var gasUsed = gasUsed.add(gasUsed2);
+          var ethBalance2 = await ethers.provider.getBalance(alice.address);  
+          var diff = ethBalance2.sub(ethBalance).add(gasUsed).sub(BigNumber.from(41).mul(ETHMultiplier).div(10)).abs(); 
+          //diff is less than 1gwei (due to the precision lose of gasUsed returned as gwei)
+          assert.isTrue(diff.lte(GWEI));
+          await expect(ethHodlBooster.connect(alice as Signer).withraw(1, false)).to.be.revertedWith("Exceed available");  
+          await expect(ethHodlBooster.connect(alice as Signer).withraw(1, true)).to.be.revertedWith("Exceed available");     
+
+          //6*1.025  
+          ethBalance = await ethers.provider.getBalance(bob.address); 
+          var bobMaturedEth = await ethHodlBooster.maturedAsset(bob.address);
+          var bobeMaturedUST = await ethHodlBooster.maturedStableCoin(bob.address); 
+          assert.equal(bobMaturedEth.toString(), BigNumber.from(615).mul(ETHMultiplier).div(100).toString()); 
+          assert.equal(bobeMaturedUST.toString(), "0");
+          
+          tx = await ethHodlBooster.connect(bob as Signer).withraw(BigNumber.from(615).mul(ETHMultiplier).div(100), false); 
+          var gasUsed3 = (await tx.wait()).gasUsed.mul(GWEI);  
+          ethBalance2 = await ethers.provider.getBalance(bob.address);  
+          diff = ethBalance2.sub(ethBalance).add(gasUsed3).sub(BigNumber.from(615).mul(ETHMultiplier).div(100)).abs(); 
+          //diff is less than 1gwei (due to the precision lose of gasUsed returned as gwei)
+          assert.isTrue(diff.lte(GWEI)); 
+          await expect(ethHodlBooster.connect(bob as Signer).withraw(1, false)).to.be.revertedWith("Exceed available");   
+          await expect(ethHodlBooster.connect(bob as Signer).withraw(1, true)).to.be.revertedWith("Exceed available");  
+
+
         });
       });  
    

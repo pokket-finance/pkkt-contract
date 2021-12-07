@@ -7,9 +7,7 @@ import { deployContract } from "./utilities/deploy";
 import { PKKTToken } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
  
- 
-
-const WEI = BigNumber.from(10).pow(18);
+import { WEI } from "../constants/constants";
 
 const CAP = BigNumber.from(1000).mul(WEI);
 
