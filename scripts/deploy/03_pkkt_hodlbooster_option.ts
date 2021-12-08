@@ -1,8 +1,8 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { NULL_ADDRESS, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS, WBTC_ADDRESS, ROPSTEN_WBTC_ADDRESS} from "../../constants/constants"; 
+import { NULL_ADDRESS, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS, WBTC_ADDRESS, ROPSTEN_WBTC_ADDRESS, USDT_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS} from "../../constants/constants"; 
 import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
-import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
+import { OptionVault, PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption } from "../../typechain";
 import * as dotenv from "dotenv";  
 dotenv.config();  
 
@@ -20,51 +20,93 @@ const main = async ({
     contract: "OptionVault"  
   });
   const optionVaultContract = await ethers.getContractAt("OptionVault", optionVault.address);
-  console.log(`03 - Deploying OptionVault on on ${network.name} to ${optionVault.address}`);   
- 
-  
+  console.log(`03 - Deployed OptionVault on on ${network.name} to ${optionVault.address}`);   
   const structureData = await deploy("StructureData", {
     contract: "StructureData",
     from: deployer,
   });
-  const ethHodlBooster = await deploy("PKKTHodlBoosterOption", {
+  
+  console.log("03 - Deploying ETH-USDT-HodlBooster-Call on", network.name);
+
+  const ethHodlBoosterCall = await deploy("PKKTHodlBoosterCallOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterOption" ,
-    args: ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, 
-    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6, optionVault.address],
+    contract: "PKKTHodlBoosterCallOption" ,
+    args: ["ETH-USDT-HodlBooster-Call", "ETHUSDTHodlBoosterCall", NULL_ADDRESS, 
+    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, ETH_DECIMALS, USDT_DECIMALS, optionVault.address],
     libraries: {
       StructureData: structureData.address,
     },
   });
   
-  await optionVaultContract.addOption(ethHodlBooster.address);
-  console.log(`03 - Deployed ETH-USDT-HodlBooster on ${network.name} to ${ethHodlBooster.address}`); 
-  const ethHodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", ethHodlBooster.address);
+  await optionVaultContract.addOption(ethHodlBoosterCall.address);
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Call on ${network.name} to ${ethHodlBoosterCall.address}`); 
+  const ethHodlBoosterCallOptionContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", ethHodlBoosterCall.address);
   
-  await ethHodlBoosterOptionContract.transferOwnership(owner);
-  console.log(`03 - Transfer owner of ETH-USDT-HodlBooster to ${owner} on ${network.name}`); 
+  await ethHodlBoosterCallOptionContract.transferOwnership(owner);
+  console.log(`03 - Transfer owner of ETH-USDT-HodlBooster-Call to ${owner} on ${network.name}`); 
 
 
-  console.log("03 - Deploying WBTC-USDT-HodlBooster on", network.name);
-  const wbtcHodlBooster = await deploy("PKKTHodlBoosterOption", {
+  console.log("03 - Deploying ETH-USDT-HodlBooster-Put on", network.name);
+  const ethHodlBoosterPut = await deploy("PKKTHodlBoosterPutOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterOption" ,
-    args: ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", 
+    contract: "PKKTHodlBoosterPutOption" ,
+    args: ["ETH-USDT-HodlBooster-Put", "ETHUSDTHodlBoosterPut", NULL_ADDRESS, 
+    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, ETH_DECIMALS, USDT_DECIMALS, optionVault.address],
+    libraries: {
+      StructureData: structureData.address,
+    },
+  });
+  
+  await optionVaultContract.addOption(ethHodlBoosterPut.address);
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`); 
+  const ethHodlBoosterPutOptionContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", ethHodlBoosterPut.address);
+  
+  await ethHodlBoosterPutOptionContract.transferOwnership(owner);
+  console.log(`03 - Transfer owner of ETH-USDT-HodlBooster-Put to ${owner} on ${network.name}`); 
+
+ 
+
+  console.log("03 - Deploying WBTC-USDT-HodlBooster-Call on", network.name);
+  const wbtcHodlBoosterCall = await deploy("PKKTHodlBoosterCallOption", {
+    from: deployer,
+    contract: "PKKTHodlBoosterCallOption" ,
+    args: ["WBTC-USDT-HodlBooster-Call", "WBTCUSDTHodlBoosterCall", 
     isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
-    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6, optionVault.address],
+    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, WBTC_DECIMALS, USDT_DECIMALS, optionVault.address],
     libraries: {
       StructureData: structureData.address,
     },
   });
   
-  await optionVaultContract.addOption(wbtcHodlBooster.address);
-  console.log(`03 - Deployed WBTC-USDT-HodlBooster on ${network.name} to ${wbtcHodlBooster.address}`); 
-  const wbtcHodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", wbtcHodlBooster.address);
-  await wbtcHodlBoosterOptionContract.transferOwnership(owner);
-  console.log(`03 - Transfer owner of WBTC-USDT-HodlBooster to ${owner} on ${network.name}`);
+  await optionVaultContract.addOption(wbtcHodlBoosterCall.address);
+  console.log(`03 - Deployed WBTC-USDT-HodlBooster-Call on ${network.name} to ${wbtcHodlBoosterCall.address}`); 
+  const wbtcHodlBoosterCallOptionContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", wbtcHodlBoosterCall.address);
+  await wbtcHodlBoosterCallOptionContract.transferOwnership(owner);
+  console.log(`03 - Transfer owner of WBTC-USDT-HodlBooster-Call to ${owner} on ${network.name}`);
+
+  
+  console.log("03 - Deploying WBTC-USDT-HodlBooster-Put on", network.name);
+  const wbtcHodlBoosterPut = await deploy("PKKTHodlBoosterPutOption", {
+    from: deployer,
+    contract: "PKKTHodlBoosterPutOption" ,
+    args: ["WBTC-USDT-HodlBooster-Call", "WBTCUSDTHodlBoosterPut", 
+    isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
+    isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, WBTC_DECIMALS, USDT_DECIMALS, optionVault.address],
+    libraries: {
+      StructureData: structureData.address,
+    },
+  });
+  
+  await optionVaultContract.addOption(wbtcHodlBoosterPut.address);
+  console.log(`03 - Deployed WBTC-USDT-HodlBooster-Put on ${network.name} to ${wbtcHodlBoosterPut.address}`); 
+  const wbtcHodlBoosterPutOptionContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", wbtcHodlBoosterPut.address);
+  await wbtcHodlBoosterPutOptionContract.transferOwnership(owner);
+  console.log(`03 - Transfer owner of WBTC-USDT-HodlBooster-Put to ${owner} on ${network.name}`);
+
+
    
 };
-main.tags = ["PKKTHodlBoosterOption"];
+main.tags = ["PKKTHodlBoosterCallOption"];
 
 export default main;
 

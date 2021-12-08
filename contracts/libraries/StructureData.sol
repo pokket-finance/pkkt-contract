@@ -11,7 +11,6 @@ library StructureData {
          uint8 pricePrecision;
          int16 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4
          uint16 interestRate; //take, 0.01% is represented as 1, precision is 4
-         bool callOrPut;
      }
 
     struct OptionState {
@@ -25,6 +24,15 @@ library StructureData {
          bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral;
     }
  
+   struct MaturedState {
+       uint256 maturedDepositAssetAmount;
+       uint256 maturedCounterPartyAssetAmount;
+       uint256 requestingDepositAssetAmount;
+       uint256 requestingCounterPartyAssetAmount;
+       bool executed;
+       uint256 round;
+       
+   }
 
     enum OptionType {
         HodlBooster,
