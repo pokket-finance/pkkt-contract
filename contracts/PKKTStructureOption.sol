@@ -2,18 +2,17 @@
 pragma solidity =0.8.4;
  
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
 import "hardhat/console.sol";
  
 import {StructureData} from "./libraries/StructureData.sol";     
 import "./interfaces/IPKKTStructureOption.sol";
 import "./interfaces/IExecuteSettlement.sol"; 
 import "./interfaces/IOptionVault.sol"; 
-abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, IExecuteSettlement {
+abstract contract PKKTStructureOption is ERC20Upgradeable, OwnableUpgradeable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -29,41 +28,61 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
     uint8 internal assetAmountDecimals;
     uint8 internal stableCoinAmountDecimals;
       
-    address public immutable asset;
-    address public immutable stableCoin;
+    address public asset;
+    address public stableCoin;
  
-    bool public immutable isEth;
+    bool public isEth;
     StructureData.OptionParameters public optionParameters;  
-     uint256 public currentRound;
-     uint256 public previousUnderlyingPrice;
-     mapping(uint256=>uint256) public optionHeights;
-     mapping(uint256=>StructureData.OptionState) public optionStates;
-     address[] public usersInvolved;  
-     mapping(address=>StructureData.UserState) public userStates; 
-     mapping(address=>uint256) public maturedAsset; 
-     mapping(address=>uint256) public maturedStableCoin;
-     bool public underSettlement;
-     address override public vaultAddress;
+    uint256 public currentRound;
+    uint256 public previousUnderlyingPrice;
+    mapping(uint256=>uint256) public optionHeights;
+    mapping(uint256=>StructureData.OptionState) public optionStates;
+    address[] public usersInvolved;  
+    mapping(address=>StructureData.UserState) public userStates; 
+    mapping(address=>uint256) public maturedAsset; 
+    mapping(address=>uint256) public maturedStableCoin;
+    bool public underSettlement;
+    address override public vaultAddress;
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
-    constructor(
+    function initalize(
         string memory name,
         string memory symbol,
         address _asset,
         address _stableCoin,
-        uint8 _assetAmountDecimals,  
+        uint8 _assetAmountDecimals,
         uint8 _stableCoinAmountDecimals,
         address _vaultAddress
-    ) ERC20(name, symbol) {  
+    ) public initializer {
         require(_vaultAddress != address(0), "Empty vault address");
+        ERC20Upgradeable.__ERC20_init(name, symbol);
+        OwnableUpgradeable.__Ownable_init();
         asset = _asset;
         stableCoin = _stableCoin;
         isEth = _asset == address(0);
         assetAmountDecimals = _assetAmountDecimals;
-        stableCoinAmountDecimals = _stableCoinAmountDecimals; 
+        stableCoinAmountDecimals = _stableCoinAmountDecimals;
         vaultAddress = _vaultAddress;
     }
+
+    // constructor(
+    //     string memory name,
+    //     string memory symbol,
+    //     address _asset,
+    //     address _stableCoin,
+    //     uint8 _assetAmountDecimals,  
+    //     uint8 _stableCoinAmountDecimals,
+    //     address _vaultAddress
+    // ) ERC20(name, symbol) {  
+    //     require(_vaultAddress != address(0), "Empty vault address");
+    //     asset = _asset;
+    //     stableCoin = _stableCoin;
+    //     isEth = _asset == address(0);
+    //     assetAmountDecimals = _assetAmountDecimals;
+    //     stableCoinAmountDecimals = _stableCoinAmountDecimals; 
+    //     vaultAddress = _vaultAddress;
+    // }
           
     function decimals() public view override returns (uint8) {
         return assetAmountDecimals;

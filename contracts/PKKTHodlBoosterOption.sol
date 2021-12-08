@@ -14,20 +14,39 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
     using SafeMath for uint256;  
     using StructureData for StructureData.UserState;
 
-  constructor(
-        string memory name,
-        string memory symbol,
-        address _underlying,
-        address _stableCoin,
-        uint8 _underlyingDecimals,
-        uint8 _stableCoinDecimals,
-        address _vaultAddress
-    ) PKKTStructureOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals, _vaultAddress) {  
+  // constructor(
+  //       string memory name,
+  //       string memory symbol,
+  //       address _underlying,
+  //       address _stableCoin,
+  //       uint8 _underlyingDecimals,
+  //       uint8 _stableCoinDecimals,
+  //       address _vaultAddress
+  //   ) PKKTStructureOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals, _vaultAddress) {  
           
-    }
+  // }
 
-   
-     function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
+  function initialize(
+    string memory name,
+    string memory symbol,
+    address _underlying,
+    address _stableCoin,
+    uint8 _underlyingDecimals,
+    uint8 _stableCoinDecimals,
+    address _vaultAddress
+  ) public initializer {
+    PKKTStructureOption.initalize(
+      name,
+      symbol,
+      _underlying,
+      _stableCoin,
+      _underlyingDecimals,
+      _stableCoinDecimals,
+      _vaultAddress
+    );
+  }
+
+    function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
      returns(uint256 _maturedAssetAmount, uint256 _maturedStableCoinAmount, bool _executed) {
         _maturedAssetAmount = 0;
         _maturedStableCoinAmount = 0;

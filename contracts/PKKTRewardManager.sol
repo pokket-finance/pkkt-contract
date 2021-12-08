@@ -48,7 +48,11 @@ abstract contract PKKTRewardManager is IClaimable, OwnableUpgradeable {
     /// @notice Initializes the contract with storage variables
     /// @param _itemName name of underlying storage ex: "Vault" or "Pool"
     /// @param _pkktPerBlock total number of PKKT rewarded to users per block
-    function initialize(PKKTToken _pkkt, string memory _itemName, uint256 _pkktPerBlock, uint256 _startBlock) internal initializer {
+    function initialize(
+        PKKTToken _pkkt,
+        string memory _itemName,
+        uint256 _pkktPerBlock,
+        uint256 _startBlock) internal initializer {
         require(address(_pkkt) != address(0), "Zero address");
         OwnableUpgradeable.__Ownable_init();
         pkkt = _pkkt;
