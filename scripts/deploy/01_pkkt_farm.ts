@@ -1,12 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { PKKTFARM_BYTECODE, PKKT_FARM_MAX } from "../../constants/constants";
-import PKKTFARM_ABI from "../../constants/abis/PKKTFARM.json";
-import { ContractFactory, Signer } from "ethers";
-import { ethers, upgrades } from "hardhat";
-import { PKKTFarm, PKKTToken } from "../../typechain";
+import { PKKT_FARM_MAX } from "../../constants/constants";
+import { ethers } from "hardhat";
 import * as dotenv from "dotenv";  
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { deployUpgradeableContract } from "../../test/utilities/deployUpgradable";
 dotenv.config();  
 
 const main = async ({
@@ -17,17 +12,31 @@ const main = async ({
   const { deploy } = deployments;
   console.log("01 - Deploying PKKTFarm on", network.name);
 
-  //const { deployer, owner } = await getNamedAccounts();
+  const { deployer, owner } = await getNamedAccounts();
 
   const pkktToken = await deployments.get("PKKTToken");
+  const pool = await deploy("Pool", {
+    contract: "Pool",
+    from: deployer,
+  });
+  const pkktFarm = await deploy("PKKTFarm", {
+    from: deployer,
+    proxy: {
+      proxyContract: "OpenZeppelinTransparentProxy",
+      execute: {
+        methodName: "initialize",
+        args: [
+          pkktToken.address,
+          process.env.PKKT_PER_BLOCK,
+          process.env.START_BLOCK
+        ],
+      },
+    },
+    libraries: {
+      Pool: pool.address,
+    },
+  });
 
-  const [deployer] = await ethers.getSigners();
-
-  const pkktFarm = await deployUpgradeableContract(
-    "PKKTFarm",
-    deployer as Signer,
-    [pkktToken.address, process.env.PKKT_PER_BLOCK, process.env.START_BLOCK]
-  );
   console.log(`01 - Deployed PKKTFarm on ${network.name} to ${pkktFarm.address}`);
 
   const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);

@@ -3,9 +3,10 @@ import { assert, Assertion, expect } from "chai";
 import { Contract } from "@ethersproject/contracts"; 
 import { BigNumber, Signer } from "ethers";
 
-import { deployContract } from "./utilities/deploy"; 
+import { deployContract } from "./utilities/deploy";
+import { deployUpgradeableContract } from "./utilities/deployUpgradable"; 
 import {advanceBlockTo} from "./utilities/timer"; 
-import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
+import { PKKTHodlBoosterOption, ERC20Mock, PKKTVault, PKKTToken } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { NULL_ADDRESS,WEI,GWEI } from "../constants/constants";
  
@@ -27,13 +28,16 @@ const RationMultipler = 10000;
 describe("PKKT Hodl Booster", async function () {
     let ethHodlBooster: PKKTHodlBoosterOption;
     let wbtcHodlBooster: PKKTHodlBoosterOption;
+    let pkktToken: PKKTToken;
+    let pkktVault: PKKTVault;
     let deployer: SignerWithAddress; 
     let alice: SignerWithAddress; 
     let bob: SignerWithAddress; 
     let carol: SignerWithAddress;
     let trader: SignerWithAddress; 
     let usdt: ERC20Mock;
-    let wbtc: ERC20Mock; 
+    let wbtc: ERC20Mock;
+    let vault: Contract;
     before(async function () {
       [deployer, alice, bob, carol, trader] = await ethers.getSigners(); 
         
@@ -45,12 +49,46 @@ describe("PKKT Hodl Booster", async function () {
           this.owner = deployer as Signer;  
           usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000000).mul(USDTMultiplier), USDTDecimals]) as ERC20Mock;
           wbtc = await  deployContract("ERC20Mock", deployer as Signer, ["Wrapped BTC", "WBTC", BigNumber.from(100).mul(WBTCMultiplier), WBTCDecimals]) as ERC20Mock;
+          
+          pkktToken = await deployContract(
+            "PKKTToken",
+            deployer as Signer,
+            ["PKKTToken","PKKT", CAP.toString()]
+          ) as PKKTToken; 
+          vault = await deployContract("Vault", deployer as Signer) as Contract;
+          pkktVault = await deployUpgradeableContract(
+            "PKKTVault",
+            { signer:deployer as Signer, libraries: { Vault: vault.address } },
+            [pkktToken.address, "100", 13603000, trader.address]
+          ) as PKKTVault;
            
-          ethHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
-          ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, usdt.address, ETHDecimals, USDTDecimals]) as PKKTHodlBoosterOption; 
+          ethHodlBooster = await deployUpgradeableContract(
+            "PKKTHodlBoosterOption",
+            deployer as Signer,
+            [
+              "ETH-USDT-HodlBooster",
+              "ETHUSDTHodlBooster",
+              NULL_ADDRESS,
+              usdt.address,
+              ETHDecimals,
+              USDTDecimals,
+              pkktVault.address
+            ]
+          ) as PKKTHodlBoosterOption; 
                      
-          wbtcHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
-          ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", wbtc.address, usdt.address, WBTCDecimals, USDTDecimals]) as PKKTHodlBoosterOption; 
+          wbtcHodlBooster = await deployUpgradeableContract(
+            "PKKTHodlBoosterOption",
+            deployer as Signer,
+            [
+              "WBTC-USDT-HodlBooster",
+              "WBTCUSDTHodlBooster",
+              wbtc.address,
+              usdt.address,
+              WBTCDecimals,
+              USDTDecimals,
+              pkktVault.address
+            ]
+          ) as PKKTHodlBoosterOption; 
 
           await usdt.transfer(alice.address,  BigNumber.from(100).mul(USDTMultiplier));
           await usdt.transfer(bob.address,  BigNumber.from(100).mul(USDTMultiplier));
