@@ -62,7 +62,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         isEth = _asset == address(0);
         assetAmountDecimals = _assetAmountDecimals;
         stableCoinAmountDecimals = _stableCoinAmountDecimals; 
-        vaultAddress = _vaultAddress;
+        vaultAddress = _vaultAddress; 
     }
           
     function decimals() public view override returns (uint8) {

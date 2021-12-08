@@ -50,9 +50,11 @@ describe("PKKT Hodl Booster", async function () {
            
           ethHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
           ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, usdt.address, ETHDecimals, USDTDecimals, vault.address]) as PKKTHodlBoosterOption; 
+          vault.addOption(ethHodlBooster.address);
                      
           wbtcHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
           ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", wbtc.address, usdt.address, WBTCDecimals, USDTDecimals, vault.address]) as PKKTHodlBoosterOption; 
+          vault.addOption(wbtcHodlBooster.address);
 
           await usdt.transfer(alice.address,  BigNumber.from(100).mul(USDTMultiplier));
           await usdt.transfer(bob.address,  BigNumber.from(100).mul(USDTMultiplier));

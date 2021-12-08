@@ -19,7 +19,7 @@ const main = async ({
     from: deployer,
     contract: "OptionVault"  
   });
-
+  const optionVaultContract = await ethers.getContractAt("OptionVault", optionVault.address);
   console.log(`03 - Deploying OptionVault on on ${network.name} to ${optionVault.address}`);   
  
   
@@ -37,8 +37,10 @@ const main = async ({
     },
   });
   
+  await optionVaultContract.addOption(ethHodlBooster.address);
   console.log(`03 - Deployed ETH-USDT-HodlBooster on ${network.name} to ${ethHodlBooster.address}`); 
   const ethHodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", ethHodlBooster.address);
+  
   await ethHodlBoosterOptionContract.transferOwnership(owner);
   console.log(`03 - Transfer owner of ETH-USDT-HodlBooster to ${owner} on ${network.name}`); 
 
@@ -55,6 +57,7 @@ const main = async ({
     },
   });
   
+  await optionVaultContract.addOption(wbtcHodlBooster.address);
   console.log(`03 - Deployed WBTC-USDT-HodlBooster on ${network.name} to ${wbtcHodlBooster.address}`); 
   const wbtcHodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", wbtcHodlBooster.address);
   await wbtcHodlBoosterOptionContract.transferOwnership(owner);
