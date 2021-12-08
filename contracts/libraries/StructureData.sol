@@ -3,7 +3,7 @@ pragma solidity =0.8.4;
 
 library StructureData {
      
-     uint8 public constant MATUREROUND= 7; //7 for daily settlement, 1 for daily settlement
+     uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
     //the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)
     //for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option  
     struct OptionParameters {
