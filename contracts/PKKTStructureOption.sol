@@ -79,18 +79,13 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
             uint256 stableCoinAmount = maturedStableCoin[msg.sender];
             require(stableCoinAmount >= _amount, "Exceed available"); 
             maturedStableCoin[msg.sender] = stableCoinAmount.sub(_amount);
-            IERC20(stableCoin).safeTransfer(msg.sender, _amount); 
+            IOptionVault(vaultAddress).withdraw(msg.sender, _amount, stableCoin); 
        }
        else { 
             uint256 assetAmount = maturedAsset[msg.sender];
             require(assetAmount >= _amount, "Exceed available"); 
-            maturedAsset[msg.sender] = assetAmount.sub(_amount);
-            if (isEth) {
-                payable(msg.sender).transfer(_amount);
-            }
-            else { 
-                IERC20(asset).safeTransfer(msg.sender, _amount); 
-            } 
+            maturedAsset[msg.sender] = assetAmount.sub(_amount); 
+            IOptionVault(vaultAddress).withdraw(msg.sender, _amount, asset);  
        }
     }
 
@@ -111,8 +106,9 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
        require(isEth, "!ETH");
        require(msg.value > 0, "!value"); 
        
-        //todo: convert to weth and  transfer to a centralized place
+        //todo: convert to weth  
        _depositFor(msg.value);
+       payable(vaultAddress).transfer(msg.value);
     }
     //deposit other erc20 coin, take wbtc
     function deposit(uint256 _amount) external override {  
@@ -120,9 +116,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         require(currentRound > 0, "!Started");
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
-        _depositFor(_amount); 
-        //todo: transfer to a centralized place
-        IERC20(asset).safeTransferFrom(msg.sender, address(this), _amount);
+        _depositFor(_amount);  
+        IERC20(asset).safeTransferFrom(msg.sender, vaultAddress, _amount);
     }
  
   
@@ -143,8 +138,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
 
 
     //redeem unsettled amount
-    function redeem(uint256 _amount) external override {
-        
+    function redeem(uint256 _amount) external override { 
         require(!underSettlement, "Being settled");
          require(_amount > 0, "!amount"); 
          StructureData.UserState storage userState =  userStates[msg.sender]; 
@@ -152,14 +146,8 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
          StructureData.OptionState storage optionState = optionStates[currentRound];
          optionState.totalAmount = optionState.totalAmount.sub(_amount);
-         //todo: withdraw from centralized vault
-        if (isEth) {
-            payable(msg.sender).transfer(_amount);
-        }
-        else { 
-            IERC20(asset).safeTransfer(msg.sender, _amount); 
-        }
-        emit Redeem(msg.sender, currentRound, _amount);
+         IOptionVault(vaultAddress).withdraw(msg.sender, _amount, asset); 
+         emit Redeem(msg.sender, currentRound, _amount);
     }
 
  
@@ -235,12 +223,7 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
             uint256 toSend = optionState.totalAmount.sub(requestingAssetAmount);
             if (toSend > 0) { 
                //if balance is not correct, would result in error
-                if (isEth) {
-                    payable(_traderAddress).transfer(toSend);
-                }
-                else { 
-                    IERC20(asset).safeTransfer(_traderAddress, toSend); 
-                } 
+                IOptionVault(vaultAddress).withdraw(_traderAddress, toSend, asset);  
             }
             requestingAssetAmount = 0;
         } 
@@ -270,26 +253,26 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         underSettlement = false;
         emit OpenOption(currentRound);
     }
- 
+    //todo: get from the vault to centralize it
     function getRequest() external override view onlyOwner returns(StructureData.Request[] memory){
         if (requestingAssetAmount == 0 && requestingStableCoinAmount == 0) {
             return new StructureData.Request[](0);
         }
         if (requestingAssetAmount == 0) {
             StructureData.Request[] memory results = new StructureData.Request[](1);
-            results[0] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin});
+            results[0] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin, targetAddress: vaultAddress});
             return results;
         } 
         if (requestingStableCoinAmount == 0) {
             StructureData.Request[] memory results = new StructureData.Request[](1);
-            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset});
+            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset, targetAddress: vaultAddress});
             return results;
         }
         else {
            
            StructureData.Request[] memory results = new StructureData.Request[](2);
-            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset});
-            results[1] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin});
+            results[0] = StructureData.Request({amount:requestingAssetAmount, contractAddress: asset, targetAddress: vaultAddress});
+            results[1] = StructureData.Request({amount:requestingStableCoinAmount, contractAddress: stableCoin, targetAddress: vaultAddress});
             return results;
         }
     }
@@ -297,14 +280,14 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
     function getBalance(bool _asset) internal view returns(uint256) {
        if (_asset) {
           if (isEth) {
-              return address(this).balance;
+              return vaultAddress.balance;
           }
           else{
-             return IERC20(asset).balanceOf(address(this));
+             return IERC20(asset).balanceOf(vaultAddress);
           }
        }
        else{
-           return IERC20(stableCoin).balanceOf(address(this));
+           return IERC20(stableCoin).balanceOf(vaultAddress);
        }
     }
     function finishSettlement() external override onlyOwner {
@@ -314,10 +297,6 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
            "Matured Stable Coin not filled"); 
         requestingAssetAmount = 0;
         requestingStableCoinAmount = 0;
-    }
-    event Received(address, uint);
-    receive() external payable {
-        emit Received(msg.sender, msg.value);
     }
     function allSettled() external override view returns(bool){
         return requestingAssetAmount == 0 && requestingStableCoinAmount == 0;

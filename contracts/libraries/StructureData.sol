@@ -58,6 +58,7 @@ library StructureData {
     struct Request {
         uint256 amount;
         address contractAddress; //0 for eth
+        address targetAddress; //vault address
     }
 
 }

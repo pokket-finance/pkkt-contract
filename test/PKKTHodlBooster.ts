@@ -5,7 +5,7 @@ import { BigNumber, Signer } from "ethers";
 
 import { deployContract } from "./utilities/deploy"; 
 import {advanceBlockTo} from "./utilities/timer"; 
-import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
+import { PKKTHodlBoosterOption, ERC20Mock, OptionVault } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { NULL_ADDRESS,WEI,GWEI } from "../constants/constants";
  
@@ -34,6 +34,7 @@ describe("PKKT Hodl Booster", async function () {
     let trader: SignerWithAddress; 
     let usdt: ERC20Mock;
     let wbtc: ERC20Mock; 
+    let vault: OptionVault;
     before(async function () {
       [deployer, alice, bob, carol, trader] = await ethers.getSigners(); 
         
@@ -43,14 +44,15 @@ describe("PKKT Hodl Booster", async function () {
         beforeEach(async function () {
         
           this.owner = deployer as Signer;  
+          vault = await deployContract("OptionVault", deployer as Signer) as OptionVault;
           usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000000).mul(USDTMultiplier), USDTDecimals]) as ERC20Mock;
           wbtc = await  deployContract("ERC20Mock", deployer as Signer, ["Wrapped BTC", "WBTC", BigNumber.from(100).mul(WBTCMultiplier), WBTCDecimals]) as ERC20Mock;
            
           ethHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
-          ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, usdt.address, ETHDecimals, USDTDecimals]) as PKKTHodlBoosterOption; 
+          ["ETH-USDT-HodlBooster", "ETHUSDTHodlBooster", NULL_ADDRESS, usdt.address, ETHDecimals, USDTDecimals, vault.address]) as PKKTHodlBoosterOption; 
                      
           wbtcHodlBooster = await deployContract("PKKTHodlBoosterOption", deployer as Signer, 
-          ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", wbtc.address, usdt.address, WBTCDecimals, USDTDecimals]) as PKKTHodlBoosterOption; 
+          ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", wbtc.address, usdt.address, WBTCDecimals, USDTDecimals, vault.address]) as PKKTHodlBoosterOption; 
 
           await usdt.transfer(alice.address,  BigNumber.from(100).mul(USDTMultiplier));
           await usdt.transfer(bob.address,  BigNumber.from(100).mul(USDTMultiplier));
@@ -290,12 +292,12 @@ describe("PKKT Hodl Booster", async function () {
           
           await expect(ethHodlBooster.finishSettlement()).to.be.revertedWith("Matured Asset not filled");  
           //send eth back
-          await trader.sendTransaction({to:ethHodlBooster.address, value:request[0].amount});
+          await trader.sendTransaction({to:request[0].targetAddress, value:request[0].amount});
           await ethHodlBooster.finishSettlement();
           
           await expect(wbtcHodlBooster.finishSettlement()).to.be.revertedWith("Matured Asset not filled");   
           //send wbtc back
-          await wbtc.connect(trader as Signer).transfer(wbtcHodlBooster.address, request2[0].amount); 
+          await wbtc.connect(trader as Signer).transfer(request2[0].targetAddress, request2[0].amount); 
           await wbtcHodlBooster.finishSettlement();
 
           settled = await ethHodlBooster.allSettled();
@@ -303,8 +305,8 @@ describe("PKKT Hodl Booster", async function () {
           settled = await wbtcHodlBooster.allSettled();
           assert.isTrue(settled); 
  
-          var ethBalance = await ethers.provider.getBalance(ethHodlBooster.address); 
-          var btcBalance = await wbtc.balanceOf(wbtcHodlBooster.address); 
+          var ethBalance = await ethers.provider.getBalance(await ethHodlBooster.vaultAddress()); 
+          var btcBalance = await wbtc.balanceOf(await wbtcHodlBooster.vaultAddress()); 
           assert.equal(ethBalance.toString(), BigNumber.from(1025).mul(ETHMultiplier).div(100).toString());
           assert.equal(btcBalance.toString(), BigNumber.from(255).mul(WBTCMultiplier).div(100).toString());
 
@@ -388,7 +390,7 @@ describe("PKKT Hodl Booster", async function () {
 
           usdt.transfer(trader.address, BigNumber.from(139986).mul(USDTMultiplier));
           //send usdt back
-          await usdt.connect(trader as Signer).transfer(wbtcHodlBooster.address, request3[0].amount); 
+          await usdt.connect(trader as Signer).transfer(request3[0].targetAddress, request3[0].amount); 
           await wbtcHodlBooster.finishSettlement();
           var usdtBalance = await usdt.balanceOf(bob.address);
           await wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(69993).mul(USDTMultiplier), true);
