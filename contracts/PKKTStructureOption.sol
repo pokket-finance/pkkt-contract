@@ -173,11 +173,11 @@ abstract contract PKKTStructureOption is ERC20, Ownable, IPKKTStructureOption, I
         require(requestingStableCoinAmount == 0, "Matured Stable Coin not filled");
         require(!underSettlement, "Being settled");
         underSettlement = true;
-        previousUnderlyingPrice = _underlyingPrice;
+        previousUnderlyingPrice = _underlyingPrice; 
         //return when there is no previous matured round
-        if (currentRound < StructureData.MATUREROUND) return;
-        uint maturedRound = currentRound - StructureData.MATUREROUND + 1;
-        StructureData.OptionState storage previousOptionState = optionStates[maturedRound];
+        if (currentRound <= StructureData.MATUREROUND) return;
+        uint maturedRound = currentRound - StructureData.MATUREROUND;
+        StructureData.OptionState storage previousOptionState = optionStates[maturedRound]; 
         (uint256 maturedAssetAmount_, uint256 maturedStableCoinAmount_, bool executed_) = 
         _calculateMaturity(_underlyingPrice, previousOptionState);  
         previousOptionState.executed = executed_;

@@ -52,11 +52,11 @@ contract PKKTHodlBoosterOption is PKKTStructureOption {
             address userAddress = usersInvolved[i];
             StructureData.UserState storage userState = userStates[userAddress]; 
             //since the onGoingAsset for current round is not filled yet, we make 5 instead of 6 backward
-            uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 2); 
+            uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 1);  
             if (ongoingAsset == 0) continue;
             if (!shouldConvert) { 
                 uint256 assetAmount = _maturedAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
-                maturedAsset[userAddress] = maturedAsset[userAddress].add(assetAmount);  
+                maturedAsset[userAddress] = maturedAsset[userAddress].add(assetAmount);   
             }
             else {  
                uint256 stableCoinAmount = _maturedStableCoinAmount.mul(ongoingAsset).div(_optionState.totalAmount);

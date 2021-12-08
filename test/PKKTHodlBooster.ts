@@ -234,13 +234,13 @@ describe("PKKT Hodl Booster", async function () {
           settled = await wbtcHodlBooster.allSettled();
           assert.isTrue(settled);
 
-          //from round 2 to 8
-          for(var i = 0; i < 6; i++){
+          //from round 2 to 9
+          for(var i = 0; i < 7; i++){
             //eth round 2+i: 2 eth
             await ethHodlBooster.connect(alice as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});  
             await ethHodlBooster.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)}); 
             
-            //wbtc round2+i: 2 btc
+            //wbtc round 2+i: 2 btc
             await wbtcHodlBooster.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));  
             await wbtcHodlBooster.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
             
@@ -275,7 +275,7 @@ describe("PKKT Hodl Booster", async function () {
           settled = await wbtcHodlBooster.allSettled();
           assert.isFalse(settled);
           var round = await ethHodlBooster.currentRound();
-          assert.equal(round.toString(), "8");   
+          assert.equal(round.toString(), "9");   
           var request = await ethHodlBooster.getRequest();
           assert.equal(request.length, 1);
 
@@ -284,7 +284,7 @@ describe("PKKT Hodl Booster", async function () {
           assert.equal(request[0].contractAddress, NULL_ADDRESS);
 
           round = await wbtcHodlBooster.currentRound();
-          assert.equal(round.toString(), "8");   
+          assert.equal(round.toString(), "9");   
           var request2 = await wbtcHodlBooster.getRequest();
           assert.equal(request2.length, 1);
           //2.5*1.02-2
@@ -378,7 +378,7 @@ describe("PKKT Hodl Booster", async function () {
           await wbtcHodlBooster.rollToNext(parameters7); 
 
           round = await wbtcHodlBooster.currentRound();
-          assert.equal(round.toString(), "9");   
+          assert.equal(round.toString(), "10");   
 
 
           await expect(wbtcHodlBooster.connect(bob as Signer).withraw(BigNumber.from(1).mul(USDTMultiplier), true)).to.be.revertedWith("Matured Stable Coin not filled");   
