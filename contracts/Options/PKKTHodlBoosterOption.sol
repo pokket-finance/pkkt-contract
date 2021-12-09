@@ -42,15 +42,12 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
      mapping(uint256=>StructureData.OptionState) public optionStates;
      address[] public usersInvolved;  
      mapping(address=>StructureData.UserState) public userStates; 
-     //todo: move to a centralized place, take, option vault
-     mapping(address=>uint256) public maturedDepositAssetAmount;   
-     mapping(address=>uint256) public maturedCounterPartyAssetAmount;   
-     //todo: move to a centralized place, take, option vault
-     StructureData.MaturedState private maturedState;
-     bool public underSettlement;
-     address override public vaultAddress;
+     bool public underSettlement; 
      bool public callOrPut; //put accept stablecoin only, call accept asset coins only
      IPKKTStructureOption public counterPartyOption;
+     IOptionVault public optionVault;
+     mapping(address=>uint256) public maturedDepositAssetAmount;
+     mapping(address=>uint256) public maturedCounterPartyAssetAmount;
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
@@ -69,8 +66,8 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         counterPartyAsset = _counterPartyAsset;
         isEth = _depositAsset == address(0);
         depositAssetAmountDecimals = _depositAssetAmountDecimals;
-        counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals; 
-        vaultAddress = _vaultAddress; 
+        counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;  
+        optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
     }
 
@@ -82,9 +79,12 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
     function decimals() public view override returns (uint8) {
         return depositAssetAmountDecimals;
     }
- 
-    function withraw(uint256 _amount) external override {
-       require(maturedState.requestingDepositAssetAmount  == 0, "Matured amount not filled"); 
+
+    function vaultAddress() public view override returns(address) {
+        return optionVault.getAddress();
+    }
+
+    function withraw(uint256 _amount) external override { 
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount"); 
@@ -92,7 +92,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         uint256 userMaturedAmount = maturedDepositAssetAmount[msg.sender];
         require(userMaturedAmount >= _amount, "Exceed available"); 
         maturedDepositAssetAmount[msg.sender] = userMaturedAmount.sub(_amount); 
-        IOptionVault(vaultAddress).withdraw(msg.sender, _amount, depositAsset);  
+        optionVault.withdraw(msg.sender, _amount, depositAsset);  
     }
 
     function redeposit(uint256 _amount) external override {
@@ -114,8 +114,9 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
        
         //todo: convert to weth  
        _depositFor(msg.value);
-       payable(vaultAddress).transfer(msg.value);
+       payable(vaultAddress()).transfer(msg.value);
     }
+
     //deposit other erc20 coin, take wbtc
     function deposit(uint256 _amount) external override {  
         require(!underSettlement, "Being settled");
@@ -123,7 +124,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
         _depositFor(_amount);  
-        IERC20(depositAsset).safeTransferFrom(msg.sender, vaultAddress, _amount);
+        IERC20(depositAsset).safeTransferFrom(msg.sender, vaultAddress(), _amount);
     }
  
   
@@ -152,7 +153,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
          StructureData.OptionState storage optionState = optionStates[currentRound];
          optionState.totalAmount = optionState.totalAmount.sub(_amount);
-         IOptionVault(vaultAddress).withdraw(msg.sender, _amount, depositAsset); 
+        optionVault.withdraw(msg.sender, _amount, depositAsset); 
          emit Redeem(msg.sender, currentRound, _amount);
     }
 
@@ -174,16 +175,17 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         return optionStates[optionHeights[_blockHeight]];
     } 
 
-   function closePrevious(uint256 _underlyingPrice) external override onlyOwner {
-        require(maturedState.requestingDepositAssetAmount == 0 && maturedState.requestingCounterPartyAssetAmount == 0, "Matured Amount not filled"); 
+   function closePrevious(uint256 _underlyingPrice) external override onlyOwner { 
         require(!underSettlement, "Being settled");
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice; 
         //return when there is no previous matured round
         if (currentRound <= StructureData.MATUREROUND) return;
         uint maturedRound = currentRound - StructureData.MATUREROUND;
-        StructureData.OptionState storage previousOptionState = optionStates[maturedRound];  
-        maturedState = _calculateMaturity(_underlyingPrice, previousOptionState); 
+        StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
+        StructureData.OptionState memory currentOptionState = optionStates[currentRound];
+        StructureData.MaturedState memory maturedState = _calculateMaturity(_underlyingPrice, previousOptionState); 
+        optionVault.setMaturityState(maturedState, currentOptionState, depositAsset, counterPartyAsset);
         previousOptionState.executed = maturedState.executed;
         emit CloseOption(maturedRound);
    }
@@ -191,7 +193,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
    internal virtual returns(StructureData.MaturedState memory _state); 
  
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent(address _traderAddress) external override onlyOwner {  
+   function commitCurrent() external override onlyOwner {  
         require(underSettlement, "Not being settled");
         //return when there is no previous round
         //console.log("CommitCurrent: %s %d", name(), currentRound);
@@ -215,18 +217,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
             userState.pendingAsset = 0;
          }
 
-        //send trader the deposit coin
-        if (maturedState.requestingDepositAssetAmount <= optionState.totalAmount) {
-            uint256 toSend = optionState.totalAmount.sub(maturedState.requestingDepositAssetAmount);
-            if (toSend > 0) { 
-               //if balance is not correct, would result in error
-                IOptionVault(vaultAddress).withdraw(_traderAddress, toSend, depositAsset);  
-            }
-            maturedState.requestingDepositAssetAmount = 0; 
-        } 
-        else {  
-            maturedState.requestingDepositAssetAmount =  maturedState.requestingDepositAssetAmount.sub(optionState.totalAmount);  
-        } 
+      
         optionHeights[currentRound] = block.number; //commit current option at current block
         emit CommitOption(currentRound);
    }
@@ -250,53 +241,5 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         underSettlement = false;
         emit OpenOption(currentRound);
     }
-    //todo: get from the vault to centralize it
-    function getRequest() external override view onlyOwner returns(StructureData.Request[] memory){
-        if (maturedState.requestingDepositAssetAmount == 0 && maturedState.requestingCounterPartyAssetAmount == 0) {
-            return new StructureData.Request[](0);
-        }
-        if (maturedState.requestingDepositAssetAmount == 0) {
-            StructureData.Request[] memory results = new StructureData.Request[](1);
-            results[0] = StructureData.Request({amount:maturedState.requestingCounterPartyAssetAmount, contractAddress: counterPartyAsset, targetAddress: vaultAddress});
-            return results;
-        } 
-        if (maturedState.requestingCounterPartyAssetAmount == 0) {
-            StructureData.Request[] memory results = new StructureData.Request[](1);
-            results[0] = StructureData.Request({amount:maturedState.requestingDepositAssetAmount, contractAddress: depositAsset, targetAddress: vaultAddress});
-            return results;
-        }
-        else {
-           
-           StructureData.Request[] memory results = new StructureData.Request[](2);
-            results[0] = StructureData.Request({amount:maturedState.requestingDepositAssetAmount, contractAddress: depositAsset, targetAddress: vaultAddress});
-            results[1] = StructureData.Request({amount:maturedState.requestingCounterPartyAssetAmount, contractAddress: counterPartyAsset, targetAddress: vaultAddress});
-            return results;
-        }
-    }
- 
-     function getBalance(bool _counterParty) internal view returns(uint256) {
-       if (_counterParty) {
-            return IERC20(counterPartyAsset).balanceOf(vaultAddress); 
-       }
-       else{
-            if (isEth) {
-              return vaultAddress.balance;
-          }
-          else{
-             return IERC20(depositAsset).balanceOf(vaultAddress);
-          }
-       }
-    }
 
-    function finishSettlement() external override onlyOwner {
-        require(maturedState.requestingDepositAssetAmount == 0 || getBalance(false) >=  maturedState.maturedDepositAssetAmount, 
-           "Matured Amount not filled");       
-        require(maturedState.requestingCounterPartyAssetAmount == 0 || getBalance(true) >=  maturedState.maturedCounterPartyAssetAmount, 
-           "Matured Amount not filled");       
-        maturedState.requestingDepositAssetAmount = 0; 
-        maturedState.requestingCounterPartyAssetAmount = 0;
-    }
-    function allSettled() external override view returns(bool){
-        return maturedState.requestingDepositAssetAmount == 0 && maturedState.requestingCounterPartyAssetAmount == 0;
-    }
 }

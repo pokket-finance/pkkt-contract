@@ -7,15 +7,9 @@ interface IExecuteSettlement {
    function closePrevious(uint256 _underlyingPrice) external;
 
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent(address _traderAddress) external; 
+   function commitCurrent() external; 
 
     //open a new option
-   function rollToNext(StructureData.OptionParameters memory _optionParameters) external;
-  
-   function getRequest() external view returns(StructureData.Request[] memory);
-   //finish the settlement once all requestedcoins are sent
-   function finishSettlement() external;
-
-   function allSettled() external view returns(bool);
+   function rollToNext(StructureData.OptionParameters memory _optionParameters) external; 
 
 }

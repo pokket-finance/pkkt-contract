@@ -63,10 +63,18 @@ library StructureData {
         }
         return userState.ongoingAsset[uint8(previousCursor)];
     }
-    struct Request {
+
+    enum Direction {
+        None,
+        SendToTrader,
+        SendBackToVault
+    }
+    struct SettlementInstruction {
         uint256 amount;
         address contractAddress; //0 for eth
         address targetAddress; //vault address
+        Direction direction;
+        bool fullfilled;
     }
 
 }

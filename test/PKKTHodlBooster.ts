@@ -7,7 +7,8 @@ import { deployContract } from "./utilities/deploy";
 import {advanceBlockTo} from "./utilities/timer"; 
 import { PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption, ERC20Mock, OptionVault } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD } from "../constants/constants";
+import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,Direction, WBTC_ADDRESS } from "../constants/constants";
+import { AssertionError } from "assert/strict";
  
   
 const CAP = BigNumber.from(1000).mul(WEI);
@@ -27,6 +28,7 @@ describe("PKKT Hodl Booster", async function () {
     let ethHodlBoosterPut: PKKTHodlBoosterPutOption;
     let wbtcHodlBoosterPut: PKKTHodlBoosterPutOption;
     let deployer: SignerWithAddress; 
+    let settler: SignerWithAddress;
     let alice: SignerWithAddress; 
     let bob: SignerWithAddress; 
     let carol: SignerWithAddress;
@@ -35,7 +37,7 @@ describe("PKKT Hodl Booster", async function () {
     let wbtc: ERC20Mock; 
     let vault: OptionVault;
     before(async function () {
-      [deployer, alice, bob, carol, trader] = await ethers.getSigners(); 
+      [deployer, settler, alice, bob, carol, trader] = await ethers.getSigners(); 
         
     });
 
@@ -43,25 +45,29 @@ describe("PKKT Hodl Booster", async function () {
         beforeEach(async function () {
         
           this.owner = deployer as Signer;  
-          vault = await deployContract("OptionVault", deployer as Signer) as OptionVault;
+          vault = await deployContract("OptionVault", deployer as Signer, [settler.address]) as OptionVault;
           usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000000).mul(USDTMultiplier), USDT_DECIMALS]) as ERC20Mock;
           wbtc = await  deployContract("ERC20Mock", deployer as Signer, ["Wrapped BTC", "WBTC", BigNumber.from(100).mul(WBTCMultiplier), WBTC_DECIMALS]) as ERC20Mock;
            
           ethHodlBoosterCall = await deployContract("PKKTHodlBoosterCallOption", deployer as Signer, 
           ["ETH-USDT-HodlBooster-Call", "ETHUSDTHodlBoosterCall", NULL_ADDRESS, usdt.address, ETH_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterCallOption; 
           vault.addOption(ethHodlBoosterCall.address);
+          ethHodlBoosterCall.transferOwnership(settler.address);
                      
           wbtcHodlBoosterCall = await deployContract("PKKTHodlBoosterCallOption", deployer as Signer, 
           ["WBTC-USDT-HodlBooster-Call", "WBTCUSDTHodlBoosterCall", wbtc.address, usdt.address, WBTC_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterCallOption; 
           vault.addOption(wbtcHodlBoosterCall.address);
+          wbtcHodlBoosterCall.transferOwnership(settler.address);
 
           ethHodlBoosterPut = await deployContract("PKKTHodlBoosterPutOption", deployer as Signer, 
           ["ETH-USDT-HodlBooster-Put", "ETHUSDTHodlBoosterPut", NULL_ADDRESS, usdt.address, ETH_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterPutOption; 
-          vault.addOption(ethHodlBoosterPut.address);
+          vault.addOption(ethHodlBoosterPut.address); 
+          ethHodlBoosterPut.transferOwnership(settler.address);
                      
           wbtcHodlBoosterPut = await deployContract("PKKTHodlBoosterPutOption", deployer as Signer, 
           ["WBTC-USDT-HodlBooster-Put", "WBTCUSDTHodlBoosterPut", wbtc.address, usdt.address, WBTC_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterPutOption; 
           vault.addOption(ethHodlBoosterPut.address);
+          wbtcHodlBoosterPut.transferOwnership(settler.address);
 
 
           await usdt.transfer(alice.address,  BigNumber.from(100).mul(USDTMultiplier));
@@ -93,7 +99,7 @@ describe("PKKT Hodl Booster", async function () {
           await expect(ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)})).to.be.revertedWith("!Started");   
           await expect(wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier))).to.be.revertedWith("!Started");  
           const ethPrice = 4000 * (10**ETHPricePrecision);
-          await ethHodlBoosterCall.closePrevious(ethPrice); //4000usdt
+          await ethHodlBoosterCall.connect(settler as Signer).closePrevious(ethPrice); //4000usdt
           const parameters1 = {
             quota: BigNumber.from(10).mul(ETHMultiplier), //10eth
             pricePrecision: ETHPricePrecision,
@@ -101,7 +107,7 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
           };
-          await ethHodlBoosterCall.rollToNext(parameters1);
+          await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters1);
           const btcPrice = 60000 * (10**WBTCPicePrecision);
           const parameters2 = {
             quota: BigNumber.from(25).mul(WBTCMultiplier).div(10), //2.5btc
@@ -110,8 +116,8 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };
-          await wbtcHodlBoosterCall.closePrevious(btcPrice); //60000usdt
-          await wbtcHodlBoosterCall.rollToNext( parameters2);
+          await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice); //60000usdt
+          await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext( parameters2);
 
           await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
           await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));
@@ -185,6 +191,7 @@ describe("PKKT Hodl Booster", async function () {
           optionState = await wbtcHodlBoosterCall.optionStates(round); 
           assert.equal(optionState.totalAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
         });
+
         it("should allow call option settlement", async function () {
           const ethPrice = 4000 * (10**ETHPricePrecision);
           const parameters1 = {
@@ -194,7 +201,7 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
           }; 
-          await ethHodlBoosterCall.rollToNext(parameters1);  
+          await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters1);  
 
           const btcPrice = 60000 * (10**WBTCPicePrecision);
           const parameters2 = {
@@ -203,9 +210,9 @@ describe("PKKT Hodl Booster", async function () {
             strikePriceRatio: 0.1 * RationMultipler, //10% up
             interestRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
-          }; 
-          await wbtcHodlBoosterCall.rollToNext(parameters2); 
-          
+          };  
+          await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters2); 
+
           //eth round 1: 10 eth
           await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(4).mul(ETHMultiplier)});  
           await ethHodlBoosterCall.connect(bob as Signer).depositETH({ value: BigNumber.from(6).mul(ETHMultiplier)}); 
@@ -213,17 +220,14 @@ describe("PKKT Hodl Booster", async function () {
           //wbtc round 1: 2.5 btc
           await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));  
           await wbtcHodlBoosterCall.connect(bob as Signer).deposit(BigNumber.from(5).mul(WBTCMultiplier).div(10));
-
+ 
           
-          
-          var settled = await ethHodlBoosterCall.allSettled();
-          assert.isTrue(settled); 
-          settled = await wbtcHodlBoosterCall.allSettled();
-          assert.isTrue(settled);
+          var settled = await vault.allSettled();
+          assert.isTrue(settled);  
 
-          await ethHodlBoosterCall.closePrevious(ethPrice); //4000usdt  
+          await ethHodlBoosterCall.connect(settler as Signer).closePrevious(ethPrice); //4000usdt  
            //eth round 1:strike price 4400usdt
-          await ethHodlBoosterCall.commitCurrent(trader.address);  
+          await ethHodlBoosterCall.connect(settler as Signer).commitCurrent();  
           const parameters3 = {
             quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
             pricePrecision: ETHPricePrecision,
@@ -231,11 +235,10 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };
-          await ethHodlBoosterCall.rollToNext(parameters3);  
           
-          await wbtcHodlBoosterCall.closePrevious(btcPrice); //60000usdt   
+          await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice); //60000usdt   
            //wbtc round 1:strike price 66000usdt
-          await wbtcHodlBoosterCall.commitCurrent(trader.address);  
+          await wbtcHodlBoosterCall.connect(settler as Signer).commitCurrent();  
           const parameters4 = {
             quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
             pricePrecision: WBTCPicePrecision,
@@ -243,11 +246,12 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.01 * RationMultipler, //1% per week
             callOrPut: true
           };
-          await wbtcHodlBoosterCall.rollToNext(parameters4);
-          settled = await ethHodlBoosterCall.allSettled();
-          assert.isTrue(settled); 
-          settled = await wbtcHodlBoosterCall.allSettled();
-          assert.isTrue(settled);
+          
+          await vault.connect(settler as Signer).startSettlement(trader.address); 
+          await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters3);  
+          await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters4);
+          settled = await vault.allSettled();
+          assert.isTrue(settled);  
 
           //from round 2 to SETTLEMENTPERIOD
           for(var i = 0; i < SETTLEMENTPERIOD; i++){
@@ -259,9 +263,9 @@ describe("PKKT Hodl Booster", async function () {
             await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));  
             await wbtcHodlBoosterCall.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
             
-            await ethHodlBoosterCall.closePrevious(ethPrice*1.01); //4040usdt  
+            await ethHodlBoosterCall.connect(settler as Signer).closePrevious(ethPrice*1.01); //4040usdt  
             //eth round 2+i: strike price 4444usdt
-            await ethHodlBoosterCall.commitCurrent(trader.address); //strike price 4444usdt
+            await ethHodlBoosterCall.connect(settler as Signer).commitCurrent(); //strike price 4444usdt
             const parameters5 = {
               quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
               pricePrecision: ETHPricePrecision,
@@ -269,11 +273,10 @@ describe("PKKT Hodl Booster", async function () {
               interestRate: 0.01 * RationMultipler, //1% per week
               callOrPut: true
             };
-            await ethHodlBoosterCall.rollToNext(parameters5);
 
-            await wbtcHodlBoosterCall.closePrevious(btcPrice*1.05); //63000usdt  
+            await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice*1.05); //63000usdt  
             //wbtc round 2+i: strike price 69300usdt
-            await wbtcHodlBoosterCall.commitCurrent(trader.address); 
+            await wbtcHodlBoosterCall.connect(settler as Signer).commitCurrent(); 
             const parameters6 = {
               quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
               pricePrecision: WBTCPicePrecision,
@@ -281,46 +284,52 @@ describe("PKKT Hodl Booster", async function () {
               interestRate: 0.005 * RationMultipler, //0.5% per week
               callOrPut: true
             };
-            await wbtcHodlBoosterCall.rollToNext(parameters6); 
+            await vault.connect(settler as Signer).startSettlement(trader.address); 
+            await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters5);
+            await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters6); 
           }
 
           //we have something matured
-          settled = await ethHodlBoosterCall.allSettled();
-          assert.isFalse(settled); 
-          settled = await wbtcHodlBoosterCall.allSettled();
-          assert.isFalse(settled);
+          settled = await vault.allSettled();
+          assert.isFalse(settled);  
           var round = await ethHodlBoosterCall.currentRound();
           assert.equal(round.toString(), (2+SETTLEMENTPERIOD).toString());   
-          var request = await ethHodlBoosterCall.getRequest();
-          assert.equal(request.length, 1);
-
+          var ethInstruction = await vault.settlementInstruction(NULL_ADDRESS); 
           //10*1.025-2
-          assert.equal(request[0].amount.toString(), BigNumber.from(825).mul(ETHMultiplier).div(100).toString());
-          assert.equal(request[0].contractAddress, NULL_ADDRESS);
+          assert.equal(ethInstruction.amount.toString(), BigNumber.from(825).mul(ETHMultiplier).div(100).toString());
+          assert.equal(ethInstruction.contractAddress, NULL_ADDRESS);
+          assert.equal(ethInstruction.targetAddress, vault.address);
+          assert.equal(ethInstruction.fullfilled, false);
+          assert.equal(ethInstruction.direction, Direction.SendBackToVault);
 
           round = await wbtcHodlBoosterCall.currentRound();
           assert.equal(round.toString(), (2+SETTLEMENTPERIOD).toString());   
-          var request2 = await wbtcHodlBoosterCall.getRequest();
-          assert.equal(request2.length, 1);
+          var btcInstruction = await vault.settlementInstruction(wbtc.address);  
           //2.5*1.02-2
-          assert.equal(request2[0].amount.toString(), BigNumber.from(55).mul(WBTCMultiplier).div(100).toString());
-          assert.equal(request2[0].contractAddress, wbtc.address);
+          assert.equal(btcInstruction.amount.toString(), BigNumber.from(55).mul(WBTCMultiplier).div(100).toString());
+          assert.equal(btcInstruction.contractAddress, wbtc.address);
+          assert.equal(btcInstruction.targetAddress, vault.address);
+          assert.equal(btcInstruction.fullfilled, false);
+          assert.equal(btcInstruction.direction, Direction.SendBackToVault);
 
-          
-          await expect(ethHodlBoosterCall.finishSettlement()).to.be.revertedWith("Matured Amount not filled");  
+
+          await vault.connect(settler as Signer).finishSettlement(); 
+          settled = await vault.allSettled();
+          assert.isFalse(settled);  
+
           //send eth back
-          await trader.sendTransaction({to:request[0].targetAddress, value:request[0].amount});
-          await ethHodlBoosterCall.finishSettlement();
+          await trader.sendTransaction({to:ethInstruction.targetAddress, value:ethInstruction.amount}); 
           
-          await expect(wbtcHodlBoosterCall.finishSettlement()).to.be.revertedWith("Matured Amount not filled");   
-          //send wbtc back
-          await wbtc.connect(trader as Signer).transfer(request2[0].targetAddress, request2[0].amount); 
-          await wbtcHodlBoosterCall.finishSettlement();
+          await vault.connect(settler as Signer).finishSettlement(); 
+          settled = await vault.allSettled();
+          assert.isFalse(settled);  
 
-          settled = await ethHodlBoosterCall.allSettled();
-          assert.isTrue(settled); 
-          settled = await wbtcHodlBoosterCall.allSettled();
-          assert.isTrue(settled); 
+          //then send wbtc back
+          await wbtc.connect(trader as Signer).transfer(btcInstruction.targetAddress, btcInstruction.amount); 
+          await vault.connect(settler as Signer).finishSettlement(); 
+          settled = await vault.allSettled();
+          assert.isTrue(settled);  
+
  
           var ethBalance = await ethers.provider.getBalance(await ethHodlBoosterCall.vaultAddress()); 
           var btcBalance = await wbtc.balanceOf(await wbtcHodlBoosterCall.vaultAddress()); 
@@ -373,16 +382,17 @@ describe("PKKT Hodl Booster", async function () {
           await wbtcHodlBoosterCall.connect(alice as Signer).redeposit(BigNumber.from(1).mul(WBTCMultiplier)); 
 
           var traderBtcBalance = await wbtc.balanceOf(trader.address);
-          await wbtcHodlBoosterCall.closePrevious(btcPrice*1.2); //72000usdt  
+          await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice*1.2); //72000usdt  
           
           //don't support withdraw during settlement
           await expect(wbtcHodlBoosterCall.connect(bob as Signer).withraw(BigNumber.from(204).mul(WBTCMultiplier).div(100))).to.be.revertedWith("Being settled");   
 
-          await wbtcHodlBoosterCall.commitCurrent(trader.address); //strike price 79200usdt
+          await wbtcHodlBoosterCall.connect(settler as Signer).commitCurrent(); //strike price 79200usdt
           var traderBtcBalance2 = await wbtc.balanceOf(trader.address);
           //1.51btc was sent to trader
           assert.equal(traderBtcBalance2.sub(traderBtcBalance).toString(), BigNumber.from(151).mul(WBTCMultiplier).div(100).toString());
 
+          await vault.connect(settler as Signer).startSettlement(trader.address); 
           const parameters7 = {
             quota: BigNumber.from(3).mul(WBTCMultiplier), //3btc
             pricePrecision: WBTCPicePrecision,
@@ -390,25 +400,27 @@ describe("PKKT Hodl Booster", async function () {
             interestRate: 0.015 * RationMultipler, //1.5% per week
             callOrPut: true
           };
-          await wbtcHodlBoosterCall.rollToNext(parameters7); 
+          await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters7); 
 
           round = await wbtcHodlBoosterCall.currentRound();
           assert.equal(round.toString(), (3+SETTLEMENTPERIOD).toString());   
 
 
           //await expect(wbtcHodlBoosterCall.connect(bob as Signer).withraw(BigNumber.from(1).mul(USDTMultiplier), true)).to.be.revertedWith("Matured Stable Coin not filled");   
-          var request3 = await wbtcHodlBoosterCall.getRequest();
-          assert.equal(request3.length, 1);
+          var usdtInstruction = await vault.settlementInstruction(usdt.address);  
           //2*1.01*69300 
-          assert.equal(request3[0].amount.toString(), BigNumber.from(139986).mul(USDTMultiplier).toString());
-          assert.equal(request3[0].contractAddress, usdt.address);
-          settled = await wbtcHodlBoosterCall.allSettled();
-          assert.isFalse(settled); 
+          assert.equal(usdtInstruction.amount.toString(), BigNumber.from(139986).mul(USDTMultiplier).toString());
+          assert.equal(usdtInstruction.contractAddress, usdt.address);
+          assert.equal(usdtInstruction.targetAddress, vault.address);
+          assert.equal(usdtInstruction.fullfilled, false);
+          assert.equal(usdtInstruction.direction, Direction.SendBackToVault);
 
           usdt.transfer(trader.address, BigNumber.from(139986).mul(USDTMultiplier));
           //send usdt back
-          await usdt.connect(trader as Signer).transfer(request3[0].targetAddress, request3[0].amount); 
-          await wbtcHodlBoosterCall.finishSettlement();
+          await usdt.connect(trader as Signer).transfer(usdtInstruction.targetAddress, usdtInstruction.amount); 
+          await vault.connect(settler as Signer).finishSettlement(); 
+          settled = await vault.allSettled();
+          assert.isTrue(settled);  
           /*var usdtBalance = await usdt.balanceOf(bob.address);
           await wbtcHodlBoosterCall.connect(bob as Signer).withraw(BigNumber.from(69993).mul(USDTMultiplier), true);
           var usdtBalance2 = await usdt.balanceOf(bob.address);

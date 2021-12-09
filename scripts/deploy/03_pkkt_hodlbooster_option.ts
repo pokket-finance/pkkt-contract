@@ -17,6 +17,7 @@ const main = async ({
   console.log("03 - Deploying OptionVault on", network.name);
   const optionVault = await deploy("OptionVault", {
     from: deployer,
+    args: [owner],
     contract: "OptionVault"  
   });
   const optionVaultContract = await ethers.getContractAt("OptionVault", optionVault.address);
