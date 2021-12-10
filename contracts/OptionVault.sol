@@ -77,7 +77,7 @@ contract OptionVault is IOptionVault, AccessControl {
 
     }
 
-    function setEmptyMaturityState(StructureData.OptionState memory _currentState, address _depositAsset, address _counterPartyAsset) 
+    function setCommittedState(StructureData.OptionState memory _currentState, address _depositAsset, address _counterPartyAsset) 
     external override  onlyRole(OPTION_ROLE){ 
         if (_currentState.callOrPut) {
             uint256 pendingDepositAssetAmount = pendingAmount[_depositAsset];
@@ -90,8 +90,8 @@ contract OptionVault is IOptionVault, AccessControl {
             addAssetIfNeeded(_counterPartyAsset);
         }
     }
-    function setMaturityState(StructureData.MaturedState memory _maturedState, StructureData.OptionState memory _currentState, 
-    address _depositAsset, address _counterPartyAsset)  external override  onlyRole(OPTION_ROLE){ 
+    function setMaturityState(StructureData.MaturedState memory _maturedState, address _depositAsset, address _counterPartyAsset)  
+    external override  onlyRole(OPTION_ROLE){ 
         if (_maturedState.maturedDepositAssetAmount > 0) {
            uint256 maturedDepositAssetAmount  = maturedAmount[_depositAsset];
            maturedAmount[_depositAsset] = maturedDepositAssetAmount.add(_maturedState.maturedDepositAssetAmount);
@@ -101,18 +101,7 @@ contract OptionVault is IOptionVault, AccessControl {
             uint256 maturedCounterPartyAssetAmount = maturedAmount[_counterPartyAsset];
             maturedAmount[_counterPartyAsset] = maturedCounterPartyAssetAmount.add(_maturedState.maturedCounterPartyAssetAmount);
             addAssetIfNeeded(_counterPartyAsset);
-        }
-        
-        if (_currentState.callOrPut) {
-            uint256 pendingDepositAssetAmount = pendingAmount[_depositAsset];
-             pendingAmount[_depositAsset] = pendingDepositAssetAmount.add(_currentState.totalAmount);
-            addAssetIfNeeded(_depositAsset);
-        }
-        else { 
-            uint256 pendingCounterPartyAssetAmount = pendingAmount[_counterPartyAsset];
-            pendingAmount[_counterPartyAsset] = pendingCounterPartyAssetAmount.add(_currentState.totalAmount);
-            addAssetIfNeeded(_counterPartyAsset);
-        }
+        } 
          
     }
 

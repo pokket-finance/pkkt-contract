@@ -45,6 +45,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
      bool public underSettlement; 
      bool public callOrPut; //put accept stablecoin only, call accept asset coins only
      IPKKTStructureOption public counterPartyOption;
+     address public counterParty;
      IOptionVault public optionVault;
      mapping(address=>uint256) public maturedDepositAssetAmount;
      mapping(address=>uint256) public maturedCounterPartyAssetAmount;
@@ -71,9 +72,10 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         callOrPut = _callOrPut;
     }
 
-    function setCounterpartyOption(address _counterParty) external {
+    function setCounterPartyOption(address _counterParty) external {
         require(_counterParty != address(this), "Cannot set self as counterparty");
         counterPartyOption = IPKKTStructureOption(_counterParty);
+        counterParty = _counterParty;
     }
           
     function decimals() public view override returns (uint8) {
@@ -102,9 +104,15 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
        uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
        require(maturedAmount >= _amount, "Exceed available");
        maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
-       _depositFor(_amount);
+       _depositFor(msg.sender, _amount);
     }
 
+    function depositFromCounterParty(address[] memory addresses, uint256[] memory _amounts) override external {
+        require(msg.sender == counterParty, "Only counter party option can call this method");
+        for(uint256 i = 0; i < 0 ; i++){
+            _depositFor(addresses[i], _amounts[i]);
+        }
+    }
     //deposit eth
     function depositETH() external payable override {
        require(!underSettlement, "Being settled");
@@ -113,7 +121,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
        require(msg.value > 0, "!value"); 
        
         //todo: convert to weth  
-       _depositFor(msg.value);
+       _depositFor(msg.sender, msg.value);
        payable(vaultAddress()).transfer(msg.value);
     }
 
@@ -123,24 +131,24 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         require(currentRound > 0, "!Started");
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
-        _depositFor(_amount);  
+        _depositFor(msg.sender, _amount);  
         IERC20(depositAsset).safeTransferFrom(msg.sender, vaultAddress(), _amount);
     }
  
   
-    function _depositFor(uint256 _amount) private { 
+    function _depositFor(address _userAddress, uint256 _amount) private { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
         require(optionState.totalAmount.add(_amount) <= optionParameters.quota, "Not enough quota");
-        StructureData.UserState storage userState =  userStates[msg.sender]; 
+        StructureData.UserState storage userState =  userStates[_userAddress]; 
         //first time added
         if (!userState.hasState) { 
             userState.hasState = true;
-            usersInvolved.push(msg.sender);
+            usersInvolved.push(_userAddress);
         } 
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
         
-        emit Deposit(msg.sender, currentRound, _amount);
+        emit Deposit(_userAddress, currentRound, _amount);
     }
 
 
@@ -183,29 +191,36 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
             return;
         }
         
-        StructureData.OptionState memory currentOptionState = optionStates[currentRound];
-        //return when there is no previous matured round
         if (currentRound <= StructureData.MATUREROUND) { 
-            optionVault.setEmptyMaturityState(currentOptionState, depositAsset, counterPartyAsset);
             return;
         }
         uint maturedRound = currentRound - StructureData.MATUREROUND;
         StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
-        StructureData.MaturedState memory maturedState = _calculateMaturity(_underlyingPrice, previousOptionState); 
-        optionVault.setMaturityState(maturedState, currentOptionState, depositAsset, counterPartyAsset);
+        StructureData.MaturedState memory maturedState = _calculateMaturity(_underlyingPrice, previousOptionState);  
+        optionVault.setMaturityState(maturedState, depositAsset, counterPartyAsset);
         previousOptionState.executed = maturedState.executed;
         emit CloseOption(maturedRound);
    }
    function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) 
    internal virtual returns(StructureData.MaturedState memory _state); 
- 
+    
+   function autoRoll(bool _counterParty) private {
+     
+   }
    //close pending option and autoroll if capacity is enough based on the maturity result
    function commitCurrent() external override onlyOwner {  
         require(underSettlement, "Not being settled");
         //return when there is no previous round
         //console.log("CommitCurrent: %s %d", name(), currentRound);
         if (currentRound <= 0) return;
+         if (currentRound > StructureData.MATUREROUND) {  
+            StructureData.OptionState storage previousOptionState = optionStates[currentRound - StructureData.MATUREROUND];
+            if (previousOptionState.totalAmount > 0) { 
+                autoRoll(previousOptionState.executed);
+            }   
+        } 
         StructureData.OptionState storage optionState = optionStates[currentRound];
+        optionVault.setCommittedState(optionState, depositAsset, counterPartyAsset);
         optionState.underlyingPrice = previousUnderlyingPrice; 
         optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(int256(RATIOMULTIPLIER) + int256(optionParameters.strikePriceRatio))).div(RATIOMULTIPLIER);  
         optionState.interestRate = optionParameters.interestRate;

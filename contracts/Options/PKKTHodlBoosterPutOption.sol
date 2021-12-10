@@ -32,8 +32,6 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
        StructureData.MaturedState memory state = StructureData.MaturedState({
           maturedDepositAssetAmount: 0,
           maturedCounterPartyAssetAmount: 0,
-          requestingDepositAssetAmount: 0,
-          requestingCounterPartyAssetAmount: 0,
           executed: false,
           round: _optionState.round
        }); 
@@ -41,12 +39,12 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
         bool shouldConvert = _optionState.strikePrice > _underlyingPrice; 
         state.executed = shouldConvert; 
         if (shouldConvert) {  
-           state.requestingCounterPartyAssetAmount = state.maturedCounterPartyAssetAmount = _optionState.totalAmount.
+           state.maturedCounterPartyAssetAmount = _optionState.totalAmount.
            mul(multipler).mul(10**(_optionState.pricePrecision + counterPartyAssetAmountDecimals)).div(_optionState.strikePrice).
            div(RATIOMULTIPLIER).div(10** depositAssetAmountDecimals); 
         }
         else {
-           state.requestingDepositAssetAmount = state.maturedDepositAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
+           state.maturedDepositAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
 
         }
  

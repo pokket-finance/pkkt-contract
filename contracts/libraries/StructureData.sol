@@ -27,8 +27,6 @@ library StructureData {
    struct MaturedState {
        uint256 maturedDepositAssetAmount;
        uint256 maturedCounterPartyAssetAmount;
-       uint256 requestingDepositAssetAmount;
-       uint256 requestingCounterPartyAssetAmount;
        bool executed;
        uint256 round;
        
@@ -45,6 +43,7 @@ library StructureData {
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
+        bool shouldStop;
     }
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;
