@@ -17,13 +17,13 @@ const main = async ({
 
   const pkktToken = await deployments.get("PKKTToken");
   const vault = await deploy("Vault", {
-    contract: "Vault",
     from: deployer,
   });
 
   const pkktVault = await deploy("PKKTVault", {
     from: deployer,
     proxy: {
+      owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
       execute: {
         methodName: "initialize",
@@ -40,7 +40,7 @@ const main = async ({
     }
   });
 
-  console.log(`02 - Deployed PKKTVault on ${network.name} to ${pkktVault.address}`); 
+  console.log(`02 - Deployed PKKTVault on ${network.name} Proxy: ${pkktVault.address} implementation ${pkktVault.implementation}`); 
 
   const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
   const pkktVaultMax = process.env.PKKT_FARM_MAX ?? PKKT_VAULT_MAX;

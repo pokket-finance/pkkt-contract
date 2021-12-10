@@ -18,13 +18,11 @@ const main = async ({
 
   const { deployer, owner } = await getNamedAccounts();
  
-  // TODO create utility function to grab necessary addresses based on network
   const isMainnet = network.name === "mainnet" || network.name == "hardhat";
   
   const pkktVault = await deployments.get("PKKTVault");
 
   const structureData = await deploy("StructureData", {
-    contract: "StructureData",
     from: deployer,
   });
 
@@ -50,14 +48,11 @@ const main = async ({
     }
   });
   console.log(`03 - Deployed ETH-USDT-HodlBooster on ${network.name} to ${pkktHodlBoosterOption.address}`); 
-  
-  // const hodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", result.address);
-  // await hodlBoosterOptionContract.transferOwnership(owner);
-  // console.log(`03 - Transfer owner of ETH-USDT-HodlBooster to ${owner} on ${network.name}`); 
 
   console.log(`03 - Deploying WBTC-USDT-HodlBooster on ${network.name}`);
-  const pkktHodlBoosterOption2 = await deploy("PKKTHodlBoosterOption", {
+  const pkktHodlBoosterOption2 = await deploy("PKKTHodlBoosterOption2", {
     from: deployer,
+    contract: "PKKTHodlBoosterOption",
     proxy: {
       proxyContract: "OpenZeppelinTransparentProxy",
       execute: {
@@ -77,22 +72,8 @@ const main = async ({
       StructureData: structureData.address,
     }
   });
-
-  // const result2 = await deploy("PKKTHodlBoosterOption", {
-  //   from: deployer,
-  //   contract: "PKKTHodlBoosterOption" ,
-  //   args: ["WBTC-USDT-HodlBooster", "WBTCUSDTHodlBooster", 
-  //   isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
-  //   isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS, 18, 6],
-  //   libraries: {
-  //     StructureData: structureData.address,
-  //   },
-  // });
   
   console.log(`03 - Deployed WBTC-USDT-HodlBooster on ${network.name} to ${pkktHodlBoosterOption2.address}`); 
-  // const hodlBoosterOptionContract2 = await ethers.getContractAt("PKKTHodlBoosterOption", result2.address);
-  // await hodlBoosterOptionContract2.transferOwnership(owner);
-  // console.log(`03 - Transfer owner of WBTC-USDT-HodlBooster to ${owner} on ${network.name}`);
 };
 main.tags = ["PKKTHodlBoosterOption"];
 

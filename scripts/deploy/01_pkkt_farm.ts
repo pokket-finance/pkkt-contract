@@ -16,12 +16,12 @@ const main = async ({
 
   const pkktToken = await deployments.get("PKKTToken");
   const pool = await deploy("Pool", {
-    contract: "Pool",
     from: deployer,
   });
   const pkktFarm = await deploy("PKKTFarm", {
     from: deployer,
     proxy: {
+      owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
       execute: {
         methodName: "initialize",
@@ -37,14 +37,15 @@ const main = async ({
     },
   });
 
-  console.log(`01 - Deployed PKKTFarm on ${network.name} to ${pkktFarm.address}`);
+  console.log(`01 - Deployed PKKTFarm on ${network.name} to Proxy: ${pkktFarm.address} implementation: ${pkktFarm.implementation}`);
 
   const pkktTokenContract = await ethers.getContractAt("PKKTToken", pkktToken.address);
   const pkktFarmMax = process.env.PKKT_FARM_MAX ?? PKKT_FARM_MAX;
   await pkktTokenContract.addMinter(pkktFarm.address, BigInt(pkktFarmMax));
-  console.log(`01 - Added PKKTFarm to PKKTToken as minter on ${network.name} with max ${pkktFarmMax}`);
-};
+  console.log(`02 - Added PKKTVault to PKKTToken as minter on ${network.name} with max ${pkktFarmMax}`);
+}
 main.tags = ["PKKTFarm"];
+main.dependencies = ["PKKTToken"]
 
 export default main;
 
