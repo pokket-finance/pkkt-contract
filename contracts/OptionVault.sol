@@ -62,7 +62,34 @@ contract OptionVault is IOptionVault, AccessControl {
             IERC20(_contractAddress).safeTransfer(_target, _amount); 
         }
     }
+    function prepareSettlement() external override {
+       uint256 assetCount = asset.length; 
+       for (uint i=0; i < assetCount; i++) {
+            address assetAddress = asset[i]; 
+           StructureData.SettlementInstruction memory instruction =  settlementInstruction[assetAddress];
+           require(instruction.fullfilled, "Settlement not finished"); 
+       }
+        for (uint i=0; i < assetCount; i++) {
+            address assetAddress = asset[i]; 
+            maturedAmount[assetAddress] = 0;
+            pendingAmount[assetAddress] = 0;
+       }
 
+    }
+
+    function setEmptyMaturityState(StructureData.OptionState memory _currentState, address _depositAsset, address _counterPartyAsset) 
+    external override  onlyRole(OPTION_ROLE){ 
+        if (_currentState.callOrPut) {
+            uint256 pendingDepositAssetAmount = pendingAmount[_depositAsset];
+             pendingAmount[_depositAsset] = pendingDepositAssetAmount.add(_currentState.totalAmount);
+            addAssetIfNeeded(_depositAsset);
+        }
+        else { 
+            uint256 pendingCounterPartyAssetAmount = pendingAmount[_counterPartyAsset];
+            pendingAmount[_counterPartyAsset] = pendingCounterPartyAssetAmount.add(_currentState.totalAmount);
+            addAssetIfNeeded(_counterPartyAsset);
+        }
+    }
     function setMaturityState(StructureData.MaturedState memory _maturedState, StructureData.OptionState memory _currentState, 
     address _depositAsset, address _counterPartyAsset)  external override  onlyRole(OPTION_ROLE){ 
         if (_maturedState.maturedDepositAssetAmount > 0) {
@@ -90,15 +117,7 @@ contract OptionVault is IOptionVault, AccessControl {
     }
 
     //make sure that the previous settlement is finished
-    function prepareSettlement() private view {
-       uint256 assetCount = asset.length; 
-       for (uint i=0; i < assetCount; i++) {
-            address assetAddress = asset[i]; 
-           StructureData.SettlementInstruction memory instruction =  settlementInstruction[assetAddress];
-           require(!instruction.fullfilled, "Settlement not finished"); 
-       }
-    }
-
+ 
     function allSettled() external override view returns(bool){
         uint256 assetCount = asset.length; 
        for (uint i=0; i < assetCount; i++) {
@@ -118,15 +137,12 @@ contract OptionVault is IOptionVault, AccessControl {
         //console.log("Asset count: %d", assetCount);
         if (assetCount == 0) { 
             return;
-        }
-        prepareSettlement(); 
+        } 
         
         for (uint i=0; i < assetCount; i++) {
             address assetAddress = asset[i];
             uint256 matured = maturedAmount[assetAddress];
             uint256 pending = pendingAmount[assetAddress]; 
-            
-             uint256 balance = getBalance(assetAddress);
             //console.log("%s: %d %d", assetAddress, matured, pending);
             if (pending == matured) {
 
@@ -148,7 +164,7 @@ contract OptionVault is IOptionVault, AccessControl {
                     amount: diff,
                     fullfilled: true 
                 });                 
-                
+                //console.log("send %s to trader %d", assetAddress, diff);
                 _withdraw(_traderAddress, diff, assetAddress); 
                 settlementInstruction[assetAddress] = instruction; 
             }
@@ -164,8 +180,6 @@ contract OptionVault is IOptionVault, AccessControl {
                 });  
                 settlementInstruction[assetAddress] = instruction; 
             } 
-            maturedAmount[assetAddress] = 0;
-            pendingAmount[assetAddress] = 0;
         }
         
     }
@@ -180,9 +194,10 @@ contract OptionVault is IOptionVault, AccessControl {
                
                 //what if send to trader failed
                if (instruction.direction == StructureData.Direction.SendBackToVault) {
-                    uint256 balance = getBalance(assetAddress);
-                    //console.log("%s %d %d", assetAddress, balance, instruction.amount);
-                    if (balance >= instruction.amount) {
+                    uint256 balance = getMaturedBalance(assetAddress);
+                     //console.log("%s %d %d", assetAddress, balance, maturedAmount[assetAddress]);
+                    
+                    if (balance >= maturedAmount[assetAddress]) {
                         instruction.fullfilled = true;
                     }
                }
@@ -190,8 +205,9 @@ contract OptionVault is IOptionVault, AccessControl {
            }
        }
     }
-
-    function getBalance(address _asset) private view returns(uint256) {
+     
+    //todo: debit the user deposit after rollToNext
+    function getMaturedBalance(address _asset) private view returns(uint256) {
        if (_asset != address(0)) {
             return IERC20(_asset).balanceOf(getAddress()); 
        }

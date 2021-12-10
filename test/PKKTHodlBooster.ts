@@ -223,7 +223,9 @@ describe("PKKT Hodl Booster", async function () {
  
           
           var settled = await vault.allSettled();
-          assert.isTrue(settled);  
+          assert.isTrue(settled);   
+
+          await vault.connect(settler as Signer).prepareSettlement(); 
 
           await ethHodlBoosterCall.connect(settler as Signer).closePrevious(ethPrice); //4000usdt  
            //eth round 1:strike price 4400usdt
@@ -255,6 +257,8 @@ describe("PKKT Hodl Booster", async function () {
 
           //from round 2 to SETTLEMENTPERIOD
           for(var i = 0; i < SETTLEMENTPERIOD; i++){
+             
+            await vault.connect(settler as Signer).prepareSettlement(); 
             //eth round 2+i: 2 eth
             await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});  
             await ethHodlBoosterCall.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)}); 
@@ -380,19 +384,23 @@ describe("PKKT Hodl Booster", async function () {
           await expect(wbtcHodlBoosterCall.connect(alice as Signer).redeposit(BigNumber.from(204).mul(WBTCMultiplier).div(100))).to.be.revertedWith("Not enough quota");   
           //deposit 1
           await wbtcHodlBoosterCall.connect(alice as Signer).redeposit(BigNumber.from(1).mul(WBTCMultiplier)); 
-
-          var traderBtcBalance = await wbtc.balanceOf(trader.address);
+ 
+          var traderBtcBalance = await wbtc.balanceOf(trader.address); 
+          
+          await vault.connect(settler as Signer).prepareSettlement(); 
           await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice*1.2); //72000usdt  
           
           //don't support withdraw during settlement
           await expect(wbtcHodlBoosterCall.connect(bob as Signer).withraw(BigNumber.from(204).mul(WBTCMultiplier).div(100))).to.be.revertedWith("Being settled");   
 
           await wbtcHodlBoosterCall.connect(settler as Signer).commitCurrent(); //strike price 79200usdt
+
+          await vault.connect(settler as Signer).startSettlement(trader.address); 
+          
           var traderBtcBalance2 = await wbtc.balanceOf(trader.address);
           //1.51btc was sent to trader
           assert.equal(traderBtcBalance2.sub(traderBtcBalance).toString(), BigNumber.from(151).mul(WBTCMultiplier).div(100).toString());
 
-          await vault.connect(settler as Signer).startSettlement(trader.address); 
           const parameters7 = {
             quota: BigNumber.from(3).mul(WBTCMultiplier), //3btc
             pricePrecision: WBTCPicePrecision,

@@ -179,11 +179,18 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         require(!underSettlement, "Being settled");
         underSettlement = true;
         previousUnderlyingPrice = _underlyingPrice; 
+        if (currentRound == 0) {
+            return;
+        }
+        
+        StructureData.OptionState memory currentOptionState = optionStates[currentRound];
         //return when there is no previous matured round
-        if (currentRound <= StructureData.MATUREROUND) return;
+        if (currentRound <= StructureData.MATUREROUND) { 
+            optionVault.setEmptyMaturityState(currentOptionState, depositAsset, counterPartyAsset);
+            return;
+        }
         uint maturedRound = currentRound - StructureData.MATUREROUND;
         StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
-        StructureData.OptionState memory currentOptionState = optionStates[currentRound];
         StructureData.MaturedState memory maturedState = _calculateMaturity(_underlyingPrice, previousOptionState); 
         optionVault.setMaturityState(maturedState, currentOptionState, depositAsset, counterPartyAsset);
         previousOptionState.executed = maturedState.executed;
