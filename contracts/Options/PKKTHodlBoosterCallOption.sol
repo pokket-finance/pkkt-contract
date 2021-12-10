@@ -55,16 +55,20 @@ contract PKKTHodlBoosterCallOption is PKKTHodlBoosterOption {
             StructureData.UserState storage userState = userStates[userAddress]; 
             //since the onGoingAsset for current round is not filled yet, we make 5 instead of 6 backward
             uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 1);  
-            if (ongoingAsset == 0) continue;
-            if (shouldConvert) { 
-              
+            if (ongoingAsset == 0) {
+               pendingMaturedCounterPartyAssetAmount[userAddress] = 
+               pendingMaturedDepositAssetAmount[userAddress] = 0;
+               continue;
+            }
+            if (shouldConvert) {  
                uint256 stableCoinAmount = state.maturedCounterPartyAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
-               maturedCounterPartyAssetAmount[userAddress] = maturedCounterPartyAssetAmount[userAddress].add(stableCoinAmount); 
+               pendingMaturedCounterPartyAssetAmount[userAddress] = stableCoinAmount; 
+               pendingMaturedDepositAssetAmount[userAddress] = 0;
             }
             else {  
-                
                 uint256 assetAmount = state.maturedDepositAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
-                maturedDepositAssetAmount[userAddress] = maturedDepositAssetAmount[userAddress].add(assetAmount);   
+                pendingMaturedDepositAssetAmount[userAddress] = assetAmount;   
+                pendingMaturedCounterPartyAssetAmount[userAddress] = 0;
             } 
          }
          return state;

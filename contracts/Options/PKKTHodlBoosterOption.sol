@@ -47,8 +47,13 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
      IPKKTStructureOption public counterPartyOption;
      address public counterParty;
      IOptionVault public optionVault;
+     //todo: differentiate bettewn previously matured ones and current round matured ones
      mapping(address=>uint256) public maturedDepositAssetAmount;
      mapping(address=>uint256) public maturedCounterPartyAssetAmount;
+
+     mapping(address=>uint256) public pendingMaturedDepositAssetAmount;
+     mapping(address=>uint256) public pendingMaturedCounterPartyAssetAmount;
+
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
@@ -106,7 +111,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
        maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
        _depositFor(msg.sender, _amount);
     }
-
+    //todo: what if quata is not enough
     function depositFromCounterParty(address[] memory addresses, uint256[] memory _amounts) override external {
         require(msg.sender == counterParty, "Only counter party option can call this method");
         for(uint256 i = 0; i < 0 ; i++){
@@ -203,17 +208,75 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
    }
    function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) 
    internal virtual returns(StructureData.MaturedState memory _state); 
-    
+
    function autoRoll(bool _counterParty) private {
-     
+        uint256 userCount = usersInvolved.length;
+        if (!_counterParty) {
+            for (uint i=0; i < userCount; i++) {
+                address userAddress = usersInvolved[i];
+                StructureData.UserState storage userState = userStates[userAddress]; 
+                
+                uint256 maturedAmount = pendingMaturedDepositAssetAmount[userAddress];
+                if (maturedAmount == 0) {
+                    continue;
+                }
+                if(userState.shouldStop) {  
+                    maturedDepositAssetAmount[userAddress] = 
+                    maturedDepositAssetAmount[userAddress].add(maturedAmount);
+                }  
+                else { 
+                    _depositFor(userAddress, maturedAmount);
+                }
+                pendingMaturedDepositAssetAmount[userAddress] = 0;
+            }  
+            return;
+        }
+        
+        uint256 maturedCount = 0;
+       
+        for (uint i=0; i < userCount; i++) {
+            address userAddress = usersInvolved[i];
+            StructureData.UserState storage userState = userStates[userAddress];  
+            if(userState.shouldStop || pendingMaturedCounterPartyAssetAmount[userAddress] == 0) {  
+                continue;
+            }  
+            maturedCount++;
+        } 
+        if (maturedCount == 0) {
+            return;
+        }
+        address[] memory autoRolledUsers = new address[](maturedCount);
+        uint256[] memory autoRolledAmounts = new uint256[](maturedCount);
+         maturedCount = 0;
+         for (uint i=0; i < userCount; i++) {
+            address userAddress = usersInvolved[i];
+            StructureData.UserState storage userState = userStates[userAddress]; 
+            
+            uint256 maturedAmount = pendingMaturedCounterPartyAssetAmount[userAddress];
+            if (maturedAmount == 0) {
+                continue;
+            }
+            if(userState.shouldStop) {  
+                maturedCounterPartyAssetAmount[userAddress] = 
+                maturedCounterPartyAssetAmount[userAddress].add(maturedAmount);
+            }  
+            else { 
+                autoRolledUsers[maturedCount] = userAddress;
+                autoRolledAmounts[maturedCount] = maturedAmount; 
+                maturedCount++;
+            }
+            pendingMaturedCounterPartyAssetAmount[userAddress] = 0;
+        } 
+        counterPartyOption.depositFromCounterParty(autoRolledUsers, autoRolledAmounts);        
    }
+
    //close pending option and autoroll if capacity is enough based on the maturity result
    function commitCurrent() external override onlyOwner {  
         require(underSettlement, "Not being settled");
         //return when there is no previous round
         //console.log("CommitCurrent: %s %d", name(), currentRound);
         if (currentRound <= 0) return;
-         if (currentRound > StructureData.MATUREROUND) {  
+        if (currentRound > StructureData.MATUREROUND) {  
             StructureData.OptionState storage previousOptionState = optionStates[currentRound - StructureData.MATUREROUND];
             if (previousOptionState.totalAmount > 0) { 
                 autoRoll(previousOptionState.executed);

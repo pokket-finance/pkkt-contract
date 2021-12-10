@@ -17,6 +17,7 @@ contract OptionVault is IOptionVault, AccessControl {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+     
     mapping(address=>uint256) private maturedAmount;
     //mapping(address=>uint256) private requestingAmount;
     mapping(address=>uint256) private pendingAmount;
