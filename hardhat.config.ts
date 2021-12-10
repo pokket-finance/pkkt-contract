@@ -7,11 +7,11 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "solidity-coverage";
 import "@typechain/hardhat";
-import "@openzeppelin/hardhat-upgrades";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import transferOwnership from "./scripts/tasks/transferOwnership";
-import prepareUpgrade from "./scripts/tasks/prepareUpgrade";
+import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
+import upgradeTo from "./scripts/tasks/upgradeTo";
 
 dotenv.config();
 
@@ -37,14 +37,15 @@ dotenv.config();
       accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
     },
     ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts: [`0x${process.env.ROPSTEN_PRIVATE_KEY}`],
+      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      gas: 2100000,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
       gas: 2100000,
       gasPrice: 8000000000,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
     },
   },
   namedAccounts: {
@@ -58,13 +59,13 @@ dotenv.config();
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
       3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
-      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
+      4: "0x8c10633bb6933E5850Ff9c38F9699b780029CBEF"
     },
     trader: { 
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
       3: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
-      4: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4"
+      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     }
   },
 
@@ -101,7 +102,13 @@ task("export-deployments", "Exports deployments into JSON", exportDeployments);
 task("transfer-ownership", "Transfers Proxy Admin ownership to the given account address.", transferOwnership)
   .addParam("account", "Address of new Proxy admin owner");
 
-task("prepare-upgrade", "Prepares the given proxy to upgrade to the new implementation contract", prepareUpgrade)
-  .addParam("address", "Proxy address of the contract we want to upgrade")
-  .addParam("name", "The name of the new implementation contract to upgrade to");
+task("propose-upgrade", "Proposes the new implementation for upgrade to gnosis safe for approval", proposeUpgrade)
+  .addParam("proxyname", "name of proxy in ./deployments")
+  .addParam("implname", "name of new implementation contract")
+  .addParam("libraryname", "Name of the library deploy with contract");
+
+task("upgrade-to", "Upgrades the proxy with the new implementation contract", upgradeTo)
+  .addParam("proxyname", "name of proxy in ./deployments")
+  .addParam("implname", "name of new implementation contract")
+  .addParam("libraryname", "Name of the library to deploy with contract");
 
