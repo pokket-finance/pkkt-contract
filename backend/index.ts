@@ -7,14 +7,16 @@ import { BigNumber, Signer } from "ethers";
 import { Contract } from "@ethersproject/contracts";
 
 import { deployContract } from "../test/utilities/deploy";
-import { ETH_DECIMALS, NULL_ADDRESS, SETTLEMENTPERIOD, USDC_DECIMALS } from "../constants/constants";
+import { ETH_DECIMALS, NULL_ADDRESS, SETTLEMENTPERIOD, USDC_DECIMALS, WBTC_DECIMALS } from "../constants/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const url = `https://api.etherscan.io/api?module=stats&action=ethprice&apikey=${[process.env.ETHERSCAN_API_KEY]}`;
-const USDCMultiplier = BigNumber.from(10).pow(USDC_DECIMALS);
-const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
+const USDCMultiplier = BigNumber.from(10).pow(USDC_DECIMALS);  
+const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);  
+const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);   
 const ETHPricePrecision = 4;
-const RationMultiplier = 10000;  
+const WBTCPricePrecision = 4;
+const RationMultiplier = 10000;
 
 const main = async () => {
     await loadOptionData();
@@ -26,6 +28,7 @@ const getEtherScanData = async () => {
 
 const loadOptionData = async () => {
     try {
+        // GET TEST ETHER FOR OTHER ACCOUNTS
         const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
 
         const users = [alice, bob];
@@ -45,34 +48,39 @@ const loadOptionData = async () => {
 
         const [
             usdc,
+            wbtc,
             optionVault,
-            ethHodlBoosterCall
+            wbtcHoldBoosterCall
         ] = await initializeContracts(deployer, settler);
 
         await usdc.transfer(alice.address, BigNumber.from(100).mul(USDCMultiplier));
         await usdc.transfer(bob.address, BigNumber.from(100).mul(USDCMultiplier));
+        
+        await wbtc.transfer(alice.address, BigNumber.from(10).mul(WBTCMultiplier));
+        await wbtc.transfer(bob.address, BigNumber.from(10).mul(WBTCMultiplier));
+        await wbtcHoldBoosterCall.connect(settler as Signer).rollToNext(parameters);
 
-        await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters);
-        await ethHodlBoosterCall.connect(alice as Signer).depositETH(
-            { value: BigNumber.from(4).mul(ETHMultiplier) }
+        await wbtcHoldBoosterCall.connect(alice as Signer).deposit(
+            BigNumber.from(2).mul(WBTCMultiplier)
         );
-        await ethHodlBoosterCall.connect(bob as Signer).depositETH(
-            { value: BigNumber.from(6).mul(ETHMultiplier) }
+        await wbtcHoldBoosterCall.connect(bob as Signer).deposit(
+            BigNumber.from(1).mul(WBTCMultiplier)
         );
-        printOptionState(ethHodlBoosterCall);
+        console.log("boo");
+        printOptionState(wbtcHoldBoosterCall);
 
         await optionVault.allSettled();
 
         parameters = {
-            quota: BigNumber.from(50).mul(ETHMultiplier), //5eth
-            pricePrecision: ETHPricePrecision,
+            quota: BigNumber.from(10).mul(WBTCMultiplier),
+            pricePrecision: WBTCPricePrecision,
             strikePriceRatio: 0.1 * RationMultiplier, //10% up
             interestRate: 0.02 * RationMultiplier, //2% per week
             callOrPut: true
         };
         await settlementPeriod(
             optionVault,
-            ethHodlBoosterCall,
+            wbtcHoldBoosterCall,
             settler,
             trader,
             ethPrice,
@@ -84,23 +92,23 @@ const loadOptionData = async () => {
         const period = 1;
         for(let i = 0; i < period; ++i) {
 
-            await ethHodlBoosterCall.connect(alice as Signer).depositETH(
-                { value: BigNumber.from(1).mul(ETHMultiplier) }
+            await wbtcHoldBoosterCall.connect(alice as Signer).deposit(
+                BigNumber.from(1).mul(WBTCMultiplier).div(10)
             );
-            await ethHodlBoosterCall.connect(bob as Signer).depositETH(
-                { value: BigNumber.from(1).mul(ETHMultiplier) }
+            await wbtcHoldBoosterCall.connect(bob as Signer).deposit(
+                BigNumber.from(1).mul(WBTCMultiplier).div(10)
             );
 
             parameters = {
-                quota: BigNumber.from(50).mul(ETHMultiplier), //5eth
-                pricePrecision: ETHPricePrecision,
+                quota: BigNumber.from(10).mul(WBTCMultiplier), //5eth
+                pricePrecision: WBTCPricePrecision,
                 strikePriceRatio: 0.1 * RationMultiplier, //10% up
                 interestRate: 0.01 * RationMultiplier, //1% per week
                 callOrPut: true
             }
             settlementPeriod(
                 optionVault,
-                ethHodlBoosterCall,
+                wbtcHoldBoosterCall,
                 settler,
                 trader,
                 ethPrice,
@@ -142,7 +150,7 @@ const settlementPeriod = async (
 const initializeContracts = async (
     deployer: SignerWithAddress,
     settler: SignerWithAddress
-    ): Promise<[ERC20Mock, OptionVault, PKKTHodlBoosterCallOption]> => {
+    ): Promise<[ERC20Mock, ERC20Mock, OptionVault, PKKTHodlBoosterCallOption]> => {
     const usdc: ERC20Mock = await deployContract(
         "ERC20Mock",
         deployer as Signer,
@@ -154,6 +162,17 @@ const initializeContracts = async (
         ]
     ) as ERC20Mock;
 
+    const wbtc: ERC20Mock = await deployContract(
+        "ERC20Mock",
+        deployer as Signer,
+        [
+            "Wraped BTC",
+            "WBTC",
+            BigNumber.from(100).mul(WBTCMultiplier),
+            WBTC_DECIMALS
+        ]
+    ) as ERC20Mock;
+
     const optionVault: OptionVault = await deployContract(
         "OptionVault",
         deployer as Signer,
@@ -161,30 +180,31 @@ const initializeContracts = async (
     ) as OptionVault;
 
     const name = "ETH-USDC-HodlBooster-Call";
-    const ethHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
+    const wbtcHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
         "PKKTHodlBoosterCallOption",
         deployer as Signer,
         [
             name,
             "ETHUSDCHodlBoosterCall",
-            NULL_ADDRESS,
+            wbtc.address,
             usdc.address,
             ETH_DECIMALS,
             USDC_DECIMALS,
             optionVault.address
         ]
     ) as PKKTHodlBoosterCallOption;
-    console.log(`Deployed ${name} at: ${ethHodlBoosterCall.address}`);
+    console.log(`Deployed ${name} at: ${wbtcHodlBoosterCall.address}`);
 
-    await ethHodlBoosterCall.transferOwnership(settler.address);
+    await wbtcHodlBoosterCall.transferOwnership(settler.address);
 
-    await optionVault.addOption(ethHodlBoosterCall.address);
+    await optionVault.addOption(wbtcHodlBoosterCall.address);
     console.log(`Added ${name} to Option Vault at: ${optionVault.address}`);
 
-    return [usdc, optionVault, ethHodlBoosterCall];
+    return [usdc, wbtc, optionVault, wbtcHodlBoosterCall];
 }
 
 const printOptionState = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
+    console.log("here");
     let round = await hodlBoosterOption.currentRound();
     let optionState = await hodlBoosterOption.optionStates(round);
     console.log(`Round: ${round}`);
