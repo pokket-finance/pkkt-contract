@@ -38,22 +38,31 @@ dotenv.config();
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
       accounts: [`0x${process.env.ROPSTEN_PRIVATE_KEY}`],
     },
+    rinkeby: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
+    },
   },
   namedAccounts: {
     deployer: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
+      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
       3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
+      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     trader: { 
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
       1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
       3: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
+      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     }
   },
 
