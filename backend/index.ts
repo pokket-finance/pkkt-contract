@@ -10,7 +10,7 @@ import { deployContract } from "../test/utilities/deploy";
 import { ETH_DECIMALS, NULL_ADDRESS, SETTLEMENTPERIOD, USDC_DECIMALS, WBTC_DECIMALS } from "../constants/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-const url = `https://api.etherscan.io/api?module=stats&action=ethprice&apikey=${[process.env.ETHERSCAN_API_KEY]}`;
+
 const USDCMultiplier = BigNumber.from(10).pow(USDC_DECIMALS);  
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);  
 const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);   
@@ -19,11 +19,22 @@ const WBTCPricePrecision = 4;
 const RationMultiplier = 10000;
 
 const main = async () => {
-    await loadOptionData();
+    //await loadOptionData();
+    await getEtherScanData();
 }
 
 const getEtherScanData = async () => {
-    
+    const response = await getData({ module: "account", action: "txlist", address: "0x15736048d17C8915338E7c5D98CB1C6138cEaA47", startblock: "0", endblock: "99999999", page: "1", offset: "10", sort: "asc" });
+    for(let res in response.data.result) {
+        console.log(JSON.stringify(res, null, 4));
+    }
+}
+
+const getData = async (params) => {
+    let url = "https://api-rinkeby.etherscan.io/api?";
+    url += Object.entries(params).map(([key, value]) => `${key}=${value}`).join("&");
+    url += `apikey=${[process.env.ETHERSCAN_API_KEY]}`;
+    return await axios.get(url);
 }
 
 const loadOptionData = async () => {
@@ -34,13 +45,13 @@ const loadOptionData = async () => {
         const users = [alice, bob];
         
         // Grab ethereum price from etherscan
-        const response = await axios.get(url);
-        let ethPrice = response.data.result.ethusd;
-        ethPrice *= (10 ** ETHPricePrecision);
+        const response = await getData("btcprice");
+        let price = response.data.result.btcusd;
+        price *= (10 ** WBTCPricePrecision);
 
         let parameters = {
-            quota: BigNumber.from(10).mul(ETHMultiplier),
-            pricePrecision: ETHPricePrecision,
+            quota: BigNumber.from(10).mul(WBTCMultiplier),
+            pricePrecision: WBTCPricePrecision,
             strikePriceRatio: 0.1 * RationMultiplier,
             interestRate: 0.025 * RationMultiplier,
             callOrPut: true
@@ -66,8 +77,6 @@ const loadOptionData = async () => {
         await wbtcHoldBoosterCall.connect(bob as Signer).deposit(
             BigNumber.from(1).mul(WBTCMultiplier)
         );
-        console.log("boo");
-        printOptionState(wbtcHoldBoosterCall);
 
         await optionVault.allSettled();
 
@@ -83,7 +92,7 @@ const loadOptionData = async () => {
             wbtcHoldBoosterCall,
             settler,
             trader,
-            ethPrice,
+            price,
             parameters
         );
 
@@ -111,7 +120,7 @@ const loadOptionData = async () => {
                 wbtcHoldBoosterCall,
                 settler,
                 trader,
-                ethPrice,
+                price,
                 parameters
             );
         }
@@ -179,13 +188,13 @@ const initializeContracts = async (
         [settler.address]
     ) as OptionVault;
 
-    const name = "ETH-USDC-HodlBooster-Call";
+    const name = "WBTC-USDC-HodlBooster-Call";
     const wbtcHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
         "PKKTHodlBoosterCallOption",
         deployer as Signer,
         [
             name,
-            "ETHUSDCHodlBoosterCall",
+            "WBTCUSDCHodlBoosterCall",
             wbtc.address,
             usdc.address,
             ETH_DECIMALS,
@@ -204,7 +213,6 @@ const initializeContracts = async (
 }
 
 const printOptionState = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
-    console.log("here");
     let round = await hodlBoosterOption.currentRound();
     let optionState = await hodlBoosterOption.optionStates(round);
     console.log(`Round: ${round}`);
