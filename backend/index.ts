@@ -1,5 +1,6 @@
 import { ERC20Mock, OptionVault, PKKTHodlBoosterCallOption, PKKTHodlBoosterOption } from "../typechain";
 import axios from "axios";
+import express from "express";
 import * as dotenv from "dotenv";
 dotenv.config();
 import { deployments, ethers } from "hardhat";
@@ -18,17 +19,26 @@ const ETHPricePrecision = 4;
 const WBTCPricePrecision = 4;
 const RationMultiplier = 10000;
 
-const main = async () => {
-    //const hodlBoosterOption = await loadOptionData();
-    //let hodlBoosterOption = ethers.getContractAt("PKKTHodlBoosterCallOption", "0x70613A63Ed0E852ae1684cd53Aa309469641b601");
+const app = express();
+const port = 3000;
+
+// Make api request in "/" route
+app.get("/", async (req, res) => {
     let HodlBoosterOption = await deployments.get("PKKTHodlBoosterCallOption");
     let hodlBoosterOption = await ethers.getContractAt(
         "PKKTHodlBoosterCallOption",
         HodlBoosterOption.address
     );
     await getEtherScanData(hodlBoosterOption);
-}
+    res.send("hello");
+});
 
+// Start the express server
+app.listen(port, () => {
+    console.log(`server is listening on ${port}`);
+});
+
+// Makes api request to etherscan to get data about our options
 const getEtherScanData = async (hodlBoosterOption) => {
     console.log(`Retrieving Data from Etherscan for ${hodlBoosterOption.address}`);
     const response = await getData(
@@ -52,6 +62,7 @@ const getEtherScanData = async (hodlBoosterOption) => {
     }
 }
 
+// Helper function to generate api url and request the endpoint
 const getData = async (params) => {
     let url = "https://api-rinkeby.etherscan.io/api?";
     // Generate api url parameters
@@ -60,19 +71,12 @@ const getData = async (params) => {
     return axios.get(url);
 }
 
+// Generate option data on the rinkeby test network
 const loadOptionData = async () => {
     try {
         // GET TEST ETHER FOR OTHER ACCOUNTS
         const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
         
-        // Grab ethereum price from etherscan
-        // const response = await getData(
-        //     {
-        //         module: "stats",
-        //         action: "wbtcprice"
-        //     }
-        // );
-        //let price = response.data.result.btcusd;
         let price = 40000;
         price *= (10 ** WBTCPricePrecision);
 
@@ -174,6 +178,7 @@ const loadOptionData = async () => {
     }
 }
 
+// Executes one complete settlement period for the PKKTHodlBoosterOption
 const settlementPeriod = async (
     optionVault: OptionVault,
     holdBoosterOption: PKKTHodlBoosterOption,
@@ -182,23 +187,13 @@ const settlementPeriod = async (
     price: number,
     parameters) => {
     await optionVault.connect(settler as Signer).prepareSettlement();
-
     await holdBoosterOption.connect(settler as Signer).closePrevious(price);
-
     await holdBoosterOption.connect(settler as Signer).commitCurrent();
-
     await optionVault.connect(settler as Signer).startSettlement(trader.address);
-
-    // parameters = {
-    //     quota: BigNumber.from(50).mul(WBTCMultiplier), //5eth
-    //     pricePrecision: WBTCPricePrecision,
-    //     strikePriceRatio: 0.1 * RationMultiplier, //10% up
-    //     interestRate: 0.02 * RationMultiplier, //2% per week
-    //     callOrPut: true
-    // };
     await holdBoosterOption.connect(settler as Signer).rollToNext(parameters)
 }
 
+// Deploy the initial contracts
 const initializeContracts = async (
     deployer: SignerWithAddress,
     settler: SignerWithAddress
@@ -235,19 +230,7 @@ const initializeContracts = async (
     ) as OptionVault;
 
     const name = "WBTC-USDC-HodlBooster-Call";
-    // const wbtcHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
-    //     "PKKTHodlBoosterCallOption",
-    //     deployer as Signer,
-    //     [
-    //         name,
-    //         "WBTCUSDCHodlBoosterCall",
-    //         wbtc.address,
-    //         usdc.address,
-    //         ETH_DECIMALS,
-    //         USDC_DECIMALS,
-    //         optionVault.address
-    //     ]
-    // ) as PKKTHodlBoosterCallOption;
+
     const WbtcHodlBoosterCall = await deploy("PKKTHodlBoosterCallOption", {
         from: deployer.address,
         contract: "PKKTHodlBoosterCallOption",
@@ -275,6 +258,8 @@ const initializeContracts = async (
     return [usdc, wbtc, optionVault, wbtcHodlBoosterCall];
 }
 
+// Helper function to get round and option state from Smart Contract
+// Then print the information
 const printRoundInformation = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
     let round = await hodlBoosterOption.currentRound();
     let optionState = await hodlBoosterOption.optionStates(round);
@@ -282,6 +267,7 @@ const printRoundInformation = async (hodlBoosterOption: PKKTHodlBoosterOption) =
     printOptionState(optionState)
 }
 
+// Helper function to print the given option state
 const printOptionState = async (optionState) => {
     console.log(`Underyling Price: ${optionState.underlyingPrice.toString()}`);
     console.log(`Total Amount: ${optionState.totalAmount.toString()}`);
@@ -291,4 +277,4 @@ const printOptionState = async (optionState) => {
     console.log(`Strike Price: ${optionState.strikePrice.toString()}\n`);
 }
 
-main();
+//main();
