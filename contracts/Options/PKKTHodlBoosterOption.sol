@@ -303,7 +303,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
          }
 
       
-        optionHeights[currentRound] = block.number; //commit current option at current block
+        optionHeights[block.number] = currentRound; //commit current option at current block
         emit CommitOption(currentRound);
    }
       
