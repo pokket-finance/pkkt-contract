@@ -2,7 +2,7 @@ import { ERC20Mock, OptionVault, PKKTHodlBoosterCallOption, PKKTHodlBoosterOptio
 import axios from "axios";
 import * as dotenv from "dotenv";
 dotenv.config();
-import { ethers } from "hardhat";
+import { deployments, ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
 import { Contract } from "@ethersproject/contracts";
 
@@ -19,25 +19,36 @@ const WBTCPricePrecision = 4;
 const RationMultiplier = 10000;
 
 const main = async () => {
-    //await loadOptionData();
-    await getEtherScanData();
+    //const hodlBoosterOption = await loadOptionData();
+    //let hodlBoosterOption = ethers.getContractAt("PKKTHodlBoosterCallOption", "0x70613A63Ed0E852ae1684cd53Aa309469641b601");
+    let HodlBoosterOption = await deployments.get("PKKTHodlBoosterCallOption");
+    let hodlBoosterOption = await ethers.getContractAt(
+        "PKKTHodlBoosterCallOption",
+        HodlBoosterOption.address
+    );
+    await getEtherScanData(hodlBoosterOption);
 }
 
-const getEtherScanData = async () => {
+const getEtherScanData = async (hodlBoosterOption) => {
+    console.log(`Retrieving Data from Etherscan for ${hodlBoosterOption.address}`);
     const response = await getData(
         {
             module: "account",
-            action: "txlist",
-            address: "0x15736048d17C8915338E7c5D98CB1C6138cEaA47",
+            action: "tokentx",
+            address: hodlBoosterOption.address,
             startblock: "0",
             endblock: "99999999",
             page: "1",
-            offset: "10",
+            offset: "100",
             sort: "asc"
         }
     );
-    for(let res in response.data.result) {
-        console.log(JSON.stringify(res, null, 4));
+    const result = response.data.result;
+    const blockNumbers = result.map(res => res.blockNumber);
+    console.log(blockNumbers);
+    for(let blockNumber of blockNumbers) {
+        const optionState = await hodlBoosterOption.getRoundData(blockNumber);
+        printOptionState(optionState);
     }
 }
 
@@ -45,20 +56,24 @@ const getData = async (params) => {
     let url = "https://api-rinkeby.etherscan.io/api?";
     // Generate api url parameters
     url += Object.entries(params).map(([key, value]) => `${key}=${value}`).join("&");
-    url += `apikey=${[process.env.ETHERSCAN_API_KEY]}`;
-    return await axios.get(url);
+    url += `&apikey=${[process.env.ETHERSCAN_API_KEY]}`;
+    return axios.get(url);
 }
 
 const loadOptionData = async () => {
     try {
         // GET TEST ETHER FOR OTHER ACCOUNTS
         const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
-
-        const users = [alice, bob];
         
         // Grab ethereum price from etherscan
-        const response = await getData("btcprice");
-        let price = response.data.result.btcusd;
+        // const response = await getData(
+        //     {
+        //         module: "stats",
+        //         action: "wbtcprice"
+        //     }
+        // );
+        //let price = response.data.result.btcusd;
+        let price = 40000;
         price *= (10 ** WBTCPricePrecision);
 
         let parameters = {
@@ -78,9 +93,26 @@ const loadOptionData = async () => {
 
         await usdc.transfer(alice.address, BigNumber.from(100).mul(USDCMultiplier));
         await usdc.transfer(bob.address, BigNumber.from(100).mul(USDCMultiplier));
+        await usdc.connect(alice as Signer).approve(
+            wbtcHoldBoosterCall.address,
+            BigNumber.from(100000).mul(USDCMultiplier)
+        );
+        await usdc.connect(bob as Signer).approve(
+            wbtcHoldBoosterCall.address,
+            BigNumber.from(100000).mul(USDCMultiplier)
+        );
         
         await wbtc.transfer(alice.address, BigNumber.from(10).mul(WBTCMultiplier));
         await wbtc.transfer(bob.address, BigNumber.from(10).mul(WBTCMultiplier));
+        await wbtc.connect(alice as Signer).approve(
+            wbtcHoldBoosterCall.address,
+            BigNumber.from(10).mul(WBTCMultiplier)
+        );
+        await wbtc.connect(bob as Signer).approve(
+            wbtcHoldBoosterCall.address,
+            BigNumber.from(10).mul(WBTCMultiplier)
+        );
+
         await wbtcHoldBoosterCall.connect(settler as Signer).rollToNext(parameters);
 
         await wbtcHoldBoosterCall.connect(alice as Signer).deposit(
@@ -127,7 +159,7 @@ const loadOptionData = async () => {
                 interestRate: 0.01 * RationMultiplier, //1% per week
                 callOrPut: true
             }
-            settlementPeriod(
+            await settlementPeriod(
                 optionVault,
                 wbtcHoldBoosterCall,
                 settler,
@@ -136,6 +168,7 @@ const loadOptionData = async () => {
                 parameters
             );
         }
+        return wbtcHoldBoosterCall;
     } catch(err) {
         console.error(err);
     }
@@ -156,13 +189,13 @@ const settlementPeriod = async (
 
     await optionVault.connect(settler as Signer).startSettlement(trader.address);
 
-    parameters = {
-        quota: BigNumber.from(50).mul(WBTCMultiplier), //5eth
-        pricePrecision: WBTCPricePrecision,
-        strikePriceRatio: 0.1 * RationMultiplier, //10% up
-        interestRate: 0.02 * RationMultiplier, //2% per week
-        callOrPut: true
-    };
+    // parameters = {
+    //     quota: BigNumber.from(50).mul(WBTCMultiplier), //5eth
+    //     pricePrecision: WBTCPricePrecision,
+    //     strikePriceRatio: 0.1 * RationMultiplier, //10% up
+    //     interestRate: 0.02 * RationMultiplier, //2% per week
+    //     callOrPut: true
+    // };
     await holdBoosterOption.connect(settler as Signer).rollToNext(parameters)
 }
 
@@ -170,6 +203,9 @@ const initializeContracts = async (
     deployer: SignerWithAddress,
     settler: SignerWithAddress
     ): Promise<[ERC20Mock, ERC20Mock, OptionVault, PKKTHodlBoosterCallOption]> => {
+
+    const { deploy } = await deployments;
+
     const usdc: ERC20Mock = await deployContract(
         "ERC20Mock",
         deployer as Signer,
@@ -199,19 +235,36 @@ const initializeContracts = async (
     ) as OptionVault;
 
     const name = "WBTC-USDC-HodlBooster-Call";
-    const wbtcHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
-        "PKKTHodlBoosterCallOption",
-        deployer as Signer,
-        [
-            name,
+    // const wbtcHodlBoosterCall: PKKTHodlBoosterCallOption = await deployContract(
+    //     "PKKTHodlBoosterCallOption",
+    //     deployer as Signer,
+    //     [
+    //         name,
+    //         "WBTCUSDCHodlBoosterCall",
+    //         wbtc.address,
+    //         usdc.address,
+    //         ETH_DECIMALS,
+    //         USDC_DECIMALS,
+    //         optionVault.address
+    //     ]
+    // ) as PKKTHodlBoosterCallOption;
+    const WbtcHodlBoosterCall = await deploy("PKKTHodlBoosterCallOption", {
+        from: deployer.address,
+        contract: "PKKTHodlBoosterCallOption",
+        args: [
+            "WBTC-USDC-HodlBooster-Call",
             "WBTCUSDCHodlBoosterCall",
             wbtc.address,
             usdc.address,
-            ETH_DECIMALS,
+            WBTC_DECIMALS,
             USDC_DECIMALS,
             optionVault.address
         ]
-    ) as PKKTHodlBoosterCallOption;
+    });
+    const wbtcHodlBoosterCall = await ethers.getContractAt(
+        "PKKTHodlBoosterCallOption",
+        WbtcHodlBoosterCall.address
+    );
     console.log(`Deployed ${name} at: ${wbtcHodlBoosterCall.address}`);
 
     await wbtcHodlBoosterCall.transferOwnership(settler.address);
@@ -222,10 +275,14 @@ const initializeContracts = async (
     return [usdc, wbtc, optionVault, wbtcHodlBoosterCall];
 }
 
-const printOptionState = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
+const printRoundInformation = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
     let round = await hodlBoosterOption.currentRound();
     let optionState = await hodlBoosterOption.optionStates(round);
     console.log(`Round: ${round}`);
+    printOptionState(optionState)
+}
+
+const printOptionState = async (optionState) => {
     console.log(`Underyling Price: ${optionState.underlyingPrice.toString()}`);
     console.log(`Total Amount: ${optionState.totalAmount.toString()}`);
     console.log(`Price Precision: ${optionState.pricePrecision.toString()}`);
