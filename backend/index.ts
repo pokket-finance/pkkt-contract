@@ -24,7 +24,18 @@ const main = async () => {
 }
 
 const getEtherScanData = async () => {
-    const response = await getData({ module: "account", action: "txlist", address: "0x15736048d17C8915338E7c5D98CB1C6138cEaA47", startblock: "0", endblock: "99999999", page: "1", offset: "10", sort: "asc" });
+    const response = await getData(
+        {
+            module: "account",
+            action: "txlist",
+            address: "0x15736048d17C8915338E7c5D98CB1C6138cEaA47",
+            startblock: "0",
+            endblock: "99999999",
+            page: "1",
+            offset: "10",
+            sort: "asc"
+        }
+    );
     for(let res in response.data.result) {
         console.log(JSON.stringify(res, null, 4));
     }
@@ -32,6 +43,7 @@ const getEtherScanData = async () => {
 
 const getData = async (params) => {
     let url = "https://api-rinkeby.etherscan.io/api?";
+    // Generate api url parameters
     url += Object.entries(params).map(([key, value]) => `${key}=${value}`).join("&");
     url += `apikey=${[process.env.ETHERSCAN_API_KEY]}`;
     return await axios.get(url);
@@ -141,19 +153,17 @@ const settlementPeriod = async (
     await holdBoosterOption.connect(settler as Signer).closePrevious(price);
 
     await holdBoosterOption.connect(settler as Signer).commitCurrent();
-    //printOptionState(holdBoosterOption);
 
     await optionVault.connect(settler as Signer).startSettlement(trader.address);
 
     parameters = {
-        quota: BigNumber.from(50).mul(ETHMultiplier), //5eth
-        pricePrecision: ETHPricePrecision,
+        quota: BigNumber.from(50).mul(WBTCMultiplier), //5eth
+        pricePrecision: WBTCPricePrecision,
         strikePriceRatio: 0.1 * RationMultiplier, //10% up
         interestRate: 0.02 * RationMultiplier, //2% per week
         callOrPut: true
     };
     await holdBoosterOption.connect(settler as Signer).rollToNext(parameters)
-    //printOptionState(holdBoosterOption);
 }
 
 const initializeContracts = async (
