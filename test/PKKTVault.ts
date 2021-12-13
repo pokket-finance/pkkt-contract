@@ -8,18 +8,15 @@ import {advanceBlockTo} from "./utilities/timer";
 import { PKKTToken, PKKTVault, ERC20Mock } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"; 
 
-import { WEI } from "../constants/constants";
+import { WEI, USDT_DECIMALS,DAI_DECIMALS,USDC_DECIMALS } from "../constants/constants";
 
 const CAP = BigNumber.from(1000).mul(WEI);
 
 const MAX = BigNumber.from(500).mul(WEI);
-
-const USDTDecimals = 6; 
-const USDCDecimals = 6;
-const DAIDecimals = 18;
-const USDTMultiplier = BigNumber.from(10).pow(USDTDecimals); 
-const USDCMultiplier = BigNumber.from(10).pow(USDCDecimals);
-const DAIMultiplier = BigNumber.from(10).pow(DAIDecimals);
+   
+const USDTMultiplier = BigNumber.from(10).pow(USDT_DECIMALS); 
+const USDCMultiplier = BigNumber.from(10).pow(USDC_DECIMALS);
+const DAIMultiplier = BigNumber.from(10).pow(DAI_DECIMALS);
  
 
 describe("PKKT Vault", async function () {
@@ -45,9 +42,9 @@ describe("PKKT Vault", async function () {
         
           pkktToken = await deployContract("PKKTToken", deployer as Signer, ["PKKTToken","PKKT", CAP.toString()]) as PKKTToken; 
           this.owner = deployer as Signer;  
-          usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000).mul(USDTMultiplier), USDTDecimals]) as ERC20Mock;
-          usdc = await  deployContract("ERC20Mock", deployer as Signer, ["USDCToken", "USDC", BigNumber.from(10000).mul(USDCMultiplier), USDCDecimals]) as ERC20Mock;
-          dai = await  deployContract("ERC20Mock", deployer as Signer, ["DAIToken", "DAI", BigNumber.from(10000).mul(DAIMultiplier), DAIDecimals]) as ERC20Mock;
+          usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000).mul(USDTMultiplier), USDT_DECIMALS]) as ERC20Mock;
+          usdc = await  deployContract("ERC20Mock", deployer as Signer, ["USDCToken", "USDC", BigNumber.from(10000).mul(USDCMultiplier), USDC_DECIMALS]) as ERC20Mock;
+          dai = await  deployContract("ERC20Mock", deployer as Signer, ["DAIToken", "DAI", BigNumber.from(10000).mul(DAIMultiplier), DAI_DECIMALS]) as ERC20Mock;
   
           await usdt.transfer(alice.address,  BigNumber.from(100).mul(USDTMultiplier));
           await usdt.transfer(bob.address,  BigNumber.from(100).mul(USDTMultiplier));
@@ -86,9 +83,9 @@ describe("PKKT Vault", async function () {
           pkktVault.initialize(pkktToken.address, "100", 13601000, trader.address);
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
-            { underlying: usdt.address, decimals: USDTDecimals},  
-            { underlying: usdc.address, decimals: USDCDecimals},
-            { underlying: dai.address, decimals: DAIDecimals}
+            { underlying: usdt.address, decimals: USDT_DECIMALS},  
+            { underlying: usdc.address, decimals: USDC_DECIMALS},
+            { underlying: dai.address, decimals: DAI_DECIMALS}
           ], true); 
 
           await usdt.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDTMultiplier)); 
@@ -117,9 +114,9 @@ describe("PKKT Vault", async function () {
           pkktVault.initialize(pkktToken.address, "100", 13601000, trader.address);
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
-            { underlying: usdt.address, decimals: USDTDecimals},  
-            { underlying: usdc.address, decimals: USDCDecimals},
-            { underlying: dai.address, decimals: DAIDecimals}
+            { underlying: usdt.address, decimals: USDT_DECIMALS},  
+            { underlying: usdc.address, decimals: USDC_DECIMALS},
+            { underlying: dai.address, decimals: DAI_DECIMALS}
           ], true); 
 
           await usdt.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDTMultiplier));  
@@ -304,9 +301,9 @@ describe("PKKT Vault", async function () {
           pkktVault.initialize(pkktToken.address, "100", 13601000, trader.address);
           await pkktToken.addMinter(pkktVault.address, MAX);
           await pkktVault.addMany([
-            { underlying: usdt.address, decimals: USDTDecimals},  
-            { underlying: usdc.address, decimals: USDCDecimals},
-            { underlying: dai.address, decimals: DAIDecimals}
+            { underlying: usdt.address, decimals: USDT_DECIMALS},  
+            { underlying: usdc.address, decimals: USDC_DECIMALS},
+            { underlying: dai.address, decimals: DAI_DECIMALS}
           ], true); 
 
           await usdt.connect(alice as Signer).approve(pkktVault.address, BigNumber.from(100).mul(USDTMultiplier));  

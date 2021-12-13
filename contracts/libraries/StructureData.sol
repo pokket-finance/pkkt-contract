@@ -2,16 +2,15 @@
 pragma solidity =0.8.4;
 
 library StructureData {
-     uint8 public constant MATUREROUND= 7;
-//the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)
-//for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option 
-//if the wbtc of the 
+     
+     uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
+    //the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)
+    //for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option  
     struct OptionParameters {
          uint256 quota;  
          uint8 pricePrecision;
          int16 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4
          uint16 interestRate; //take, 0.01% is represented as 1, precision is 4
-         bool callOrPut;
      }
 
     struct OptionState {
@@ -22,9 +21,16 @@ library StructureData {
          uint16 interestRate; //take, 0.01% is represented as 1, precision is 4
          uint8 pricePrecision; 
          bool executed; 
-         bool callOrPut;
+         bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral;
     }
  
+   struct MaturedState {
+       uint256 maturedDepositAssetAmount;
+       uint256 maturedCounterPartyAssetAmount;
+       bool executed;
+       uint256 round;
+       
+   }
 
     enum OptionType {
         HodlBooster,
@@ -37,6 +43,7 @@ library StructureData {
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
+        bool shouldStop;
     }
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;
@@ -55,9 +62,18 @@ library StructureData {
         }
         return userState.ongoingAsset[uint8(previousCursor)];
     }
-    struct Request {
+
+    enum Direction {
+        None,
+        SendToTrader,
+        SendBackToVault
+    }
+    struct SettlementInstruction {
         uint256 amount;
         address contractAddress; //0 for eth
+        address targetAddress; //vault address
+        Direction direction;
+        bool fullfilled;
     }
 
 }

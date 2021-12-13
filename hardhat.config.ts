@@ -5,11 +5,11 @@ import "hardhat-log-remover";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
+import "@openzeppelin/hardhat-upgrades";
 import "solidity-coverage";
 import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
-import transferOwnership from "./scripts/tasks/transferOwnership";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
 
@@ -98,9 +98,6 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
   }
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
-
-task("transfer-ownership", "Transfers Proxy Admin ownership to the given account address.", transferOwnership)
-  .addParam("account", "Address of new Proxy admin owner");
 
 task("propose-upgrade", "Proposes the new implementation for upgrade to gnosis safe for approval", proposeUpgrade)
   .addParam("proxyname", "name of proxy in ./deployments")
