@@ -21,12 +21,15 @@ interface IPKKTStructureOption {
     //0 for latest, 6 for 7 days ago
     function getOngoingAsset(uint8 _backwardRound) external view returns (uint256);
 
-    function withraw(uint256 _amount) external;
+    //complete withdraw happens on the option vault
+    function initiateWithraw(uint256 _assetToTerminate) external; 
 
+  
     function redeposit(uint256 _amount) external;
 
     //can only be called from counterparty option
     function depositFromCounterParty(address[] memory _addresses, uint256[] memory _amounts) external;
+
 
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
@@ -34,4 +37,6 @@ interface IPKKTStructureOption {
     function getRoundData(uint256 _blockHeight) external view returns(StructureData.OptionState memory);
 
     
+ 
 }
+

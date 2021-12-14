@@ -17,7 +17,7 @@ library StructureData {
          uint256 round;
          uint256 totalAmount; 
          uint256 strikePrice;
-         uint256 underlyingPrice;
+         uint256 underlyingPrice; 
          uint16 interestRate; //take, 0.01% is represented as 1, precision is 4
          uint8 pricePrecision; 
          bool executed; 
@@ -43,7 +43,8 @@ library StructureData {
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
-        bool shouldStop;
+        uint256 assetToTerminate; 
+        //bool shouldStop;
     }
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;

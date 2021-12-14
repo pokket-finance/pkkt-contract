@@ -207,7 +207,7 @@ contract OptionVault is IOptionVault, AccessControl {
     }
 
     event Received(address indexed source, uint amount);
-    receive() external payable {
+    receive() external payable { 
         emit Received(msg.sender, msg.value);
     }
 }
