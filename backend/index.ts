@@ -72,7 +72,7 @@ const getData = async (params) => {
 }
 
 // Generate option data on the rinkeby test network
-const loadOptionData = async () => {
+const generateOptionData = async () => {
     try {
         // GET TEST ETHER FOR OTHER ACCOUNTS
         const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
