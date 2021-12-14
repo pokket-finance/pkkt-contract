@@ -14,16 +14,25 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
     using SafeMath for uint256;  
     using StructureData for StructureData.UserState;
 
-  constructor(
-        string memory name,
-        string memory symbol,
-        address _underlying,
-        address _stableCoin,
-        uint8 _underlyingDecimals,
-        uint8 _stableCoinDecimals,
-        address _vaultAddress
-    ) PKKTHodlBoosterOption(name, symbol, _stableCoin, _underlying,_stableCoinDecimals, _underlyingDecimals,  _vaultAddress, true) {  
-          
+  function initialize(
+      string memory name,
+      string memory symbol,
+      address _underlying,
+      address _stableCoin,
+      uint8 _underlyingDecimals,
+      uint8 _stableCoinDecimals,
+      address _vaultAddress
+    ) public initializer { 
+      PKKTHodlBoosterOption.initialize(
+         name,
+         symbol,
+         _stableCoin,
+         _underlying,
+         _stableCoinDecimals,
+         _underlyingDecimals, 
+         _vaultAddress,
+         true
+      );    
     }
 
    
@@ -35,7 +44,7 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
           executed: false,
           round: _optionState.round
        }); 
-        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate); 
+        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.premiumRate); 
         bool shouldConvert = _optionState.strikePrice > _underlyingPrice; 
         state.executed = shouldConvert; 
         if (shouldConvert) {  

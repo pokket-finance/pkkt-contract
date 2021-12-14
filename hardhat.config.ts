@@ -5,13 +5,15 @@ import "hardhat-log-remover";
 import "hardhat-deploy";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
+import "@openzeppelin/hardhat-upgrades";
 import "solidity-coverage";
 import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
+import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
+import upgradeTo from "./scripts/tasks/upgradeTo";
 
-dotenv.config();  
-  
+dotenv.config();
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -20,7 +22,7 @@ dotenv.config();
   paths: {
     deploy: "scripts/deploy",
     deployments: "deployments",
-  }, 
+  },
   networks: {
     hardhat: {
       forking: {
@@ -35,8 +37,15 @@ dotenv.config();
       accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
     },
     ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts: [`0x${process.env.ROPSTEN_PRIVATE_KEY}`],
+      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      gas: 2100000,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
+    },
+    rinkeby: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      gas: 2100000,
+      gasPrice: 8000000000,
+      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
@@ -95,3 +104,14 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
   }
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
+
+task("propose-upgrade", "Proposes the new implementation for upgrade to gnosis safe for approval", proposeUpgrade)
+  .addParam("proxyname", "name of proxy in ./deployments")
+  .addParam("implname", "name of new implementation contract")
+  .addParam("libraryname", "Name of the library deploy with contract");
+
+task("upgrade-to", "Upgrades the proxy with the new implementation contract", upgradeTo)
+  .addParam("proxyname", "name of proxy in ./deployments")
+  .addParam("implname", "name of new implementation contract")
+  .addParam("libraryname", "Name of the library to deploy with contract");
+

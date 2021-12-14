@@ -1,0 +1,53 @@
+{
+  "address": "0x96D9788139D663bfcb01d7965EAa93D5ED3623E4",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "MATUREROUND",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xab745055fe9b3faca509d55233273041a767f0a6935a6632def13c4967f78af9",
+  "receipt": {
+    "to": null,
+    "from": "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4",
+    "contractAddress": "0x96D9788139D663bfcb01d7965EAa93D5ED3623E4",
+    "transactionIndex": 1,
+    "gasUsed": "83666",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x44b7da299473009b59bdfb743f687881270d4dae5ad9284c627a2be0813033b4",
+    "transactionHash": "0xab745055fe9b3faca509d55233273041a767f0a6935a6632def13c4967f78af9",
+    "logs": [],
+    "blockNumber": 11573457,
+    "cumulativeGasUsed": "1668427",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "8474e35b853e611c5d70139c0961d073",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.4+commit.c7e474f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"MATUREROUND\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/libraries/StructureData.sol\":\"StructureData\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/libraries/StructureData.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity =0.8.4;\\n\\nlibrary StructureData {\\n     uint8 public constant MATUREROUND= 7;\\n//the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)\\n//for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option \\n//if the wbtc of the \\n    struct OptionParameters {\\n         uint256 quota;  \\n         uint8 pricePrecision;\\n         int16 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4\\n         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4\\n         bool callOrPut;\\n     }\\n\\n    struct OptionState {\\n         uint256 round;\\n         uint256 totalAmount; \\n         uint256 strikePrice;\\n         uint256 underlyingPrice;\\n         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4\\n         uint8 pricePrecision; \\n         bool executed; \\n         bool callOrPut;\\n    }\\n \\n\\n    enum OptionType {\\n        HodlBooster,\\n        VolAlpha\\n    }\\n\\n    struct UserState {\\n        uint256 pendingAsset; //for current round\\n        uint256[MATUREROUND] ongoingAsset; //for previous 7 rounds\\n        uint8 nextCursor; //nextCursor\\n        uint232 totalRound; \\n        bool hasState;\\n    }\\n    function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { \\n        uint cursor = userState.nextCursor;\\n        userState.ongoingAsset[cursor] = newValue;\\n        uint8 nextCursor = cursor == (MATUREROUND - 1) ? uint8(0) : uint8(cursor + 1);\\n        userState.nextCursor = nextCursor;\\n        userState.totalRound = userState.totalRound + 1; //won't overflow\\n    }\\n    \\n    function GetOngoingAsset(UserState storage userState, uint8 backwardRound) internal view returns(uint256) {\\n        if (userState.totalRound <= backwardRound) return 0;\\n        require(backwardRound < MATUREROUND);\\n        int8 previousCursor = int8(userState.nextCursor) - int8(backwardRound) - 1;\\n        if (previousCursor < 0) {\\n            previousCursor = previousCursor + int8(MATUREROUND);\\n        }\\n        return userState.ongoingAsset[uint8(previousCursor)];\\n    }\\n    struct Request {\\n        uint256 amount;\\n        address contractAddress; //0 for eth\\n    }\\n\\n}\",\"keccak256\":\"0x96dfe0e4844d162bf87b66b34b71e453615b535fb52c0233ed9b178039d2b9ae\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608b610038600b82828239805160001a607314602b57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361060335760003560e01c8063f747e177146038575b600080fd5b603f600781565b60405160ff909116815260200160405180910390f3fea2646970667358221220bcedb87bc3416a377c577da3cf99585f528425cfa4d64a106fa85bf58769590d64736f6c63430008040033",
+  "deployedBytecode": "0x730000000000000000000000000000000000000000301460806040526004361060335760003560e01c8063f747e177146038575b600080fd5b603f600781565b60405160ff909116815260200160405180910390f3fea2646970667358221220bcedb87bc3416a377c577da3cf99585f528425cfa4d64a106fa85bf58769590d64736f6c63430008040033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
