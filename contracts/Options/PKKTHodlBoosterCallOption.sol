@@ -14,19 +14,27 @@ contract PKKTHodlBoosterCallOption is PKKTHodlBoosterOption {
     using SafeMath for uint256;  
     using StructureData for StructureData.UserState;
 
-  constructor(
-        string memory name,
-        string memory symbol,
-        address _underlying,
-        address _stableCoin,
-        uint8 _underlyingDecimals,
-        uint8 _stableCoinDecimals,
-        address _vaultAddress
-    ) PKKTHodlBoosterOption(name, symbol, _underlying, _stableCoin, _underlyingDecimals, _stableCoinDecimals, _vaultAddress, true) {  
-          
-    }
+   function initialize(
+      string memory name,
+      string memory symbol,
+      address _underlying,
+      address _stableCoin,
+      uint8 _underlyingDecimals,
+      uint8 _stableCoinDecimals,
+      address _vaultAddress
+    ) public initializer {
+      PKKTHodlBoosterOption.initialize(
+         name,
+         symbol,
+         _underlying,
+         _stableCoin,
+         _underlyingDecimals,
+         _stableCoinDecimals, 
+         _vaultAddress,
+         true
+      );
+   }
 
-   
      function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
      returns(StructureData.MaturedState memory) {
        StructureData.MaturedState memory state = StructureData.MaturedState({

@@ -1,0 +1,34 @@
+{
+    "rinkeby": {
+        "DefaultProxyAdmin": "0xc9355DA7c27F635d30F0D8d7a665170E56b0d264",
+        "PKKTFarm": "0xB85ecd695e180B3ad5248e4F5c0B144cdC240E5f",
+        "PKKTFarm_Implementation": "0x24D25ADFCFF8acDc61cb21B7b6E10686da13Ad4A",
+        "PKKTFarm_Proxy": "0xB85ecd695e180B3ad5248e4F5c0B144cdC240E5f",
+        "PKKTHodlBoosterOption": "0x691fECD88Ec2546CA3De30e55B26601235D620C5",
+        "PKKTHodlBoosterOption_Implementation": "0x70CD225E9D43426800ffed32F306Ac2939e756d2",
+        "PKKTHodlBoosterOption_Proxy": "0x691fECD88Ec2546CA3De30e55B26601235D620C5",
+        "PKKTToken": "0xa667397a4641eCA18Db14dC3812D1b1DD58E5cDb",
+        "PKKTVault": "0xeABc339233f844A90Dff7653ec6F3F0858FC4E9B",
+        "PKKTVault_Implementation": "0x41eeFC66ab4D7D1Be7a64481C97Dd25Db1804074",
+        "PKKTVault_Proxy": "0xeABc339233f844A90Dff7653ec6F3F0858FC4E9B",
+        "Pool": "0xd2C40fF1c7153c29452B66E1c9b5216E1a5FA7Fe",
+        "StructureData": "0x2819d8Ac84d99766D726b9C3696104Fe450E2619",
+        "Vault": "0x9fE9a0c86C0bB5ff2163812FEFC2e21F9132b061"
+    },
+    "ropsten": {
+        "DefaultProxyAdmin": "0x5Cd48E8f02b1F6741Fb663990720a5A6c7eca564",
+        "PKKTFarm": "0x199C1A8bC7472947F76D578a9B27ae35CB9DC793",
+        "PKKTFarm_Implementation": "0x55719873fa21fA20f933E35aBa33663115F93Acb",
+        "PKKTFarm_Proxy": "0x199C1A8bC7472947F76D578a9B27ae35CB9DC793",
+        "PKKTHodlBoosterOption": "0xd2C40fF1c7153c29452B66E1c9b5216E1a5FA7Fe",
+        "PKKTHodlBoosterOption_Implementation": "0xa667397a4641eCA18Db14dC3812D1b1DD58E5cDb",
+        "PKKTHodlBoosterOption_Proxy": "0xd2C40fF1c7153c29452B66E1c9b5216E1a5FA7Fe",
+        "PKKTToken": "0xB47ddC95378E74C4e29debff12E783efB7966e4d",
+        "PKKTVault": "0x40A1A146Ff8AA9e13b5625939918e16da256d98b",
+        "PKKTVault_Implementation": "0x416dfA8D1A02b8Da0E48713Cd1Afa05049718813",
+        "PKKTVault_Proxy": "0x40A1A146Ff8AA9e13b5625939918e16da256d98b",
+        "Pool": "0x2ed1dD0a3aC6E9c277961e745Ec73837d97790e7",
+        "StructureData": "0x96D9788139D663bfcb01d7965EAa93D5ED3623E4",
+        "Vault": "0xC4064A7394AB5fbe6D66c162ec9F43F13f1fdFfa"
+    }
+}

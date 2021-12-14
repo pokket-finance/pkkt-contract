@@ -2,20 +2,17 @@
 pragma solidity =0.8.4;
  
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
 import "hardhat/console.sol";
  
 import {StructureData} from "../libraries/StructureData.sol";     
 import "../interfaces/IPKKTStructureOption.sol";
 import "../interfaces/IExecuteSettlement.sol"; 
 import "../interfaces/IOptionVault.sol"; 
-
-//todo: we might abstract some common function into an abstract contract PKKTStructureOption once we have the vol alpha requirement specified
-abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption, IExecuteSettlement {
+abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -31,10 +28,10 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
     uint8 internal depositAssetAmountDecimals;
     uint8 internal counterPartyAssetAmountDecimals;
       
-    address public immutable depositAsset;
-    address public immutable counterPartyAsset;
+    address public depositAsset;
+    address public counterPartyAsset;
  
-    bool public immutable isEth;
+    bool public isEth;
     StructureData.OptionParameters public optionParameters;  
      uint256 public currentRound;
      uint256 public previousUnderlyingPrice;  
@@ -58,7 +55,7 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
-    constructor(
+    function initialize(
         string memory name,
         string memory symbol,
         address _depositAsset,
@@ -67,19 +64,21 @@ abstract contract PKKTHodlBoosterOption is ERC20, Ownable, IPKKTStructureOption,
         uint8 _counterPartyAssetAmountDecimals,
         address _vaultAddress,
         bool _callOrPut
-    ) ERC20(name, symbol) {  
+    ) internal initializer {
         require(_vaultAddress != address(0), "Empty vault address");
+        ERC20Upgradeable.__ERC20_init(name, symbol);
+        OwnableUpgradeable.__Ownable_init();
         depositAsset = _depositAsset;
         counterPartyAsset = _counterPartyAsset;
         isEth = _depositAsset == address(0);
         depositAssetAmountDecimals = _depositAssetAmountDecimals;
-        counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;  
+        counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
     }
 
     function setCounterPartyOption(address _counterParty) external {
-        require(_counterParty != address(this), "Cannot set self as counterparty");
+        require(_counterParty != address(this), "Cannot set self as counter party");
         counterPartyOption = IPKKTStructureOption(_counterParty);
         counterParty = _counterParty;
     }

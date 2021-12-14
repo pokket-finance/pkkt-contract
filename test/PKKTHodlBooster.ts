@@ -3,7 +3,8 @@ import { assert, Assertion, expect } from "chai";
 import { Contract } from "@ethersproject/contracts"; 
 import { BigNumber, Signer } from "ethers";
 
-import { deployContract } from "./utilities/deploy"; 
+import { deployContract } from "./utilities/deploy";
+import { deployUpgradeableContract } from "./utilities/deployUpgradable"; 
 import {advanceBlockTo} from "./utilities/timer"; 
 import { PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption, ERC20Mock, OptionVault } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -45,27 +46,93 @@ describe("PKKT Hodl Booster", async function () {
         beforeEach(async function () {
         
           this.owner = deployer as Signer;  
-          vault = await deployContract("OptionVault", deployer as Signer, [settler.address]) as OptionVault;
-          usdt = await  deployContract("ERC20Mock", deployer as Signer, ["USDTToken", "USDT", BigNumber.from(10000000).mul(USDTMultiplier), USDT_DECIMALS]) as ERC20Mock;
-          wbtc = await  deployContract("ERC20Mock", deployer as Signer, ["Wrapped BTC", "WBTC", BigNumber.from(100).mul(WBTCMultiplier), WBTC_DECIMALS]) as ERC20Mock;
+          vault = await deployContract(
+            "OptionVault",
+            deployer as Signer,
+            [settler.address]
+          ) as OptionVault;
+          usdt = await  deployContract(
+            "ERC20Mock",
+            deployer as Signer,
+            [
+              "USDTToken",
+              "USDT",
+              BigNumber.from(10000000).mul(USDTMultiplier),
+              USDT_DECIMALS
+            ]
+          ) as ERC20Mock;
+          wbtc = await  deployContract(
+            "ERC20Mock",
+            deployer as Signer,
+            [
+              "Wrapped BTC",
+              "WBTC",
+              BigNumber.from(100).mul(WBTCMultiplier),
+              WBTC_DECIMALS
+            ]
+          ) as ERC20Mock;
            
-          ethHodlBoosterCall = await deployContract("PKKTHodlBoosterCallOption", deployer as Signer, 
-          ["ETH-USDT-HodlBooster-Call", "ETHUSDTHodlBoosterCall", NULL_ADDRESS, usdt.address, ETH_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterCallOption; 
+          ethHodlBoosterCall = await deployUpgradeableContract(
+            "PKKTHodlBoosterCallOption",
+            deployer as Signer,
+            [
+              "ETH-USDT-HodlBooster-Call",
+              "ETHUSDTHodlBoosterCall",
+              NULL_ADDRESS,
+              usdt.address,
+              ETH_DECIMALS,
+              USDT_DECIMALS,
+              vault.address
+            ]
+          ) as PKKTHodlBoosterCallOption; 
           vault.addOption(ethHodlBoosterCall.address);
           ethHodlBoosterCall.transferOwnership(settler.address);
                      
-          wbtcHodlBoosterCall = await deployContract("PKKTHodlBoosterCallOption", deployer as Signer, 
-          ["WBTC-USDT-HodlBooster-Call", "WBTCUSDTHodlBoosterCall", wbtc.address, usdt.address, WBTC_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterCallOption; 
+          wbtcHodlBoosterCall = await deployUpgradeableContract(
+            "PKKTHodlBoosterCallOption",
+            deployer as Signer,
+            [
+              "WBTC-USDT-HodlBooster-Call",
+              "WBTCUSDTHodlBoosterCall",
+              wbtc.address,
+              usdt.address,
+              WBTC_DECIMALS,
+              USDT_DECIMALS,
+              vault.address
+            ]
+          ) as PKKTHodlBoosterCallOption; 
           vault.addOption(wbtcHodlBoosterCall.address);
           wbtcHodlBoosterCall.transferOwnership(settler.address);
 
-          ethHodlBoosterPut = await deployContract("PKKTHodlBoosterPutOption", deployer as Signer, 
-          ["ETH-USDT-HodlBooster-Put", "ETHUSDTHodlBoosterPut", NULL_ADDRESS, usdt.address, ETH_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterPutOption; 
+          ethHodlBoosterPut = await deployUpgradeableContract(
+            "PKKTHodlBoosterPutOption",
+            deployer as Signer,
+            [
+              "ETH-USDT-HodlBooster-Put",
+              "ETHUSDTHodlBoosterPut",
+              NULL_ADDRESS,
+              usdt.address,
+              ETH_DECIMALS,
+              USDT_DECIMALS,
+              vault.address
+            ]
+          ) as PKKTHodlBoosterPutOption; 
           vault.addOption(ethHodlBoosterPut.address); 
           ethHodlBoosterPut.transferOwnership(settler.address);
                      
-          wbtcHodlBoosterPut = await deployContract("PKKTHodlBoosterPutOption", deployer as Signer, 
-          ["WBTC-USDT-HodlBooster-Put", "WBTCUSDTHodlBoosterPut", wbtc.address, usdt.address, WBTC_DECIMALS, USDT_DECIMALS, vault.address]) as PKKTHodlBoosterPutOption; 
+          wbtcHodlBoosterPut = await deployUpgradeableContract(
+            "PKKTHodlBoosterPutOption",
+            deployer as Signer,
+            [
+              "WBTC-USDT-HodlBooster-Put",
+              "WBTCUSDTHodlBoosterPut",
+              wbtc.address,
+              usdt.address,
+              WBTC_DECIMALS,
+              USDT_DECIMALS,
+              vault.address
+            ]
+          ) as PKKTHodlBoosterPutOption; 
           vault.addOption(ethHodlBoosterPut.address);
           wbtcHodlBoosterPut.transferOwnership(settler.address);
 
