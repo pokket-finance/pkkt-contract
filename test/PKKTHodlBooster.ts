@@ -171,7 +171,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(10).mul(ETHMultiplier), //10eth
             pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.025 * RationMultipler, //2.5% per week
+            premiumRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
           };
           await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters1);
@@ -180,7 +180,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(25).mul(WBTCMultiplier).div(10), //2.5btc
             pricePrecision: WBTCPicePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.02 * RationMultipler, //2% per week
+            premiumRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };
           await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice); //60000usdt
@@ -218,7 +218,7 @@ describe("PKKT Hodl Booster", async function () {
           assert.equal(optionState.totalAmount.toString(), BigNumber.from(9).mul(ETHMultiplier).toString());
           assert.equal(optionState.round.toString(), "1");
           assert.equal(optionState.pricePrecision.toString(), parameters1.pricePrecision.toString());
-          assert.equal(optionState.interestRate.toString(), parameters1.interestRate.toString());
+          assert.equal(optionState.premiumRate.toString(), parameters1.premiumRate.toString());
           assert.equal(optionState.executed, false);
           assert.equal(optionState.strikePrice.toString(), "0");
 
@@ -230,7 +230,7 @@ describe("PKKT Hodl Booster", async function () {
           assert.equal(optionState.totalAmount.toString(), BigNumber.from(25).mul(WBTCMultiplier).div(10).toString());
           assert.equal(optionState.round.toString(), "1");
           assert.equal(optionState.pricePrecision.toString(), parameters2.pricePrecision.toString());
-          assert.equal(optionState.interestRate.toString(), parameters2.interestRate.toString());
+          assert.equal(optionState.premiumRate.toString(), parameters2.premiumRate.toString());
           assert.equal(optionState.executed, false);
           assert.equal(optionState.strikePrice.toString(), "0");   
           var ethBalance = await ethers.provider.getBalance(alice.address); 
@@ -265,7 +265,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(10).mul(ETHMultiplier), //10eth
             pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.025 * RationMultipler, //2.5% per week
+            premiumRate: 0.025 * RationMultipler, //2.5% per week
             callOrPut: true
           }; 
           await ethHodlBoosterCall.connect(settler as Signer).rollToNext(parameters1);  
@@ -275,7 +275,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(25).mul(WBTCMultiplier).div(10), //2.5btc
             pricePrecision: WBTCPicePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.02 * RationMultipler, //2% per week
+            premiumRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };  
           await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters2); 
@@ -301,7 +301,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
             pricePrecision: ETHPricePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.02 * RationMultipler, //2% per week
+            premiumRate: 0.02 * RationMultipler, //2% per week
             callOrPut: true
           };
           
@@ -312,7 +312,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
             pricePrecision: WBTCPicePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.01 * RationMultipler, //1% per week
+            premiumRate: 0.01 * RationMultipler, //1% per week
             callOrPut: true
           };
           
@@ -341,7 +341,7 @@ describe("PKKT Hodl Booster", async function () {
               quota: BigNumber.from(5).mul(ETHMultiplier), //5eth
               pricePrecision: ETHPricePrecision,
               strikePriceRatio: 0.1 * RationMultipler, //10% up
-              interestRate: 0.01 * RationMultipler, //1% per week
+              premiumRate: 0.01 * RationMultipler, //1% per week
               callOrPut: true
             };
 
@@ -352,7 +352,7 @@ describe("PKKT Hodl Booster", async function () {
               quota: BigNumber.from(2).mul(WBTCMultiplier), //2btc
               pricePrecision: WBTCPicePrecision,
               strikePriceRatio: 0.1 * RationMultipler, //10% up
-              interestRate: 0.005 * RationMultipler, //0.5% per week
+              premiumRate: 0.005 * RationMultipler, //0.5% per week
               callOrPut: true
             };
             await vault.connect(settler as Signer).startSettlement(trader.address); 
@@ -453,7 +453,7 @@ describe("PKKT Hodl Booster", async function () {
           await wbtcHodlBoosterCall.connect(alice as Signer).redeposit(BigNumber.from(1).mul(WBTCMultiplier)); 
  
           var traderBtcBalance = await wbtc.balanceOf(trader.address); 
-          
+
           await vault.connect(settler as Signer).prepareSettlement(); 
           await wbtcHodlBoosterCall.connect(settler as Signer).closePrevious(btcPrice*1.2); //72000usdt  
           
@@ -472,7 +472,7 @@ describe("PKKT Hodl Booster", async function () {
             quota: BigNumber.from(3).mul(WBTCMultiplier), //3btc
             pricePrecision: WBTCPicePrecision,
             strikePriceRatio: 0.1 * RationMultipler, //10% up
-            interestRate: 0.015 * RationMultipler, //1.5% per week
+            premiumRate: 0.015 * RationMultipler, //1.5% per week
             callOrPut: true
           };
           await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters7); 

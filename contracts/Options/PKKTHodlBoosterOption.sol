@@ -305,7 +305,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         optionVault.setCommittedState(optionState, depositAsset, counterPartyAsset);
         optionState.underlyingPrice = previousUnderlyingPrice; 
         optionState.strikePrice =  optionState.underlyingPrice.mul(uint256(int256(RATIOMULTIPLIER) + int256(optionParameters.strikePriceRatio))).div(RATIOMULTIPLIER);  
-        optionState.interestRate = optionParameters.interestRate;
+        optionState.premiumRate = optionParameters.premiumRate;
         optionState.pricePrecision = optionParameters.pricePrecision;
         //mint for the current option
         _mint(address(this), optionState.totalAmount);
@@ -334,7 +334,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         StructureData.OptionState({
                             round: currentRound,
                             totalAmount: 0,
-                            interestRate:  _optionParameters.interestRate,
+                            premiumRate:  _optionParameters.premiumRate,
                             pricePrecision: _optionParameters.pricePrecision,
                             strikePrice: 0,
                             underlyingPrice: 0,

@@ -588,7 +588,7 @@
             },
             {
               "internalType": "uint16",
-              "name": "interestRate",
+              "name": "premiumRate",
               "type": "uint16"
             },
             {
@@ -829,7 +829,7 @@
         },
         {
           "internalType": "uint16",
-          "name": "interestRate",
+          "name": "premiumRate",
           "type": "uint16"
         },
         {
@@ -873,7 +873,7 @@
         },
         {
           "internalType": "uint16",
-          "name": "interestRate",
+          "name": "premiumRate",
           "type": "uint16"
         },
         {
@@ -975,7 +975,7 @@
             },
             {
               "internalType": "uint16",
-              "name": "interestRate",
+              "name": "premiumRate",
               "type": "uint16"
             },
             {

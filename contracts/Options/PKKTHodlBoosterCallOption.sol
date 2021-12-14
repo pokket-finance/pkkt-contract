@@ -43,7 +43,7 @@ contract PKKTHodlBoosterCallOption is PKKTHodlBoosterOption {
           executed: false,
           round: _optionState.round
        }); 
-        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.interestRate);
+        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.premiumRate);
         //todo: check callOrPut
         bool shouldConvert = _optionState.strikePrice < _underlyingPrice; 
         state.executed = shouldConvert; 
