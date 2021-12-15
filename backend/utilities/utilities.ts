@@ -44,10 +44,4 @@ export async function printOptionState(optionState: OptionState) {
     for(const [key, value] of Object.entries(optionState)) {
         console.log(`${key}: ${value}`);
     }
-    // console.log(`Underyling Price: ${optionState.underlyingPrice.toString()}`);
-    // console.log(`Total Amount: ${optionState.totalAmount.toString()}`);
-    // console.log(`Price Precision: ${optionState.pricePrecision.toString()}`);
-    // console.log(`Premium Rate: ${optionState.premiumRate.toString()}`);
-    // console.log(`Executed: ${optionState.executed}`);
-    // console.log(`Strike Price: ${optionState.strikePrice.toString()}\n`);
 }

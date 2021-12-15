@@ -8,4 +8,6 @@ import { getOptionState } from "./utilities/utilities";
 export async function getVaultInfo(hodlBoosterOption: PKKTHodlBoosterOption) {
     const optionState = await getOptionState(hodlBoosterOption);
     console.log("Total Value Locked: ", optionState.totalAmount.toString());
+    console.log("Underlying Price: ", optionState.underlyingPrice.toString());
+    console.log("Strike Price: ", optionState.strikePrice.toString());
 }

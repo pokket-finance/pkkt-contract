@@ -18,7 +18,6 @@ app.get("/", async (req, res) => {
         "WBTCHodlBoosterCallOption"
     ) as PKKTHodlBoosterOption;
     await getVaultInfo(hodlBoosterOption);
-    const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
     res.send("hello");
 });
 
@@ -26,6 +25,7 @@ app.get("/:userId", async (req, res) => {
     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
         "WBTCHodlBoosterCallOption"
     ) as PKKTHodlBoosterOption;
+    await getVaultInfo(hodlBoosterOption);
     const provider = new ethers.providers.JsonRpcProvider()
     const user = provider.getSigner(req.params.userId);
     await getUserNAV(hodlBoosterOption, user as Signer);
