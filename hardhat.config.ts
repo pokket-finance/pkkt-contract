@@ -13,6 +13,7 @@ import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
 import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
+import generateOptionData from "./scripts/tasks/backend/generateOptionData";
 
 dotenv.config();
 
@@ -124,3 +125,5 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
 
 task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
   .addFlag("fresh", "If set, deletes the existing network deployments folder");
+
+task("generate-option-data", "Generates data to allow backend interaction with etherscan", generateOptionData);
