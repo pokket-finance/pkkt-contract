@@ -45,7 +45,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      address public counterParty;
      IOptionVault public optionVault;
      
-     //public data for complete withdrawal
+     //public data for complete withdrawal and redeposit
      mapping(address=>uint256) public maturedDepositAssetAmount;
      mapping(address=>uint256) public maturedCounterPartyAssetAmount;
 
@@ -111,6 +111,61 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         optionVault.withdraw(msg.sender, _amount, depositAsset);  
     }*/
 
+    
+    function getMatured() external override view returns (StructureData.MaturedAmount[] memory result) {
+        uint256 currentMaturedDepositAssetAmount  = maturedDepositAssetAmount[msg.sender];
+        uint256 currentMaturedCounterPartyAssetAmount = maturedCounterPartyAssetAmount[msg.sender];
+        if (currentMaturedDepositAssetAmount == 0 && currentMaturedCounterPartyAssetAmount == 0) {
+            return new StructureData.MaturedAmount[](0);
+        } 
+        if (currentMaturedDepositAssetAmount == 0) {
+            result = new StructureData.MaturedAmount[](1) ;
+            result[0] = StructureData.MaturedAmount({
+                amount: currentMaturedCounterPartyAssetAmount,
+                asset: counterPartyAsset
+            });
+            return result;
+        } 
+        if (currentMaturedCounterPartyAssetAmount == 0) {
+            result = new StructureData.MaturedAmount[](1) ;
+            result[0] = StructureData.MaturedAmount({
+                amount: currentMaturedDepositAssetAmount,
+                asset: depositAsset
+            });
+            return result;
+        } 
+        result = new StructureData.MaturedAmount[](2) ;
+        result[0] = StructureData.MaturedAmount({
+                amount: currentMaturedDepositAssetAmount,
+                asset: depositAsset
+            });
+        result[1] = StructureData.MaturedAmount({
+            amount: currentMaturedCounterPartyAssetAmount,
+            asset: counterPartyAsset
+        });
+        return result;
+    }
+
+    function completeWithdraw(uint256 _amount, address _asset) external override {
+       require(_amount > 0, "!amount"); 
+       require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address");
+       if (_asset == depositAsset) {
+           uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
+           require(maturedAmount >= _amount, "Exceed available");
+           maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
+       }
+       else {
+           
+           uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
+           require(maturedAmount >= _amount, "Exceed available");
+           maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
+       }
+       
+        optionVault.withdraw(msg.sender, _amount, _asset);
+    }
+
+    //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
+
     function redeposit(uint256 _amount) external override {
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");
@@ -120,6 +175,23 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
        _depositFor(msg.sender, _amount);
     }
+
+    //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
+    function redepositToCounterParty(uint256 _amount) external override {
+       require(!underSettlement, "Being settled");
+       require(currentRound > 1, "!No Matured");
+       require(_amount > 0, "!amount"); 
+       uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
+       require(maturedAmount >= _amount, "Exceed available");
+       maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
+       address[] memory addresses = new address[](1);
+       uint256[] memory amounts = new uint256[](1);
+       addresses[0] = msg.sender;
+       amounts[0] = _amount;
+       counterPartyOption.depositFromCounterParty(addresses, amounts);
+    }
+
+
     //todo: what if quata is not enough
     function depositFromCounterParty(address[] memory addresses, uint256[] memory _amounts) override external {
         require(msg.sender == counterParty, "Only counterparty option can call this method");
@@ -238,7 +310,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
                     continue;
                 }
                 uint256 amountToTerminate = getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
-                if (amountToTerminate > 0){
+                if (amountToTerminate > 0) {
                     maturedDepositAssetAmount[userAddress] = 
                     maturedDepositAssetAmount[userAddress].add(amountToTerminate);
                 }

@@ -43,8 +43,7 @@ library StructureData {
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
-        uint256 assetToTerminate; 
-        //bool shouldStop;
+        uint256 assetToTerminate;  
     }
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;
@@ -77,4 +76,8 @@ library StructureData {
         bool fullfilled;
     }
 
+    struct MaturedAmount {
+        uint256 amount;
+        address asset;
+    }
 }
