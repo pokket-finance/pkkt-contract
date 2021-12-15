@@ -46,8 +46,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      IOptionVault public optionVault;
      
      //public data for complete withdrawal and redeposit
-     mapping(address=>uint256) public maturedDepositAssetAmount;
-     mapping(address=>uint256) public maturedCounterPartyAssetAmount;
+     mapping(address=>uint256) private maturedDepositAssetAmount;
+     mapping(address=>uint256) private maturedCounterPartyAssetAmount;
 
      mapping(address=>uint256) internal pendingMaturedDepositAssetAmount;
      mapping(address=>uint256) internal pendingMaturedCounterPartyAssetAmount;
@@ -148,6 +148,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
     function completeWithdraw(uint256 _amount, address _asset) external override {
        require(_amount > 0, "!amount"); 
+       require(!underSettlement, "Being settled");
+       require(currentRound > 1, "!No Matured");
        require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address");
        if (_asset == depositAsset) {
            uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
