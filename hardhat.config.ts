@@ -12,6 +12,7 @@ import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
+import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
 
 dotenv.config();
 
@@ -50,10 +51,22 @@ dotenv.config();
   },
   namedAccounts: {
     deployer: {
-      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      default: 0,
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
       4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
+    },
+    settler: {
+      default: 1,
+      4: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4"
+    },
+    alice: {
+      default: 2,
+      4: "0x57680aba4bb27Fd82b51EeBdB8C5b3f4A073b2aA"
+    },
+    bob: {
+      default: 3,
+      4: "0x7e3E166B473cDc33b302B942205c63deDf136F4C"
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -62,10 +75,10 @@ dotenv.config();
       4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     trader: { 
-      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      default: 4,
       1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
       3: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
-      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
+      4: "0x88ad553a4793f91E9b36BBee418f0A497E9bBF6D"
     }
   },
 
@@ -109,3 +122,5 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
   .addParam("implname", "name of new implementation contract")
   .addParam("libraryname", "Name of the library to deploy with contract");
 
+task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
+  .addFlag("fresh", "If set, deletes the existing network deployments folder");

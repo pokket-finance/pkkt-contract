@@ -41,34 +41,20 @@ const port = 3000;
 
 const main = async () => {
     const [deployer, settler, alice, bob, trader]: SignerWithAddress[] = await ethers.getSigners();
-    if (true) {
-        const dir = `./deployments/hardhat`;
-        await removeDirectory(dir);
-        await deployContracts(deployer, settler);
-        const [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption] = await getDeployedContracts();
-        await generateOptionData(
-            settler,
-            alice,
-            bob,
-            trader,
-            usdc,
-            wbtc,
-            optionVault,
-            wbtcHodlBoosterCallOption
-        );
-    }
-    await getUserMaturedData(alice);
-    await getUserData(alice, bob);
+    const [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption] = await getDeployedContracts();
+    await generateOptionData(
+        settler,
+        alice,
+        bob,
+        trader,
+        usdc,
+        wbtc,
+        optionVault,
+        wbtcHodlBoosterCallOption
+    );
+    await getVaultInfo();
+    await getUsersNAV(alice, bob);
 }
-
-const removeDirectory = async (dir) => {
-    try {
-        await fsPromises.rmdir(dir, { recursive: true });
-        console.log(`${dir} removed`);
-    } catch (err) {
-        console.error(err);
-    }
-};
 
 const getDeployedContracts = async (): Promise<[
     ERC20Mock,
@@ -90,56 +76,28 @@ const getDeployedContractHelper = async (name: string): Promise<Contract> => {
     return await ethers.getContractAt(Contract.abi, Contract.address);
 }
 
-const getUserMaturedData = async (alice: SignerWithAddress) => {
-    const wbtcHodlBoosterCallOption: PKKTHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterCallOption;
-    let aliceData1 = await wbtcHodlBoosterCallOption.maturedDepositAssetAmount(alice.address);
-    let aliceData2 = await wbtcHodlBoosterCallOption.maturedCounterPartyAssetAmount(alice.address);
-    console.log(`Alicedata: ${aliceData1}`);
-    console.log(`Alice data: ${aliceData2}`);
-};
-
-const getUserData = async (...users: SignerWithAddress[]) => {
-    const wbtcHodlBoosterCallOption: PKKTHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterCallOption;
-    let userData: ([BigNumber, number, BigNumber, boolean, BigNumber] & {
-        pendingAsset: BigNumber;
-        nextCursor: number;
-        totalRound: BigNumber;
-        hasState: boolean;
-        assetToTerminate: BigNumber;
-    })[] = [];
-    for(const user of users) {
-        let datum = await wbtcHodlBoosterCallOption.userStates(user.address);
-        userData.push(datum);
-    }
-    
-    for(const userState of userData) {
-        await printUserState(userState);
-    }
+const getVaultInfo = async () => {
+    const optionVault: OptionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const wbtc: ERC20Mock = await getDeployedContractHelper("WBTC") as ERC20Mock;
+    let maturedAmount: BigNumber = await optionVault.getMaturedAmount(wbtc.address);
+    let pendingAmount: BigNumber = await optionVault.getPendingAmount(wbtc.address);
+    console.log(`Matured: ${maturedAmount}, Pending: ${pendingAmount}`);
 }
 
-const printUserState = async (userState:
-    [
-        BigNumber,
-        number,
-        BigNumber,
-        boolean,
-        BigNumber
-    ] & {
-        pendingAsset: BigNumber;
-        nextCursor: number;
-        totalRound: BigNumber;
-        hasState: boolean;
-        assetToTerminate: BigNumber
-    }) => {
-    console.log(`Pending Asset (current round): ${userState.pendingAsset.toString()}`);
-    console.log("Next cursor: ", userState.nextCursor.toString());
-    console.log("Total Round", userState.totalRound.toString());
-    console.log("Has State: ", userState.hasState);
-    console.log("Asset To Terminate: ", userState.assetToTerminate.toString());
+const getUsersNAV = async (...users: SignerWithAddress[]) => {
+    const wbtcHodlBoosterCallOption: PKKTHodlBoosterCallOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterCallOption"
+    ) as PKKTHodlBoosterCallOption;
+    for(const user of users) {
+        let pendingAmount: BigNumber = await wbtcHodlBoosterCallOption
+            .connect(user as Signer)
+            .getPendingAsset();
+        let ongoingAmount: BigNumber = await wbtcHodlBoosterCallOption
+            .connect(user as Signer)
+            .getOngoingAsset(0);
+        let userNAV: BigNumber = pendingAmount.add(ongoingAmount);
+        console.log("User NAV: ", userNAV.toString());
+    }
 }
 
 // Makes api request to etherscan to get data about our options
@@ -297,83 +255,6 @@ const settlementPeriod = async (
     await optionVault.connect(settler as Signer).startSettlement(trader.address);
     await printRoundInformation(holdBoosterOption);
     await holdBoosterOption.connect(settler as Signer).rollToNext(parameters)
-}
-
-// Deploy the initial contracts
-const deployContracts = async (deployer: SignerWithAddress, settler: SignerWithAddress) => {
-
-    const { deploy } = await deployments;
-
-    const USDC = await deploy("USDC", {
-        contract: "ERC20Mock",
-        from: deployer.address,
-        args: [
-            "USDCToken",
-            "USDC",
-            BigNumber.from(10000).mul(USDCMultiplier),
-            USDC_DECIMALS,
-        ],
-    });
-
-    const WBTC = await deploy("WBTC", {
-        contract: "ERC20Mock",
-        from: deployer.address,
-        args: [
-            "Wrapped BTC",
-            "WBTC",
-            BigNumber.from(100).mul(WBTCMultiplier),
-            WBTC_DECIMALS
-        ],
-    });
-
-    const OptionVault = await deploy("OptionVault", {
-        contract: "OptionVault",
-        from: deployer.address,
-        args: [
-            settler.address,
-        ],
-    });
-
-    const name = "WBTC-USDC-HodlBooster-Call";
-    const structureData = await deploy("StructureData", {
-        from: deployer.address,
-    });
-    const WbtcHodlBoosterCall = await deploy("WBTCHodlBoosterCallOption", {
-        from: deployer.address,
-        contract: "PKKTHodlBoosterCallOption",
-        proxy: {
-            owner: settler.address,
-            proxyContract: "OpenZeppelinTransparentProxy",
-            execute: {
-                methodName: "initialize",
-                args: [
-                    "WBTC-USDC-HodlBooster-Call",
-                    "WBTCUSDCHodlBoosterCall",
-                    WBTC.address,
-                    USDC.address,
-                    WBTC_DECIMALS,
-                    USDC_DECIMALS,
-                    OptionVault.address
-                ],
-            },
-        },
-        libraries: {
-            StructureData: structureData.address,
-        }
-    });
-
-    const wbtcHodlBoosterCall = await ethers.getContractAt(
-        "PKKTHodlBoosterCallOption",
-        WbtcHodlBoosterCall.address
-    );
-    console.log(`Deployed ${name} at: ${wbtcHodlBoosterCall.address}`);
-
-    await wbtcHodlBoosterCall.transferOwnership(settler.address);
-
-    const optionVault = await ethers.getContractAt(OptionVault.abi, OptionVault.address);
-
-    await optionVault.addOption(wbtcHodlBoosterCall.address);
-    console.log(`Added ${name} to Option Vault at: ${optionVault.address}`);
 }
 
 // Helper function to get round and option state from Smart Contract
