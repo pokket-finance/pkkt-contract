@@ -37,28 +37,28 @@ app.listen(port, () => {
 });
 
 // Makes api request to etherscan to get data about our options
-// const getEtherScanData = async (hodlBoosterOption) => {
-//     console.log(`Retrieving Data from Etherscan for ${hodlBoosterOption.address}`);
-//     const response = await getData(
-//         {
-//             module: "account",
-//             action: "tokentx",
-//             address: hodlBoosterOption.address,
-//             startblock: "0",
-//             endblock: "99999999",
-//             page: "1",
-//             offset: "100",
-//             sort: "asc"
-//         }
-//     );
-//     const result = response.data.result;
-//     const blockNumbers = result.map(res => res.blockNumber);
-//     console.log(blockNumbers);
-//     for(let blockNumber of blockNumbers) {
-//         const optionState = await hodlBoosterOption.getRoundData(blockNumber);
-//         printOptionState(optionState);
-//     }
-// }
+const getEtherScanData = async (hodlBoosterOption) => {
+    console.log(`Retrieving Data from Etherscan for ${hodlBoosterOption.address}`);
+    const response = await getData(
+        {
+            module: "account",
+            action: "tokentx",
+            address: hodlBoosterOption.address,
+            startblock: "0",
+            endblock: "99999999",
+            page: "1",
+            offset: "100",
+            sort: "asc"
+        }
+    );
+    const result = response.data.result;
+    const blockNumbers = result.map(res => res.blockNumber);
+    console.log(blockNumbers);
+    for(let blockNumber of blockNumbers) {
+        const optionState = await hodlBoosterOption.getRoundData(blockNumber);
+        //printOptionState(optionState);
+    }
+}
 
 // Helper function to generate api url and request the endpoint
 const getData = async (params) => {
