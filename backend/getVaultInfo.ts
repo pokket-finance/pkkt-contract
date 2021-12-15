@@ -1,5 +1,5 @@
 import { PKKTHodlBoosterOption } from "../typechain";
-import { getOptionState } from "../utilities/utilities";
+import { getOptionState } from "./utilities/utilities";
 
 /**
  * Retrieves the vault information for a specific PKKTHodlBoosterOption

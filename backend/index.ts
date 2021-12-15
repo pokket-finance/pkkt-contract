@@ -8,7 +8,7 @@ import { Signer } from "ethers";
 
 import { getVaultInfo } from "./getVaultInfo";
 import { getUserNAV } from "./getUserNAV";
-import { getDeployedContractHelper } from "../utilities/utilities";
+import { getDeployedContractHelper } from "./utilities/utilities";
 
 const app = express();
 const port = 3000;

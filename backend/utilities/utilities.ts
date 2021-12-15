@@ -1,7 +1,7 @@
 import { BigNumber, Contract } from "ethers";
 import { ethers, deployments } from "hardhat";
 
-import { PKKTHodlBoosterOption } from "../typechain";
+import { PKKTHodlBoosterOption } from "../../typechain";
 
 type OptionState = {
         round: BigNumber;
