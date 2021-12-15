@@ -133,7 +133,7 @@ contract OptionVault is IOptionVault, AccessControl {
             address assetAddress = asset[i];
             uint256 matured = maturedAmount[assetAddress];
             uint256 pending = pendingAmount[assetAddress]; 
-            //console.log("%s: %d %d", assetAddress, matured, pending);
+            console.log("%s: %d %d", assetAddress, matured, pending);
             if (pending == matured) {
 
                 StructureData.SettlementInstruction memory instruction = StructureData.SettlementInstruction({
@@ -154,12 +154,11 @@ contract OptionVault is IOptionVault, AccessControl {
                     amount: diff,
                     fullfilled: true 
                 });                 
-                //console.log("send %s to trader %d", assetAddress, diff);
+                console.log("send %s to trader %d", assetAddress, diff);
                 _withdraw(_traderAddress, diff, assetAddress); 
                 settlementInstruction[assetAddress] = instruction; 
             }
             else {
-                
                 uint diff = matured.sub(pending);
                 StructureData.SettlementInstruction memory instruction = StructureData.SettlementInstruction({
                     contractAddress: assetAddress,
@@ -170,8 +169,7 @@ contract OptionVault is IOptionVault, AccessControl {
                 });  
                 settlementInstruction[assetAddress] = instruction; 
             } 
-        }
-        
+        }     
     }
 
     //todo: shall we throw error if not fullfilled？
@@ -185,8 +183,8 @@ contract OptionVault is IOptionVault, AccessControl {
                 //what if send to trader failed
                if (instruction.direction == StructureData.Direction.SendBackToVault) {
                     uint256 balance = getMaturedBalance(assetAddress);
-                     //console.log("%s %d %d", assetAddress, balance, maturedAmount[assetAddress]);
-                    
+                    //console.log("%s %d %d", assetAddress, balance, maturedAmount[assetAddress]);
+                    //console.log("address %s ", getAddress());
                     if (balance >= maturedAmount[assetAddress]) {
                         instruction.fullfilled = true;
                     }
