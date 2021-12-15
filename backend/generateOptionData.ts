@@ -15,7 +15,7 @@ import {
     WBTC_PRICE_PRECISION,
     RATIO_MULTIPLIER
 } from "../constants/constants";
-import { printOptionState, getDeployedContractHelper } from "../utilities/utilities";
+import { printOptionState, getDeployedContractHelper } from "./utilities/utilities";
 
 const main = async () => {
     //const { settler, alice, bob, trader} = await getNamedAccounts();

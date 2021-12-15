@@ -1,28 +1,14 @@
-import { ERC20Mock, OptionVault, PKKTHodlBoosterCallOption, PKKTHodlBoosterOption } from "../typechain";
+import { PKKTHodlBoosterOption } from "../typechain";
 import axios from "axios";
 import express from "express";
-import fsPromises from "fs/promises";
 import * as dotenv from "dotenv";
 dotenv.config();
-import { deployments, ethers } from "hardhat";
-import { BigNumber, Signer } from "ethers";
-import { Contract } from "@ethersproject/contracts";
-
-import { deployContract } from "../test/utilities/deploy";
-import { ETH_DECIMALS, NULL_ADDRESS, SETTLEMENTPERIOD, USDC_DECIMALS, WBTC_DECIMALS } from "../constants/constants";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers } from "hardhat";
+import { Signer } from "ethers";
 
 import { getVaultInfo } from "./getVaultInfo";
 import { getUserNAV } from "./getUserNAV";
 import { getDeployedContractHelper } from "../utilities/utilities";
-
-
-const USDCMultiplier = BigNumber.from(10).pow(USDC_DECIMALS);  
-const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);  
-const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);   
-const ETHPricePrecision = 4;
-const WBTCPricePrecision = 4;
-const RationMultiplier = 10000;
 
 const app = express();
 const port = 3000;
@@ -49,9 +35,6 @@ app.get("/:userId", async (req, res) => {
 app.listen(port, () => {
     console.log(`server is listening on ${port}`);
 });
-
-
-
 
 // Makes api request to etherscan to get data about our options
 // const getEtherScanData = async (hodlBoosterOption) => {
