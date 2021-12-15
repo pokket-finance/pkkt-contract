@@ -1,8 +1,7 @@
 import fsPromises from "fs/promises";
 import { BigNumber } from "ethers";
 
-import
-{
+import {
     USDC_DECIMALS,
     WBTC_DECIMALS,
     USDC_MULTIPLIER,
