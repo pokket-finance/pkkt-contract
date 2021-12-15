@@ -24,11 +24,21 @@ interface IPKKTStructureOption {
     //complete withdraw happens on the option vault
     function initiateWithraw(uint256 _assetToTerminate) external; 
 
-  
+    function getMatured() external view returns (StructureData.MaturedAmount[] memory);
+
+    function completeWithdraw(uint256 _amount, address _asset) external;
+
+    //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
     function redeposit(uint256 _amount) external;
 
-    //can only be called from counterparty option
+
+    //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
+    function redepositToCounterParty(uint256 _amount) external;
+
+    //can only be called from counterparty option 
     function depositFromCounterParty(address[] memory _addresses, uint256[] memory _amounts) external;
+
+
 
 
     //used to render the history at client side, reading the minting transactions of a specific address,
