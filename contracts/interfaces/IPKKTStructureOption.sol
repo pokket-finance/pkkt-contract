@@ -24,9 +24,12 @@ interface IPKKTStructureOption {
     //complete withdraw happens on the option vault
     function initiateWithraw(uint256 _assetToTerminate) external; 
 
+    function cancelWithdraw(uint256 _assetToTerminate) external;
+    
     function getMatured() external view returns (StructureData.MaturedAmount[] memory);
 
     function completeWithdraw(uint256 _amount, address _asset) external;
+
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
     function redeposit(uint256 _amount) external;

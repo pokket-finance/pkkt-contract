@@ -90,27 +90,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         return optionVault.getAddress();
     }
 
-    function initiateWithraw(uint256 _assetToTerminate) external override {
-        require(_assetToTerminate > 0 , "!_assetToTerminate");
-        StructureData.UserState storage userState =  userStates[msg.sender];
-        uint256 newAssetToTerminate = userState.assetToTerminate.add(_assetToTerminate);
-        uint256 ongoing = userState.GetOngoingAsset(0);
-        require(newAssetToTerminate <= ongoing, "Exceeds available");
-        userState.assetToTerminate = newAssetToTerminate;
-    }
 
-    /*function withraw(uint256 _amount) external override { 
-       require(!underSettlement, "Being settled");
-       require(currentRound > 1, "!No Matured");
-       require(_amount > 0, "!amount"); 
-      
-        uint256 userMaturedAmount = maturedDepositAssetAmount[msg.sender];
-        require(userMaturedAmount >= _amount, "Exceed available"); 
-        maturedDepositAssetAmount[msg.sender] = userMaturedAmount.sub(_amount); 
-        optionVault.withdraw(msg.sender, _amount, depositAsset);  
-    }*/
-
-    
     function getMatured() external override view returns (StructureData.MaturedAmount[] memory result) {
         uint256 currentMaturedDepositAssetAmount  = maturedDepositAssetAmount[msg.sender];
         uint256 currentMaturedCounterPartyAssetAmount = maturedCounterPartyAssetAmount[msg.sender];
@@ -164,7 +144,22 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        
         optionVault.withdraw(msg.sender, _amount, _asset);
     }
+    function initiateWithraw(uint256 _assetToTerminate) external override {
+        require(_assetToTerminate > 0 , "!_assetToTerminate");
+        StructureData.UserState storage userState =  userStates[msg.sender];
+        uint256 newAssetToTerminate = userState.assetToTerminate.add(_assetToTerminate);
+        uint256 ongoing = userState.GetOngoingAsset(0);
+        require(newAssetToTerminate <= ongoing, "Exceeds available");
+        userState.assetToTerminate = newAssetToTerminate;
+    }
 
+    function cancelWithdraw(uint256 _assetToTerminate) external override { 
+        require(_assetToTerminate > 0 , "!_assetToTerminate");
+        StructureData.UserState storage userState =  userStates[msg.sender];
+        require(_assetToTerminate <= userState.assetToTerminate, "Exceed available");
+        userState.assetToTerminate = userState.assetToTerminate.sub(_assetToTerminate);
+    } 
+    
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
 
     function redeposit(uint256 _amount) external override {
