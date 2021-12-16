@@ -200,7 +200,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
        }
        else {
-           
+           //same result as completeWithdraw
            uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
            require(maturedAmount >= _amount, "Exceed available");
            maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
@@ -408,6 +408,9 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
    //close pending option and autoroll if capacity is enough based on the maturity result
    function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyOwner {  
+       if(currentRound <= 1 && !underSettlement) {
+           underSettlement = true;
+       }
         require(underSettlement, "Not being settled");
         //return when there is no previous round
         //console.log("CommitCurrent: %s %d", name(), currentRound);

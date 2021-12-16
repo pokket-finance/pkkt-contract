@@ -49,6 +49,7 @@ library StructureData {
         uint256 maturedDepositAssetAmount;
         uint256 maturedCounterPartyAssetAmount;
     }
+    
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;
         userState.ongoingAsset[cursor] = newValue;
