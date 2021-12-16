@@ -314,6 +314,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         return optionStates[optionHeights[_blockHeight]];
     } 
 
+   
    function closePrevious(bool _execute) external override onlyOwner { 
         require(!underSettlement, "Being settled");
         underSettlement = true; 
