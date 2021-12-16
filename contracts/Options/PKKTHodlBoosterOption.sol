@@ -44,7 +44,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      address public counterParty;
      IOptionVault public optionVault;
      
-     //public data for complete withdrawal and redeposit 
+     //private data for complete withdrawal and redeposit 
      mapping(address=>uint256) private maturedDepositAssetAmount;
      mapping(address=>uint256) private maturedCounterPartyAssetAmount;  
      mapping(address=>uint256) internal pendingMaturedDepositAssetAmount;
@@ -434,6 +434,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
             StructureData.UserState storage userState = userStates[userAddress]; 
             if(userState.pendingAsset != 0) {  
                 //transfer each user a share of the option to trigger transfer event
+                //can be used to calculate the user option selling operations
+                //utilizing some web3 indexed services, take etherscan api/graphql etc.
                 _transfer(address(this), userAddress, userState.pendingAsset);
             } 
             userState.SetOngoingAsset(userState.pendingAsset); 
