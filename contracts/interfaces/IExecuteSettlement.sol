@@ -4,12 +4,12 @@ import {StructureData} from "../libraries/StructureData.sol";
 interface IExecuteSettlement {
  
    //calculate the result of on going option    
-   function closePrevious(uint256 _underlyingPrice) external;
+   function closePrevious(bool _execute) external;
 
    //close pending option and autoroll if capacity is enough based on the maturity result
-   function commitCurrent() external; 
+   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external; 
 
     //open a new option
-   function rollToNext(StructureData.OptionParameters memory _optionParameters) external; 
+   function rollToNext(uint256 _quota) external; 
 
 }

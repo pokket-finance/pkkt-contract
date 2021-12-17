@@ -35,19 +35,16 @@ contract PKKTHodlBoosterCallOption is PKKTHodlBoosterOption {
       );
    }
 
-     function _calculateMaturity(uint256 _underlyingPrice, StructureData.OptionState memory _optionState) internal override
+     function _calculateMaturity(bool _execute, StructureData.OptionState memory _optionState) internal override
      returns(StructureData.MaturedState memory) {
        StructureData.MaturedState memory state = StructureData.MaturedState({
           maturedDepositAssetAmount: 0,
           maturedCounterPartyAssetAmount: 0,
-          executed: false,
+          executed: _execute,
           round: _optionState.round
        }); 
-        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.premiumRate);
-        //todo: check callOrPut
-        bool shouldConvert = _optionState.strikePrice < _underlyingPrice; 
-        state.executed = shouldConvert; 
-        if (shouldConvert) {  
+        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.premiumRate); 
+        if (_execute) {  
            state.maturedCounterPartyAssetAmount = _optionState.totalAmount.mul(_optionState.strikePrice).
            mul(multipler).mul(10**counterPartyAssetAmountDecimals).
            div(RATIOMULTIPLIER).div(10**(_optionState.pricePrecision + depositAssetAmountDecimals)); 
@@ -68,7 +65,7 @@ contract PKKTHodlBoosterCallOption is PKKTHodlBoosterOption {
                pendingMaturedDepositAssetAmount[userAddress] = 0;
                continue;
             }
-            if (shouldConvert) {  
+            if (_execute) {  
                uint256 stableCoinAmount = state.maturedCounterPartyAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
                pendingMaturedCounterPartyAssetAmount[userAddress] = stableCoinAmount; 
                pendingMaturedDepositAssetAmount[userAddress] = 0;
