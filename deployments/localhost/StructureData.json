@@ -1,5 +1,5 @@
 {
-  "address": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+  "address": "0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f",
   "abi": [
     {
       "inputs": [],
@@ -15,24 +15,24 @@
       "type": "function"
     }
   ],
-  "transactionHash": "0x3b9280f3b3a557fc2629193c02ecfd1710886d671b500bc2c51d15ed1816ab9c",
+  "transactionHash": "0xd29faaa6f08518c8f61ccbbe443a9e4b87c55fa1b5421f6113d83bd126715b22",
   "receipt": {
     "to": null,
     "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "contractAddress": "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+    "contractAddress": "0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f",
     "transactionIndex": 0,
     "gasUsed": "83666",
     "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0xb43564510eaab628828e251cff9951c0d018ac551af487b120396b5b4e80e611",
-    "transactionHash": "0x3b9280f3b3a557fc2629193c02ecfd1710886d671b500bc2c51d15ed1816ab9c",
+    "blockHash": "0xdeb1c187cce626ac6fc0e227931310f07328169b58cfb3e96e77cd5ba0afd81e",
+    "transactionHash": "0xd29faaa6f08518c8f61ccbbe443a9e4b87c55fa1b5421f6113d83bd126715b22",
     "logs": [],
-    "blockNumber": 13600031,
+    "blockNumber": 13600055,
     "cumulativeGasUsed": "83666",
     "status": 1,
     "byzantium": true
   },
   "args": [],
-  "solcInputHash": "fb10e7a77efd2658909775850a25bcb0",
+  "solcInputHash": "13a8c0b9b4927cc65a0fa596a6ec647d",
   "metadata": "{\"compiler\":{\"version\":\"0.8.4+commit.c7e474f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"MATUREROUND\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/libraries/StructureData.sol\":\"StructureData\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/libraries/StructureData.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity =0.8.4;\\n\\nlibrary StructureData {\\n     \\n     uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement\\n    //the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)\\n    //for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option  \\n    struct OptionParameters {\\n         uint256 quota;  \\n         uint8 pricePrecision;\\n         int16 strikePriceRatio;  // take, 10% is represented as 1000, precision is 4\\n         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4\\n     }\\n\\n    struct OptionState {\\n         uint256 round;\\n         uint256 totalAmount; \\n         uint256 strikePrice;\\n         uint256 underlyingPrice; \\n         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4\\n         uint8 pricePrecision; \\n         bool executed; \\n         bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral;\\n    }\\n \\n   struct MaturedState {\\n       uint256 maturedDepositAssetAmount;\\n       uint256 maturedCounterPartyAssetAmount;\\n       bool executed;\\n       uint256 round;\\n       \\n   }\\n\\n    enum OptionType {\\n        HodlBooster,\\n        VolAlpha\\n    }\\n\\n    struct UserState {\\n        uint256 pendingAsset; //for current round\\n        uint256[MATUREROUND] ongoingAsset; //for previous 7 rounds\\n        uint8 nextCursor; //nextCursor\\n        uint232 totalRound; \\n        bool hasState;\\n        uint256 assetToTerminate;  \\n    }\\n    function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { \\n        uint cursor = userState.nextCursor;\\n        userState.ongoingAsset[cursor] = newValue;\\n        uint8 nextCursor = cursor == (MATUREROUND - 1) ? uint8(0) : uint8(cursor + 1);\\n        userState.nextCursor = nextCursor;\\n        userState.totalRound = userState.totalRound + 1; //won't overflow\\n    }\\n    \\n    function GetOngoingAsset(UserState storage userState, uint8 backwardRound) internal view returns(uint256) {\\n        if (userState.totalRound <= backwardRound) return 0;\\n        require(backwardRound < MATUREROUND);\\n        int8 previousCursor = int8(userState.nextCursor) - int8(backwardRound) - 1;\\n        if (previousCursor < 0) {\\n            previousCursor = previousCursor + int8(MATUREROUND);\\n        }\\n        return userState.ongoingAsset[uint8(previousCursor)];\\n    }\\n\\n    enum Direction {\\n        None,\\n        SendToTrader,\\n        SendBackToVault\\n    }\\n    struct SettlementInstruction {\\n        uint256 amount;\\n        address contractAddress; //0 for eth\\n        address targetAddress; //vault address\\n        Direction direction;\\n        bool fullfilled;\\n    }\\n\\n    struct MaturedAmount {\\n        uint256 amount;\\n        address asset;\\n    }\\n}\",\"keccak256\":\"0x531178432157db66fbf51cc51182c5e6900abda68057ee2f8e8c9649f7061ec8\",\"license\":\"MIT\"}},\"version\":1}",
   "bytecode": "0x608b610038600b82828239805160001a607314602b57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe730000000000000000000000000000000000000000301460806040526004361060335760003560e01c8063f747e177146038575b600080fd5b603f600181565b60405160ff909116815260200160405180910390f3fea2646970667358221220f5e35cd05955e0035731a144f8a2d26f88c0eae70fcdaf310469b6c4c25bdd2d64736f6c63430008040033",
   "deployedBytecode": "0x730000000000000000000000000000000000000000301460806040526004361060335760003560e01c8063f747e177146038575b600080fd5b603f600181565b60405160ff909116815260200160405180910390f3fea2646970667358221220f5e35cd05955e0035731a144f8a2d26f88c0eae70fcdaf310469b6c4c25bdd2d64736f6c63430008040033",

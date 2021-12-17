@@ -17,7 +17,7 @@ import {
 } from "../constants/constants";
 import { printOptionState, getDeployedContractHelper } from "./utilities/utilities";
 
-const main = async () => {
+async function main() {
     //const { settler, alice, bob, trader} = await getNamedAccounts();
     const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
     const [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption] = await getDeployedContracts();
@@ -60,7 +60,6 @@ const generateOptionData = async (
     wbtcHodlBoosterCall: PKKTHodlBoosterCallOption
 ) => {
     try {
-        
         let price = 40000;
         price *= (10 ** WBTC_PRICE_PRECISION);
 
@@ -181,6 +180,9 @@ const printRoundInformation = async (hodlBoosterOption: PKKTHodlBoosterOption) =
     printOptionState(optionState)
 }
 
-
-
-export default main;
+main()
+    .then(() => process.exit(0))
+    .catch(error => {
+        console.error(error);
+        process.exit(1);
+    });

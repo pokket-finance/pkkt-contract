@@ -40,7 +40,7 @@ export async function getDeployedContractHelper(name: string): Promise<Contract>
  * Prints an option's state
  * @param optionState option state to print
  */
-export async function printOptionState(optionState: OptionState) {
+export function printOptionState(optionState: OptionState) {
     for(const [key, value] of Object.entries(optionState)) {
         console.log(`${key}: ${value}`);
     }

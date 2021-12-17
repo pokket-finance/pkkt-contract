@@ -21,7 +21,7 @@ app.get("/", async (req, res) => {
     res.send("hello");
 });
 
-app.get("/:userId", async (req, res) => {
+app.get("/users/:userId", async (req, res) => {
     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
         "WBTCHodlBoosterCallOption"
     ) as PKKTHodlBoosterOption;
