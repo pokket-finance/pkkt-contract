@@ -14,12 +14,7 @@ interface IPKKTStructureOption {
     function deposit(uint256 _amount) external;
 
     //redeem unsettled amount
-    function redeem(uint256 _amount) external; 
-
-    function getPendingAsset() external view returns (uint256);   
-
-    //0 for latest, 6 for 7 days ago
-    function getOngoingAsset(uint8 _backwardRound) external view returns (uint256);
+    function redeem(uint256 _amount) external;  
 
     //complete withdraw happens on the option vault
     function initiateWithraw(uint256 _assetToTerminate) external; 
@@ -32,13 +27,9 @@ interface IPKKTStructureOption {
     
     function withdraw(uint256 _amount, address _asset) external; 
 
-    function completeWithdraw(uint256 _amount, address _asset) external;
+    function completeWithdraw(uint256 _amount, address _asset) external; 
 
-    function getMatured() external view returns (StructureData.MaturedAmount[] memory);
-
-    function getAvailable() external view returns (StructureData.Available memory);
-
-
+    function getAccountBalance() external view returns (StructureData.UserBalance memory); 
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
     function redeposit(uint256 _amount) external;
