@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.25.1",
+    "@graphprotocol/graph-ts": "^0.24.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-waffle": "^2.0.0",
@@ -60,7 +62,10 @@
     "lint:sol": "solhint -f table contracts/**/*.sol",
     "lint:sol:prettier": "prettier --write \"contracts/**/*.sol\"",
     "clean-logs": "yarn run hardhat remove-logs",
-    "coverage": "yarn run hardhat coverage"
+    "coverage": "yarn run hardhat coverage",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy-graph": "graph deploy --product hosted-service matt-user/option-rinkeby"
   },
   "husky": {
     "hooks": {

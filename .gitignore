@@ -11,3 +11,7 @@ typechain
 
 # Openzeppelin local project deployment files
 .openzeppelin/unknown-*.json
+
+# Graph generated files
+generated
+build
