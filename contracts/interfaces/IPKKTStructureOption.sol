@@ -4,6 +4,11 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
 
+    function getAccountBalance() external view returns (StructureData.UserBalance memory); 
+
+    function getOptionSnapShot() external view returns(StructureData.OptionSnapshot memory);
+ 
+
     
     function vaultAddress() external view returns(address);
 
@@ -28,8 +33,6 @@ interface IPKKTStructureOption {
     function withdraw(uint256 _amount, address _asset) external; 
 
     function completeWithdraw(uint256 _amount, address _asset) external; 
-
-    function getAccountBalance() external view returns (StructureData.UserBalance memory); 
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
     function redeposit(uint256 _amount) external;

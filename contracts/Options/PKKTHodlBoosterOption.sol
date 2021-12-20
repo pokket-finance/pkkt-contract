@@ -43,6 +43,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      IPKKTStructureOption public counterPartyOption;
      address public counterParty;
      IOptionVault public optionVault;
+     uint256 public totalMaturedDepositAssetAmount; 
+     uint256 public totalMaturedCounterPartyAssetAmount;
      
      //private data for complete withdrawal and redeposit 
      mapping(address=>uint256) private maturedDepositAssetAmount;
@@ -102,7 +104,21 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        return result;
     }
 
- 
+    function getOptionSnapShot() external override view returns(StructureData.OptionSnapshot memory) {
+       StructureData.OptionState storage currentOption = optionStates[currentRound];
+       StructureData.OptionState storage lockedOption = optionStates[underSettlement ? currentRound - 1 : currentRound];
+       StructureData.OptionState storage onGoingOption = optionStates[underSettlement ? currentRound - 2 : currentRound - 1];
+
+       //StructureData.OptionState storage currentOption = optionStates[currentRound];
+       StructureData.OptionSnapshot memory result = StructureData.OptionSnapshot({
+            totalPending: currentOption.totalAmount,
+            totalMaturedDeposit :  totalMaturedDepositAssetAmount,
+            totalMaturedCounterParty : totalMaturedCounterPartyAssetAmount,
+            totalOngoing : onGoingOption.totalAmount,
+            totalLocked: lockedOption.totalAmount 
+       }); 
+       return result;
+    }
 
     function completeWithdraw(uint256 _amount, address _asset) external override { 
        require(_amount > 0, "!amount");  
@@ -218,7 +234,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
        require(maturedAmount >= _amount, "Exceed available");
        maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
-       _depositFor(msg.sender, _amount);
+       _depositFor(msg.sender, _amount, currentRound);
     }
 
     //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
@@ -240,8 +256,9 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     //todo: what if quata is not enough
     function depositFromCounterParty(address[] memory addresses, uint256[] memory _amounts) override external {
         require(msg.sender == counterParty, "Only counterparty option can call this method");
+        uint256 round = underSettlement ? currentRound - 1 : currentRound;
         for(uint256 i = 0; i < 0 ; i++){
-            _depositFor(addresses[i], _amounts[i]);
+            _depositFor(addresses[i], _amounts[i], round);
         } 
     }
     //deposit eth
@@ -251,7 +268,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        require(msg.value > 0, "!value"); 
        
         //todo: convert to weth  
-       _depositFor(msg.sender, msg.value);
+       _depositFor(msg.sender, msg.value, currentRound);
        payable(vaultAddress()).transfer(msg.value);
     }
 
@@ -260,12 +277,12 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         require(currentRound > 0, "!Started");
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
-        _depositFor(msg.sender, _amount);  
+        _depositFor(msg.sender, _amount,currentRound);  
         IERC20(depositAsset).safeTransferFrom(msg.sender, vaultAddress(), _amount);
     }
  
   
-    function _depositFor(address _userAddress, uint256 _amount) private { 
+    function _depositFor(address _userAddress, uint256 _amount, uint256 _round) private { 
         StructureData.OptionState storage optionState = optionStates[currentRound];
         require(optionState.totalAmount.add(_amount) <= quota, "Not enough quota");
         StructureData.UserState storage userState =  userStates[_userAddress]; 
@@ -277,7 +294,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
         
-        emit Deposit(_userAddress, currentRound, _amount);
+        emit Deposit(_userAddress, _round, _amount);
     }
 
  
@@ -312,6 +329,9 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);  
         optionVault.setMaturityState(maturedState, depositAsset, counterPartyAsset);
         previousOptionState.executed = maturedState.executed;
+        if (previousOptionState.totalAmount > 0) { 
+            autoRoll(maturedState.executed);
+        }   
         emit CloseOption(maturedRound);
    }
 
@@ -328,7 +348,10 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
    function autoRoll(bool _counterParty) private {
         uint256 userCount = usersInvolved.length;
+        uint256 maturedDepositAssetAmounts = 0;
+        uint256 maturedCounterPartyAssetAmounts = 0;
         if (!_counterParty) {
+            uint256 lockedRound = currentRound - 1;
             for (uint i=0; i < userCount; i++) {
                 address userAddress = usersInvolved[i];
                 StructureData.UserState storage userState = userStates[userAddress]; 
@@ -341,14 +364,16 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
                 if (amountToTerminate > 0) {
                     maturedDepositAssetAmount[userAddress] = 
                     maturedDepositAssetAmount[userAddress].add(amountToTerminate);
+                    maturedDepositAssetAmounts = maturedDepositAssetAmounts.add(amountToTerminate);
                 }
                 uint256 remainingAmount = maturedAmount.sub(amountToTerminate);
                 if (remainingAmount > 0) { 
-                    _depositFor(userAddress, maturedAmount);
+                    _depositFor(userAddress, maturedAmount, lockedRound);
                 }
                 pendingMaturedDepositAssetAmount[userAddress] = 0;
                 userState.assetToTerminate = 0;
             }  
+            totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.add(maturedDepositAssetAmounts);
             return;
         }
          
@@ -364,6 +389,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
             if (amountToTerminate > 0) {
                 maturedCounterPartyAssetAmount[userAddress] = 
                 maturedCounterPartyAssetAmount[userAddress].add(amountToTerminate);
+                maturedCounterPartyAssetAmounts = maturedCounterPartyAssetAmounts.add(amountToTerminate);
             }
             uint256 remainingAmount = maturedAmount.sub(amountToTerminate); 
             if (remainingAmount > 0){   
@@ -373,6 +399,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
             pendingMaturedCounterPartyAssetAmount[userAddress] = 0;
             userState.assetToTerminate = 0;
         } 
+        
+        totalMaturedCounterPartyAssetAmount = totalMaturedCounterPartyAssetAmount.add(maturedCounterPartyAssetAmounts);
         uint256 count = autoRolledAmounts.length;
         if (count == 0) {
             return;
@@ -386,7 +414,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         }
         delete autoRolledUsers;
         delete autoRolledAmounts;
-        counterPartyOption.depositFromCounterParty(localAutoRolledUsers, localAutoRolledAmounts);        
+        counterPartyOption.depositFromCounterParty(localAutoRolledUsers, localAutoRolledAmounts); 
    }
 
    //close pending option and autoroll if capacity is enough based on the maturity result
@@ -400,14 +428,6 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        }
         require(underSettlement, "Not being settled");
         uint256 lockedRound = currentRound - 1;
-        //return when there is no previous round
-        //console.log("CommitCurrent: %s %d", name(), currentRound);
-        if (lockedRound > StructureData.MATUREROUND ) {  
-            StructureData.OptionState storage previousOptionState = optionStates[lockedRound - StructureData.MATUREROUND];
-            if (previousOptionState.totalAmount > 0) { 
-                autoRoll(previousOptionState.executed);
-            }   
-        } 
         StructureData.OptionState storage optionState = optionStates[lockedRound];
         optionVault.setCommittedState(optionState, depositAsset, counterPartyAsset); 
         optionState.strikePrice = _optionParameters.strikePrice;
@@ -425,6 +445,13 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
                 //utilizing some web3 indexed services, take etherscan api/graphql etc.
                 _transfer(address(this), userAddress, userState.lockedAsset);
             } 
+            if (userState.assetToTerminateForNextRound != 0){
+                userState.assetToTerminate = userState.assetToTerminateForNextRound;
+                userState.assetToTerminateForNextRound = 0;
+            } 
+            else {
+                userState.assetToTerminate = 0;
+            }
             userState.SetOngoingAsset(userState.lockedAsset); 
             userState.lockedAsset = 0;
          }
@@ -432,6 +459,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
       
         optionHeights[lockedRound] = block.number; //commit current option at current block
         emit CommitOption(lockedRound);
+        underSettlement = false;
    }
        
    //first, new round

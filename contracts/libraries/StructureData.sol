@@ -46,6 +46,14 @@ library StructureData {
         uint256 assetToTerminateForNextRound;  
     }
 
+    struct OptionSnapshot {
+        uint256 totalPending;
+        uint256 totalLocked;
+        uint256 totalOngoing;
+        uint256 totalMaturedDeposit;
+        uint256 totalMaturedCounterParty;
+    }
+
     struct UserBalance {
         uint256 pendingDepositAssetAmount; 
         uint256 lockedDepositAssetAmount; 
