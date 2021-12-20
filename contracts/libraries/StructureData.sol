@@ -37,19 +37,31 @@ library StructureData {
 
     struct UserState {
         uint256 pendingAsset; //for current round
+        uint256 lockedAsset;//asset undersettlement
         uint256[MATUREROUND] ongoingAsset; //for previous 7 rounds
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
         uint256 assetToTerminate;  
+        uint256 assetToTerminateForNextRound;  
     }
 
-    struct Available {
-        uint256 pendingDepositAssetAmount;
+    struct OptionSnapshot {
+        uint256 totalPending;
+        uint256 totalLocked;
+        uint256 totalOngoing;
+        uint256 totalMaturedDeposit;
+        uint256 totalMaturedCounterParty;
+    }
+
+    struct UserBalance {
+        uint256 pendingDepositAssetAmount; 
+        uint256 lockedDepositAssetAmount; 
+        uint256 ongoingDepositAssetAmount;
         uint256 maturedDepositAssetAmount;
         uint256 maturedCounterPartyAssetAmount;
     }
-    
+
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
         uint cursor = userState.nextCursor;
         userState.ongoingAsset[cursor] = newValue;
@@ -84,5 +96,25 @@ library StructureData {
     struct MaturedAmount {
         uint256 amount;
         address asset;
+    }
+
+    struct SettlementResult {
+        address option;
+        uint256 round;
+        bool executed;
+        uint256 depositAmount; //New-Deposit
+        uint256 autoRollAmount; //T-1 Carried (filled only when not executed)
+        uint256 autoRollPremium; //Premium (filled only when not executed)
+        //maturedAmount+maturedPremium = requested withdrawal for deposit asset(filled only when not executed and with withdraw request)
+        uint256 maturedAmount;  
+        uint256 maturedPremium;
+        //autoRollCounterPartyAmount + autoRollCounterPartyPremium = Execution rolled-out for deposit asset (Execution roll-in for counter party option)
+        //filled only when executed
+        uint256 autoRollCounterPartyAmount;
+        uint256 autoRollCounterPartyPremium;
+        //maturedCounterPartyAmount+maturedCounterPartyPremium= requested withdrawal for couter party asset(filled only when executed and with withdraw request)
+        uint256 maturedCounterPartyAmount;
+        uint256 maturedCounterPartyPremium;
+
     }
 }

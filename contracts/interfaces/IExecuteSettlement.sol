@@ -11,5 +11,6 @@ interface IExecuteSettlement {
 
     //open a new option
    function rollToNext(uint256 _quota) external; 
-
+ 
+   //function dryRunSettlement(bool _execute) external view returns(StructureData.SettlementResult memory _result);
 }
