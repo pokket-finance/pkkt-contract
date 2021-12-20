@@ -23,6 +23,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     event CloseOption(uint256 indexed round);
     event CommitOption(uint256 indexed round);
     event OpenOption(uint256 indexed round);
+    event OptionCreated(address indexed option, string indexed name);
+
  
     uint256 public constant RATIOMULTIPLIER = 10000;
     uint8 internal depositAssetAmountDecimals;
@@ -73,6 +75,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
+        emit OptionCreated(address(this), name);
     }
 
     function setCounterPartyOption(address _counterParty) external {

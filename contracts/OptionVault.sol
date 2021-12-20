@@ -23,7 +23,7 @@ contract OptionVault is IOptionVault, AccessControl {
     mapping(address=>uint256) private pendingAmount;
     address[] private asset;
     mapping(address=>bool) assetExistence;
-    mapping(address=>StructureData.SettlementInstruction) public settlementInstruction; 
+    mapping(address=>StructureData.SettlementInstruction) public settlementInstruction;
     
     bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
     bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
@@ -35,7 +35,7 @@ contract OptionVault is IOptionVault, AccessControl {
     }
     
     function addOption(address _optionContract) external override onlyRole(DEFAULT_ADMIN_ROLE){
-        _setupRole(OPTION_ROLE, _optionContract); 
+        _setupRole(OPTION_ROLE, _optionContract);
     }
 
     function removeOption(address _optionContract) external override onlyRole(DEFAULT_ADMIN_ROLE){
