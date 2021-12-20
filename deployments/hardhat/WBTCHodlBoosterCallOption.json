@@ -206,6 +206,25 @@
         {
           "indexed": true,
           "internalType": "address",
+          "name": "option",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        }
+      ],
+      "name": "OptionCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "previousOwner",
           "type": "address"
         },
@@ -366,8 +385,21 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "_underlyingPrice",
+          "name": "_assetToTerminate",
           "type": "uint256"
+        }
+      ],
+      "name": "cancelWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "_execute",
+          "type": "bool"
         }
       ],
       "name": "closePrevious",
@@ -376,7 +408,30 @@
       "type": "function"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "strikePrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "pricePrecision",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint16",
+              "name": "premiumRate",
+              "type": "uint16"
+            }
+          ],
+          "internalType": "struct StructureData.OptionParameters",
+          "name": "_optionParameters",
+          "type": "tuple"
+        }
+      ],
       "name": "commitCurrent",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -542,6 +597,36 @@
     },
     {
       "inputs": [],
+      "name": "getAvailable",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "pendingDepositAssetAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maturedDepositAssetAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "maturedCounterPartyAssetAmount",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct StructureData.Available",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "getMatured",
       "outputs": [
         {
@@ -622,11 +707,6 @@
             {
               "internalType": "uint256",
               "name": "strikePrice",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "underlyingPrice",
               "type": "uint256"
             },
             {
@@ -753,6 +833,20 @@
     },
     {
       "inputs": [],
+      "name": "maxCancelWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "maxInitiateWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "name",
       "outputs": [
         {
@@ -784,34 +878,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "optionParameters",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "quota",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint8",
-          "name": "pricePrecision",
-          "type": "uint8"
-        },
-        {
-          "internalType": "int16",
-          "name": "strikePriceRatio",
-          "type": "int16"
-        },
-        {
-          "internalType": "uint16",
-          "name": "premiumRate",
-          "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint256",
@@ -834,11 +900,6 @@
         {
           "internalType": "uint256",
           "name": "strikePrice",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "underlyingPrice",
           "type": "uint256"
         },
         {
@@ -886,19 +947,6 @@
           "internalType": "address",
           "name": "",
           "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "previousUnderlyingPrice",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -953,31 +1001,9 @@
     {
       "inputs": [
         {
-          "components": [
-            {
-              "internalType": "uint256",
-              "name": "quota",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint8",
-              "name": "pricePrecision",
-              "type": "uint8"
-            },
-            {
-              "internalType": "int16",
-              "name": "strikePriceRatio",
-              "type": "int16"
-            },
-            {
-              "internalType": "uint16",
-              "name": "premiumRate",
-              "type": "uint16"
-            }
-          ],
-          "internalType": "struct StructureData.OptionParameters",
-          "name": "_optionParameters",
-          "type": "tuple"
+          "internalType": "uint256",
+          "name": "_quota",
+          "type": "uint256"
         }
       ],
       "name": "rollToNext",
@@ -1177,6 +1203,24 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_asset",
+          "type": "address"
+        }
+      ],
+      "name": "withdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "initialLogic",
           "type": "address"
@@ -1196,21 +1240,21 @@
       "type": "constructor"
     }
   ],
-  "transactionHash": "0xf335424e9dd382394e3ef1bea7fb15c19050b908fdb3bedac30733e35f8a6063",
+  "transactionHash": "0x965baa8503e6300ece23327c025c75dee4ea0e1fa4a33637939c8d6f460c1989",
   "receipt": {
     "to": null,
     "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "contractAddress": "0xC9a43158891282A2B1475592D5719c001986Aaec",
     "transactionIndex": 0,
-    "gasUsed": "733938",
-    "logsBloom": "0x00000800000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000020000000000000100000800000000000000000000000000000000400000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000200000000000000000000000002000000000000000000020000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0x684526b5ca7f5f4d5d072cfb1d8013bde4f17069bc63ffcbb2ff85a3a871f3e0",
-    "transactionHash": "0xf335424e9dd382394e3ef1bea7fb15c19050b908fdb3bedac30733e35f8a6063",
+    "gasUsed": "735788",
+    "logsBloom": "0x00000800000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000001001000000000000000000000000000400000000000000000000000000000001000000000000000000000000000000000000020000040000000100000801000000000000000000000000000000400000000000000000000000000000000000000000000200000000000000000000000000000000000000040000000000000000000000000000000000001000000000000200000000300000000000000000000000002000000000000200000020000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xfd0b882d5b1632d771c70e5a14038f6b65da914efb08c89f376a4708c694c13b",
+    "transactionHash": "0x965baa8503e6300ece23327c025c75dee4ea0e1fa4a33637939c8d6f460c1989",
     "logs": [
       {
         "transactionIndex": 0,
         "blockNumber": 13600007,
-        "transactionHash": "0xf335424e9dd382394e3ef1bea7fb15c19050b908fdb3bedac30733e35f8a6063",
+        "transactionHash": "0x965baa8503e6300ece23327c025c75dee4ea0e1fa4a33637939c8d6f460c1989",
         "address": "0xC9a43158891282A2B1475592D5719c001986Aaec",
         "topics": [
           "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
@@ -1219,11 +1263,25 @@
         ],
         "data": "0x",
         "logIndex": 0,
-        "blockHash": "0x684526b5ca7f5f4d5d072cfb1d8013bde4f17069bc63ffcbb2ff85a3a871f3e0"
+        "blockHash": "0xfd0b882d5b1632d771c70e5a14038f6b65da914efb08c89f376a4708c694c13b"
+      },
+      {
+        "transactionIndex": 0,
+        "blockNumber": 13600007,
+        "transactionHash": "0x965baa8503e6300ece23327c025c75dee4ea0e1fa4a33637939c8d6f460c1989",
+        "address": "0xC9a43158891282A2B1475592D5719c001986Aaec",
+        "topics": [
+          "0x8f61f0def895309a310dec5facf78f589cf18d834f0ba4030a5e68e32180ec97",
+          "0x000000000000000000000000c9a43158891282a2b1475592d5719c001986aaec",
+          "0x14ed39d7ba6a7fb8965976f27cbb4febe746a256b2e207f36ff6228e356c5fc1"
+        ],
+        "data": "0x",
+        "logIndex": 1,
+        "blockHash": "0xfd0b882d5b1632d771c70e5a14038f6b65da914efb08c89f376a4708c694c13b"
       }
     ],
     "blockNumber": 13600007,
-    "cumulativeGasUsed": "733938",
+    "cumulativeGasUsed": "735788",
     "status": 1,
     "byzantium": true
   },
