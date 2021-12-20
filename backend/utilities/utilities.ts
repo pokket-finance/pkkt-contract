@@ -7,7 +7,6 @@ type OptionState = {
         round: BigNumber;
         totalAmount: BigNumber;
         strikePrice: BigNumber;
-        underlyingPrice: BigNumber;
         premiumRate: number;
         pricePrecision: number;
         executed: boolean;

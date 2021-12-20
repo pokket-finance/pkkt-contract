@@ -1,0 +1,16 @@
+type User @entity {
+    "user address"
+    id: ID!
+    optionPostion: OptionPosition!
+}
+
+type Option @entity {
+    id: ID!
+}
+
+type OptionPosition @entity {
+    id: ID!
+    user: User!
+    optionType: Option!
+    optionBalance: BigInt!
+}
