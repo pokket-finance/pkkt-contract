@@ -59,6 +59,8 @@ library StructureData {
         uint256 totalOngoing;
         uint256 totalReleasedDeposit;
         uint256 totalReleasedCounterParty;
+        bool releasedDepositAvailable;
+        bool releasedCounterPartyAvailable;
     }
 
     struct UserBalance {

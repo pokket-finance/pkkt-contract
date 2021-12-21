@@ -16,8 +16,5 @@ interface IOptionVault {
     function startSettlement(address _traderAddress) external;
     function finishSettlement() external;
 
-    function allSettled() external view returns(bool);
-
-    
-    
+    function allSettled() external view returns(bool); 
 }
