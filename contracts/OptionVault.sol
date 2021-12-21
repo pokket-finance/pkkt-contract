@@ -18,7 +18,7 @@ contract OptionVault is IOptionVault, AccessControl {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
      
-    mapping(address=>uint256) private maturedAmount;
+    mapping(address=>uint256) private releasedAmount;
     //mapping(address=>uint256) private requestingAmount;
     mapping(address=>uint256) private pendingAmount;
     address[] private asset;
@@ -72,7 +72,7 @@ contract OptionVault is IOptionVault, AccessControl {
        }
         for (uint i=0; i < assetCount; i++) {
             address assetAddress = asset[i]; 
-            maturedAmount[assetAddress] = 0;
+            releasedAmount[assetAddress] = 0;
             pendingAmount[assetAddress] = 0;
        }
 
@@ -93,14 +93,14 @@ contract OptionVault is IOptionVault, AccessControl {
     }
     function setMaturityState(StructureData.MaturedState memory _maturedState, address _depositAsset, address _counterPartyAsset)  
     external override  onlyRole(OPTION_ROLE){ 
-        if (_maturedState.maturedDepositAssetAmount > 0) {
-           uint256 maturedDepositAssetAmount  = maturedAmount[_depositAsset];
-           maturedAmount[_depositAsset] = maturedDepositAssetAmount.add(_maturedState.maturedDepositAssetAmount);
+        if (_maturedState.releasedDepositAssetAmount > 0) {
+           uint256 releasedDepositAssetAmount  = releasedAmount[_depositAsset];
+           releasedAmount[_depositAsset] = releasedDepositAssetAmount.add(_maturedState.releasedDepositAssetAmount);
            addAssetIfNeeded(_depositAsset);
         }
-        if (_maturedState.maturedCounterPartyAssetAmount > 0) {
-            uint256 maturedCounterPartyAssetAmount = maturedAmount[_counterPartyAsset];
-            maturedAmount[_counterPartyAsset] = maturedCounterPartyAssetAmount.add(_maturedState.maturedCounterPartyAssetAmount);
+        if (_maturedState.releasedCounterPartyAssetAmount > 0) {
+            uint256 releasedCounterPartyAssetAmount = releasedAmount[_counterPartyAsset];
+            releasedAmount[_counterPartyAsset] = releasedCounterPartyAssetAmount.add(_maturedState.releasedCounterPartyAssetAmount);
             addAssetIfNeeded(_counterPartyAsset);
         } 
          
@@ -131,10 +131,10 @@ contract OptionVault is IOptionVault, AccessControl {
         
         for (uint i=0; i < assetCount; i++) {
             address assetAddress = asset[i];
-            uint256 matured = maturedAmount[assetAddress];
+            uint256 released = releasedAmount[assetAddress];
             uint256 pending = pendingAmount[assetAddress]; 
             //console.log("%s: %d %d", assetAddress, matured, pending);
-            if (pending == matured) {
+            if (pending == released) {
 
                 StructureData.SettlementInstruction memory instruction = StructureData.SettlementInstruction({
                     contractAddress: assetAddress,
@@ -145,8 +145,8 @@ contract OptionVault is IOptionVault, AccessControl {
                 });  
                 settlementInstruction[assetAddress] = instruction; 
             }
-            else if (pending > matured) {
-                uint diff = pending.sub(matured);
+            else if (pending > released) {
+                uint diff = pending.sub(released);
                 StructureData.SettlementInstruction memory instruction = StructureData.SettlementInstruction({
                     contractAddress: assetAddress,
                     targetAddress: _traderAddress,
@@ -160,7 +160,7 @@ contract OptionVault is IOptionVault, AccessControl {
             }
             else {
                 
-                uint diff = matured.sub(pending);
+                uint diff = released.sub(pending);
                 StructureData.SettlementInstruction memory instruction = StructureData.SettlementInstruction({
                     contractAddress: assetAddress,
                     targetAddress: getAddress(),
@@ -187,7 +187,7 @@ contract OptionVault is IOptionVault, AccessControl {
                     uint256 balance = getMaturedBalance(assetAddress);
                      //console.log("%s %d %d", assetAddress, balance, maturedAmount[assetAddress]);
                     
-                    if (balance >= maturedAmount[assetAddress]) {
+                    if (balance >= releasedAmount[assetAddress]) {
                         instruction.fullfilled = true;
                     }
                }

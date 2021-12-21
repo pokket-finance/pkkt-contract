@@ -8,6 +8,7 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
 import "hardhat/console.sol";
  
+import {Utils} from "../libraries/Utils.sol";  
 import {StructureData} from "../libraries/StructureData.sol";     
 import "../interfaces/IPKKTStructureOption.sol";
 import "../interfaces/IExecuteSettlement.sol"; 
@@ -43,16 +44,15 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      IPKKTStructureOption public counterPartyOption;
      address public counterParty;
      IOptionVault public optionVault;
-     uint256 public totalMaturedDepositAssetAmount; 
-     uint256 public totalMaturedCounterPartyAssetAmount;
+     uint256 public totalReleasedDepositAssetAmount; 
+     uint256 public totalReleasedCounterPartyAssetAmount;
+     //todo: maintain value
      uint256 public leftOverDepositAssetAmount;
      uint256 public leftOverCounterPartyAssetAmount;
      
      //private data for complete withdrawal and redeposit 
-     mapping(address=>uint256) private maturedDepositAssetAmount;
-     mapping(address=>uint256) private maturedCounterPartyAssetAmount;  
-     mapping(address=>uint256) internal pendingMaturedDepositAssetAmount;
-     mapping(address=>uint256) internal pendingMaturedCounterPartyAssetAmount;
+     mapping(address=>uint256) private releasedDepositAssetAmount;
+     mapping(address=>uint256) private releasedCounterPartyAssetAmount;  
 
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
@@ -98,8 +98,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        StructureData.UserState storage userState = userStates[msg.sender];
        StructureData.UserBalance memory result = StructureData.UserBalance({
            pendingDepositAssetAmount:userState.pendingAsset,
-           maturedDepositAssetAmount: maturedDepositAssetAmount[msg.sender],
-           maturedCounterPartyAssetAmount: maturedCounterPartyAssetAmount[msg.sender],
+           releasedDepositAssetAmount: releasedDepositAssetAmount[msg.sender],
+           releasedCounterPartyAssetAmount: releasedCounterPartyAssetAmount[msg.sender],
            lockedDepositAssetAmount:userState.lockedAsset, 
            ongoingDepositAssetAmount: userState.GetOngoingAsset(0)
        });
@@ -114,8 +114,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        //StructureData.OptionState storage currentOption = optionStates[currentRound];
        StructureData.OptionSnapshot memory result = StructureData.OptionSnapshot({
             totalPending: currentOption.totalAmount,
-            totalMaturedDeposit :  totalMaturedDepositAssetAmount,
-            totalMaturedCounterParty : totalMaturedCounterPartyAssetAmount,
+            totalReleasedDeposit :  totalReleasedDepositAssetAmount,
+            totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount,
             totalOngoing : onGoingOption.totalAmount,
             totalLocked: lockedOption.totalAmount 
        }); 
@@ -128,75 +128,95 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        require(currentRound > 1, "!No Matured");  
        require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address");
        if (_asset == depositAsset) {
-           uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
-           require(maturedAmount >= _amount, "Exceed available");
-           maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount); 
-           totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.sub(_amount);
+           uint256 releasedAmount = releasedDepositAssetAmount[msg.sender];
+           require(releasedAmount >= _amount, "Exceed available");
+           releasedDepositAssetAmount[msg.sender] = releasedAmount.sub(_amount); 
+           totalReleasedDepositAssetAmount = totalReleasedDepositAssetAmount.sub(_amount);
        }
        else {
            
-           uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
-           require(maturedAmount >= _amount, "Exceed available");
-           maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
-           totalMaturedCounterPartyAssetAmount = totalMaturedCounterPartyAssetAmount.sub(_amount);
+           uint256 releasedAmount = releasedCounterPartyAssetAmount[msg.sender];
+           require(releasedAmount >= _amount, "Exceed available");
+           releasedCounterPartyAssetAmount[msg.sender] = releasedAmount.sub(_amount);
+           totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.sub(_amount);
        }
        
         optionVault.withdraw(msg.sender, _amount, _asset);
     }
     function initiateWithraw(uint256 _assetToTerminate) external override {
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
-        StructureData.UserState storage userState =  userStates[msg.sender];
-        //undersettlement
-        if (userState.lockedAsset > 0) { 
+        StructureData.UserState storage userState =  userStates[msg.sender]; 
+        if (underSettlement) { 
+            require(currentRound > 1, "No locked");
             uint256 newAssetToTerminate = userState.assetToTerminateForNextRound.add(_assetToTerminate);
             uint256 locked = userState.lockedAsset;
             require(newAssetToTerminate <= locked, "Exceeds available");
             userState.assetToTerminateForNextRound = newAssetToTerminate;
+            StructureData.OptionState storage lockedOption = optionStates[currentRound - 1];
+            lockedOption.totalTerminate = lockedOption.totalTerminate.add(_assetToTerminate);
         }
         else {
+            require(currentRound > StructureData.MATUREROUND + 1, "No on going");
             uint256 newAssetToTerminate = userState.assetToTerminate.add(_assetToTerminate);
             uint256 ongoing = userState.GetOngoingAsset(0);
             require(newAssetToTerminate <= ongoing, "Exceeds available");
             userState.assetToTerminate = newAssetToTerminate;
+            StructureData.OptionState storage onGoingOption = optionStates[currentRound - 1 - StructureData.MATUREROUND];
+            onGoingOption.totalTerminate = onGoingOption.totalTerminate.add(_assetToTerminate);
         }
 
     }
 
     function cancelWithdraw(uint256 _assetToTerminate) external override { 
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
-        StructureData.UserState storage userState =  userStates[msg.sender];
-         //undersettlement
-        if (userState.lockedAsset > 0) { 
+        StructureData.UserState storage userState =  userStates[msg.sender]; 
+        if (underSettlement) { 
+            require(currentRound > 1, "No locked");
             require(_assetToTerminate <= userState.assetToTerminateForNextRound, "Exceed available");
-            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.sub(_assetToTerminate);
+            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.sub(_assetToTerminate); 
+            StructureData.OptionState storage lockedOption = optionStates[currentRound - 1];
+            lockedOption.totalTerminate = lockedOption.totalTerminate.sub(_assetToTerminate);
         }
         else { 
+            require(currentRound > StructureData.MATUREROUND + 1, "No on going");
             require(_assetToTerminate <= userState.assetToTerminate, "Exceed available");
             userState.assetToTerminate = userState.assetToTerminate.sub(_assetToTerminate);
+            StructureData.OptionState storage onGoingOption = optionStates[currentRound - 1 - StructureData.MATUREROUND];
+            onGoingOption.totalTerminate = onGoingOption.totalTerminate.sub(_assetToTerminate);
         }
 
     } 
     
     
     function maxInitiateWithdraw() external override {  
-        StructureData.UserState storage userState =  userStates[msg.sender];
-        //undersettlement
-        if (userState.lockedAsset > 0) {  
+        StructureData.UserState storage userState =  userStates[msg.sender]; 
+        if (underSettlement) {  
+            require(currentRound > 1, "No locked");
             userState.assetToTerminateForNextRound = userState.lockedAsset;
+            StructureData.OptionState storage lockedOption = optionStates[currentRound - 1];
+            lockedOption.totalTerminate = lockedOption.totalTerminate.add(userState.lockedAsset);
         }
         else {  
+            require(currentRound > StructureData.MATUREROUND + 1, "No on going");
             userState.assetToTerminate = userState.GetOngoingAsset(0);
+            StructureData.OptionState storage onGoingOption = optionStates[currentRound - 1 - StructureData.MATUREROUND];
+            onGoingOption.totalTerminate = onGoingOption.totalTerminate.add(userState.assetToTerminate);
         }
  
     }
 
     function maxCancelWithdraw() external override {   
-        StructureData.UserState storage userState =  userStates[msg.sender]; 
-         //undersettlement
-        if (userState.lockedAsset > 0) {  
+        StructureData.UserState storage userState =  userStates[msg.sender];  
+        if (underSettlement) {  
+            require(currentRound > 1, "No locked");
+            StructureData.OptionState storage lockedOption = optionStates[currentRound - 1];
+            lockedOption.totalTerminate = lockedOption.totalTerminate.sub( userState.assetToTerminateForNextRound);
             userState.assetToTerminateForNextRound = 0;
         }
         else {  
+            require(currentRound > StructureData.MATUREROUND + 1, "No on going");
+            StructureData.OptionState storage onGoingOption = optionStates[currentRound - 1 - StructureData.MATUREROUND];
+            onGoingOption.totalTerminate = onGoingOption.totalTerminate.sub(userState.assetToTerminate);
             userState.assetToTerminate = 0;
         } 
     }
@@ -206,28 +226,28 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        require(!underSettlement, "Being settled");  
        require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address");
        if (_asset == depositAsset) {
-           uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
-           if (maturedAmount <= _amount) { 
+           uint256 releasedAmount = releasedDepositAssetAmount[msg.sender];
+           if (releasedAmount <= _amount) { 
                StructureData.UserState storage userState =  userStates[msg.sender];  
-               require(userState.pendingAsset >= _amount.sub(maturedAmount), "Exceeds available"); 
-               maturedDepositAssetAmount[msg.sender] = 0; 
-               totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.sub(maturedAmount);
-               userState.pendingAsset = userState.pendingAsset.sub(_amount.sub(maturedAmount));
+               require(userState.pendingAsset >= _amount.sub(releasedAmount), "Exceeds available"); 
+               releasedDepositAssetAmount[msg.sender] = 0; 
+               totalReleasedDepositAssetAmount = totalReleasedDepositAssetAmount.sub(releasedAmount);
+               userState.pendingAsset = userState.pendingAsset.sub(_amount.sub(releasedAmount));
                StructureData.OptionState storage optionState = optionStates[currentRound];
-               optionState.totalAmount = optionState.totalAmount.sub(_amount.sub(maturedAmount));  
+               optionState.totalAmount = optionState.totalAmount.sub(_amount.sub(releasedAmount));  
            }
-           else{ 
-               maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount); 
-               totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.sub(_amount);
+           else { 
+               releasedDepositAssetAmount[msg.sender] = releasedAmount.sub(_amount); 
+               totalReleasedDepositAssetAmount = totalReleasedDepositAssetAmount.sub(_amount);
            }
        }
        else {
 
            //same result as completeWithdraw
-           uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
-           require(maturedAmount >= _amount, "Exceed available");
-           maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
-           totalMaturedCounterPartyAssetAmount = totalMaturedCounterPartyAssetAmount.sub(_amount);
+           uint256 releasedAmount = releasedCounterPartyAssetAmount[msg.sender];
+           require(releasedAmount >= _amount, "Exceed available");
+           releasedCounterPartyAssetAmount[msg.sender] = releasedAmount.sub(_amount);
+           totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.sub(_amount);
        }
         optionVault.withdraw(msg.sender, _amount, _asset);
         emit Withdraw(msg.sender, _asset, _amount);
@@ -238,10 +258,10 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     function redeposit(uint256 _amount) external override { 
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount"); 
-       uint256 maturedAmount = maturedDepositAssetAmount[msg.sender];
-       require(maturedAmount >= _amount, "Exceed available");
-       maturedDepositAssetAmount[msg.sender] = maturedAmount.sub(_amount);
-       totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.sub(_amount);
+       uint256 releasedAmount = releasedDepositAssetAmount[msg.sender];
+       require(releasedAmount >= _amount, "Exceed available");
+       releasedDepositAssetAmount[msg.sender] = releasedAmount.sub(_amount);
+       totalReleasedDepositAssetAmount = totalReleasedDepositAssetAmount.sub(_amount);
        _depositFor(msg.sender, _amount, currentRound);
     }
 
@@ -250,9 +270,9 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount"); 
-       uint256 maturedAmount = maturedCounterPartyAssetAmount[msg.sender];
-       require(maturedAmount >= _amount, "Exceed available");
-       maturedCounterPartyAssetAmount[msg.sender] = maturedAmount.sub(_amount);
+       uint256 releasedAmount = releasedCounterPartyAssetAmount[msg.sender];
+       require(releasedAmount >= _amount, "Exceed available");
+       releasedCounterPartyAssetAmount[msg.sender] = releasedAmount.sub(_amount);
        address[] memory addresses = new address[](1);
        uint256[] memory amounts = new uint256[](1);
        addresses[0] = msg.sender;
@@ -263,7 +283,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
     //todo: what if quata is not enough
     function depositFromCounterParty(address[] memory addresses, uint256[] memory _amounts) override external {
-        require(msg.sender == counterParty, "Only counterparty option can call this method");
+        require(msg.sender == counterParty, "Only counter party option can call this method");
         uint256 round = underSettlement ? currentRound - 1 : currentRound;
         for(uint256 i = 0; i < 0 ; i++){
             _depositFor(addresses[i], _amounts[i], round);
@@ -329,9 +349,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         require(underSettlement, "Not being settled");
         require(currentRound > 1, "Nothing to settle");
 
-       StructureData.OptionState storage lockedOption = optionStates[currentRound - 1];
-       //StructureData.OptionState storage onGoingOption = optionStates[currentRound - 2];
-
+        StructureData.OptionState storage lockedOption = optionStates[currentRound - 1]; 
         StructureData.SettlementResult memory result = StructureData.SettlementResult({
             option: address(this),
             round: currentRound - 1,
@@ -341,15 +359,31 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
             executed: _execute,
             autoRollAmount: 0,
             autoRollPremium: 0,
-            maturedAmount: 0,
-            maturedPremium: 0,
+            releasedAmount: 0,
+            releasedPremium: 0,
             autoRollCounterPartyAmount: 0,
             autoRollCounterPartyPremium: 0,
-            maturedCounterPartyAmount: 0,
-            maturedCounterPartyPremium: 0
+            releasedCounterPartyAmount: 0,
+            releasedCounterPartyPremium: 0
         });
-
-        return result;
+       if (currentRound > StructureData.MATUREROUND + 1) { 
+            StructureData.OptionState memory previousOptionState = optionStates[currentRound - StructureData.MATUREROUND - 1];
+            StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState); 
+            if (_execute) { 
+                result.autoRollCounterPartyAmount = maturedState.autoRollCounterPartyAssetAmount;
+                result.autoRollCounterPartyPremium = maturedState.autoRollCounterPartyAssetPremiumAmount;
+                result.releasedCounterPartyAmount = maturedState.releasedCounterPartyAssetAmount;
+                result.releasedCounterPartyPremium = maturedState.releasedCounterPartyAssetPremiumAmount;
+            }
+            else { 
+                result.autoRollAmount = maturedState.autoRollDepositAssetAmount;
+                result.autoRollPremium = maturedState.autoRollDepositAssetPremiumAmount;
+                result.releasedAmount = maturedState.releasedDepositAssetAmount;
+                result.releasedPremium = maturedState.releasedDepositAssetPremiumAmount;
+            }
+            
+       } 
+       return result;
    }
 
    function closePrevious(bool _execute) external override onlyOwner {  
@@ -362,79 +396,113 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
         StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);  
         optionVault.setMaturityState(maturedState, depositAsset, counterPartyAsset);
-        previousOptionState.executed = maturedState.executed;
+        previousOptionState.executed = _execute;
+        if (_execute) {
+            totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.
+            add(maturedState.releasedCounterPartyAssetAmount).add(maturedState.releasedCounterPartyAssetPremiumAmount); 
+        }
+        else {
+            totalReleasedDepositAssetAmount = totalReleasedDepositAssetAmount.
+            add(maturedState.releasedDepositAssetAmount).add(maturedState.releasedDepositAssetPremiumAmount);
+        }
         if (previousOptionState.totalAmount > 0) { 
-            autoRoll(maturedState.executed);
+            autoRoll(_execute, previousOptionState.totalAmount, maturedState);
         }   
         emit CloseOption(maturedRound);
    }
 
-   function _calculateMaturity(bool _execute, StructureData.OptionState memory _optionState) 
-   internal virtual returns(StructureData.MaturedState memory _state); 
+   
+     function _calculateMaturity(bool _execute, StructureData.OptionState memory _optionState) private view
+     returns(StructureData.MaturedState memory) {
+       StructureData.MaturedState memory state = StructureData.MaturedState({
+          releasedDepositAssetAmount: 0,
+          releasedDepositAssetPremiumAmount: 0,
+          autoRollDepositAssetAmount: 0,
+          autoRollDepositAssetPremiumAmount: 0,
+          releasedCounterPartyAssetAmount: 0, 
+          releasedCounterPartyAssetPremiumAmount: 0,
+          autoRollCounterPartyAssetAmount: 0,
+          autoRollCounterPartyAssetPremiumAmount: 0,
+          round: _optionState.round
+       });  
+        if (_execute) {  
+           uint256 maturedCounterPartyAssetAmount = _optionState.totalAmount.mul(10**(_optionState.pricePrecision + counterPartyAssetAmountDecimals)).
+           div(_optionState.strikePrice).div(10** depositAssetAmountDecimals); 
+           uint256 maturedCounterPartyAssetPremiumAmount = maturedCounterPartyAssetAmount.mul(_optionState.premiumRate).div(RATIOMULTIPLIER);
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedCounterPartyAssetAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedCounterPartyAssetPremiumAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollCounterPartyAssetAmount = maturedCounterPartyAssetAmount.sub(state.releasedCounterPartyAssetAmount);
+           state.autoRollCounterPartyAssetPremiumAmount = maturedCounterPartyAssetPremiumAmount.sub(state.releasedCounterPartyAssetPremiumAmount);
+        }
+        else {
+           uint256 maturedDepositAssetAmount = _optionState.totalAmount;
+           uint256 maturedDepositAssetPremiumAmount = maturedDepositAssetAmount.mul(_optionState.premiumRate).div(RATIOMULTIPLIER);
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedDepositAssetAmount = Utils.getAmountToTerminate(maturedDepositAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedDepositAssetPremiumAmount = Utils.getAmountToTerminate(maturedDepositAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollDepositAssetAmount = maturedDepositAssetAmount.sub(state.releasedDepositAssetAmount);
+           state.autoRollDepositAssetPremiumAmount = maturedDepositAssetPremiumAmount.sub(state.releasedDepositAssetPremiumAmount);
 
-   function getAmountToTerminate(uint256 _maturedAmount, uint256 _assetToTerminate, uint256 _assetAmount) private pure returns(uint256) {
-       if (_assetToTerminate == 0) return 0;
-       return _assetToTerminate >= _assetAmount ?  _maturedAmount : _maturedAmount.mul(_assetToTerminate).div(_assetAmount);
-   }
+        }
+         return state;
+     }
+
 
    address[] private autoRolledUsers;
    uint256[] private autoRolledAmounts;
 
-   function autoRoll(bool _counterParty) private {
-        uint256 userCount = usersInvolved.length;
-        uint256 maturedDepositAssetAmounts = 0;
-        uint256 maturedCounterPartyAssetAmounts = 0;
+   function autoRoll(bool _counterParty, uint256 _totalAmount, StructureData.MaturedState memory _maturedState) private {
+        uint256 userCount = usersInvolved.length; 
         if (!_counterParty) {
             uint256 lockedRound = currentRound - 1;
+            uint256 totalMatured = _maturedState.releasedDepositAssetAmount.add(_maturedState.releasedDepositAssetPremiumAmount);
             for (uint i=0; i < userCount; i++) {
                 address userAddress = usersInvolved[i];
                 StructureData.UserState storage userState = userStates[userAddress]; 
-                uint256 maturedAmount = pendingMaturedDepositAssetAmount[userAddress];
+                uint256 maturedAmount = totalMatured.div(userState.GetOngoingAsset(0)).mul(_totalAmount);
                 if (maturedAmount == 0) {
                     userState.assetToTerminate = 0;
                     continue;
                 }
-                uint256 amountToTerminate = getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
+                uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
                 if (amountToTerminate > 0) {
-                    maturedDepositAssetAmount[userAddress] = 
-                    maturedDepositAssetAmount[userAddress].add(amountToTerminate);
-                    maturedDepositAssetAmounts = maturedDepositAssetAmounts.add(amountToTerminate);
+                    releasedDepositAssetAmount[userAddress] = 
+                    releasedDepositAssetAmount[userAddress].add(amountToTerminate); 
                 }
                 uint256 remainingAmount = maturedAmount.sub(amountToTerminate);
                 if (remainingAmount > 0) { 
-                    _depositFor(userAddress, maturedAmount, lockedRound);
-                }
-                pendingMaturedDepositAssetAmount[userAddress] = 0;
+                    _depositFor(userAddress, remainingAmount, lockedRound);
+                } 
                 userState.assetToTerminate = 0;
             }  
-            totalMaturedDepositAssetAmount = totalMaturedDepositAssetAmount.add(maturedDepositAssetAmounts);
             return;
         }
          
+        uint256 totalMatured2 = _maturedState.releasedCounterPartyAssetAmount.add(_maturedState.releasedCounterPartyAssetPremiumAmount);
         for (uint i=0; i < userCount; i++) {
             address userAddress = usersInvolved[i];
             StructureData.UserState storage userState = userStates[userAddress];  
-            uint256 maturedAmount = pendingMaturedCounterPartyAssetAmount[userAddress]; 
+            uint256 maturedAmount = totalMatured2.div(userState.GetOngoingAsset(0)).mul(_totalAmount);
             if (maturedAmount == 0) {
                 userState.assetToTerminate = 0;
                 continue;
             }
-            uint256 amountToTerminate = getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
+            uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
             if (amountToTerminate > 0) {
-                maturedCounterPartyAssetAmount[userAddress] = 
-                maturedCounterPartyAssetAmount[userAddress].add(amountToTerminate);
-                maturedCounterPartyAssetAmounts = maturedCounterPartyAssetAmounts.add(amountToTerminate);
+                releasedCounterPartyAssetAmount[userAddress] = 
+                releasedCounterPartyAssetAmount[userAddress].add(amountToTerminate);
             }
             uint256 remainingAmount = maturedAmount.sub(amountToTerminate); 
             if (remainingAmount > 0){   
                 autoRolledAmounts.push(remainingAmount);
                 autoRolledUsers.push(userAddress);
-            }
-            pendingMaturedCounterPartyAssetAmount[userAddress] = 0;
+            } 
             userState.assetToTerminate = 0;
         } 
         
-        totalMaturedCounterPartyAssetAmount = totalMaturedCounterPartyAssetAmount.add(maturedCounterPartyAssetAmounts);
         uint256 count = autoRolledAmounts.length;
         if (count == 0) {
             return;
@@ -513,6 +581,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         StructureData.OptionState({
                             round: currentRound,
                             totalAmount: 0,
+                            totalTerminate: 0,
                             premiumRate:  0,
                             pricePrecision: 0,
                             strikePrice: 0,

@@ -15,6 +15,7 @@ library StructureData {
     struct OptionState {
          uint256 round;
          uint256 totalAmount; 
+         uint256 totalTerminate;   
          uint256 strikePrice; 
          uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
          uint8 pricePrecision; 
@@ -23,9 +24,15 @@ library StructureData {
     }
  
    struct MaturedState {
-       uint256 maturedDepositAssetAmount;
-       uint256 maturedCounterPartyAssetAmount;
-       bool executed;
+       uint256 releasedDepositAssetAmount;
+       uint256 releasedDepositAssetPremiumAmount;
+       uint256 releasedCounterPartyAssetAmount; 
+       uint256 releasedCounterPartyAssetPremiumAmount; 
+       uint256 autoRollDepositAssetAmount;
+       uint256 autoRollDepositAssetPremiumAmount;
+       uint256 autoRollCounterPartyAssetAmount; 
+       uint256 autoRollCounterPartyAssetPremiumAmount; 
+
        uint256 round;
        
    }
@@ -50,16 +57,16 @@ library StructureData {
         uint256 totalPending;
         uint256 totalLocked;
         uint256 totalOngoing;
-        uint256 totalMaturedDeposit;
-        uint256 totalMaturedCounterParty;
+        uint256 totalReleasedDeposit;
+        uint256 totalReleasedCounterParty;
     }
 
     struct UserBalance {
         uint256 pendingDepositAssetAmount; 
         uint256 lockedDepositAssetAmount; 
         uint256 ongoingDepositAssetAmount;
-        uint256 maturedDepositAssetAmount;
-        uint256 maturedCounterPartyAssetAmount;
+        uint256 releasedDepositAssetAmount;
+        uint256 releasedCounterPartyAssetAmount;
     }
 
     function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
@@ -112,15 +119,15 @@ library StructureData {
         uint256 autoRollAmount; //T-1 Carried (filled only when not executed)
         uint256 autoRollPremium; //Premium (filled only when not executed)
         //maturedAmount+maturedPremium = requested withdrawal for deposit asset(filled only when not executed and with withdraw request)
-        uint256 maturedAmount;  
-        uint256 maturedPremium;
+        uint256 releasedAmount;  
+        uint256 releasedPremium;
         //autoRollCounterPartyAmount + autoRollCounterPartyPremium = Execution rolled-out for deposit asset (Execution roll-in for counter party option)
         //filled only when executed
         uint256 autoRollCounterPartyAmount;
         uint256 autoRollCounterPartyPremium;
         //maturedCounterPartyAmount+maturedCounterPartyPremium= requested withdrawal for couter party asset(filled only when executed and with withdraw request)
-        uint256 maturedCounterPartyAmount;
-        uint256 maturedCounterPartyPremium;
+        uint256 releasedCounterPartyAmount;
+        uint256 releasedCounterPartyPremium;
 
 
     }
