@@ -98,11 +98,17 @@ library StructureData {
         address asset;
     }
 
+
     struct SettlementResult {
+        //won't change regardless execute or not
         address option;
         uint256 round;
+        uint256 depositAmount; 
+        uint256 leftOverAmount;
+        uint256 leftOverCounterPartyAmount;
+
+        //following will change if execute or not
         bool executed;
-        uint256 depositAmount; //New-Deposit
         uint256 autoRollAmount; //T-1 Carried (filled only when not executed)
         uint256 autoRollPremium; //Premium (filled only when not executed)
         //maturedAmount+maturedPremium = requested withdrawal for deposit asset(filled only when not executed and with withdraw request)
@@ -115,6 +121,7 @@ library StructureData {
         //maturedCounterPartyAmount+maturedCounterPartyPremium= requested withdrawal for couter party asset(filled only when executed and with withdraw request)
         uint256 maturedCounterPartyAmount;
         uint256 maturedCounterPartyPremium;
+
 
     }
 }
