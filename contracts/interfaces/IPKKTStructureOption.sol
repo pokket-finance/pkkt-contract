@@ -8,7 +8,6 @@ interface IPKKTStructureOption {
 
     function getOptionSnapShot() external view returns(StructureData.OptionSnapshot memory);
  
-
     
     function vaultAddress() external view returns(address);
 
@@ -50,7 +49,6 @@ interface IPKKTStructureOption {
     //the blockheight is the the height when the round is committed 
     function getRoundData(uint256 _blockHeight) external view returns(StructureData.OptionState memory);
 
-    
  
 }
 

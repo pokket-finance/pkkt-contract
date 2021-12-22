@@ -4,9 +4,9 @@ pragma solidity =0.8.4;
 library StructureData {
      
      uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
-    //the strike price is calculated based on assetPrice * (1 +/- strikePriceRatio/100)
-    //for hodl, if the asset price is higher than the strike price, the option would be executed, it's a call option  
-    struct OptionParameters {
+ 
+     struct OptionParameters {
+         address option;
          uint256 strikePrice;  // strike price if executed
          uint8 pricePrecision;
          uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
@@ -88,33 +88,18 @@ library StructureData {
         }
         return userState.ongoingAsset[uint8(previousCursor)];
     }
-
-    enum Direction {
-        None,
-        SendToTrader,
-        SendBackToVault
+  
+    struct OptionPairDefinition{
+        address callOption;
+        address putOption;
+        address callOptionDeposit;
+        address putOptionDeposit;
     }
-    struct SettlementInstruction {
-        uint256 amount;
-        address contractAddress; //0 for eth
-        address targetAddress; //vault address
-        Direction direction;
-        bool fullfilled;
-    }
-
-    struct MaturedAmount {
-        uint256 amount;
-        address asset;
-    }
-
-
-    struct SettlementResult {
+    struct SettlementAccountingResult {
         //won't change regardless execute or not
         address option;
         uint256 round;
-        uint256 depositAmount; 
-        uint256 leftOverAmount;
-        uint256 leftOverCounterPartyAmount;
+        uint256 depositAmount;  
 
         //following will change if execute or not
         bool executed;
@@ -129,8 +114,35 @@ library StructureData {
         uint256 autoRollCounterPartyPremium;
         //maturedCounterPartyAmount+maturedCounterPartyPremium= requested withdrawal for couter party asset(filled only when executed and with withdraw request)
         uint256 releasedCounterPartyAmount;
-        uint256 releasedCounterPartyPremium;
-
+        uint256 releasedCounterPartyPremium; 
 
     }
+
+    enum OptionExecution{
+        NoExecution,
+        ExecuteCall,
+        ExecutePut
+    }
+
+    struct OptionPairExecutionAccountingResult {  
+        SettlementAccountingResult callOptionResult;
+        SettlementAccountingResult putOptionResult;
+        OptionExecution execute;
+    }
+
+    struct OptionPairExecution {
+        address callOption;
+        address putOption;
+        OptionExecution execute; 
+    }
+
+    
+
+    struct SettlementCashflowResult{ 
+        address contractAddress; //0 for eth 
+        uint256 newDepositAmount;
+        uint256 newReleasedAmount;
+        int256 leftOverAmount; //positive, if trader didn't withdraw last time; negative, if trader failed to send back last time; 
+    }
+ 
 }

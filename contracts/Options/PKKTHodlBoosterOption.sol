@@ -45,10 +45,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      address public counterParty;
      IOptionVault public optionVault;
      uint256 public totalReleasedDepositAssetAmount; 
-     uint256 public totalReleasedCounterPartyAssetAmount;
-     //todo: maintain value
-     uint256 public leftOverDepositAssetAmount;
-     uint256 public leftOverCounterPartyAssetAmount;
+     uint256 public totalReleasedCounterPartyAssetAmount; 
      
      //private data for complete withdrawal and redeposit 
      mapping(address=>uint256) private releasedDepositAssetAmount;
@@ -77,8 +74,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
-    }
-
+    } 
     function setCounterPartyOption(address _counterParty) external {
         require(_counterParty != address(this), "Cannot set self as counter party");
         counterPartyOption = IPKKTStructureOption(_counterParty);
@@ -353,45 +349,6 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         return optionStates[optionHeights[_blockHeight]];
     } 
 
-   function dryRunSettlement(bool _execute) external override view onlyOwner returns(StructureData.SettlementResult memory _result) {
-        require(underSettlement, "Not being settled");
-        require(currentRound > 1, "Nothing to settle");
-
-        StructureData.OptionState storage lockedOption = optionStates[currentRound - 1]; 
-        StructureData.SettlementResult memory result = StructureData.SettlementResult({
-            option: address(this),
-            round: currentRound - 1,
-            depositAmount: lockedOption.totalAmount,
-            leftOverAmount: leftOverDepositAssetAmount,
-            leftOverCounterPartyAmount: leftOverCounterPartyAssetAmount,
-            executed: _execute,
-            autoRollAmount: 0,
-            autoRollPremium: 0,
-            releasedAmount: 0,
-            releasedPremium: 0,
-            autoRollCounterPartyAmount: 0,
-            autoRollCounterPartyPremium: 0,
-            releasedCounterPartyAmount: 0,
-            releasedCounterPartyPremium: 0
-        });
-       if (currentRound > StructureData.MATUREROUND + 1) { 
-            StructureData.OptionState memory previousOptionState = optionStates[currentRound - StructureData.MATUREROUND - 1];
-            StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState); 
-            if (_execute) { 
-                result.autoRollCounterPartyAmount = maturedState.autoRollCounterPartyAssetAmount;
-                result.autoRollCounterPartyPremium = maturedState.autoRollCounterPartyAssetPremiumAmount;
-                result.releasedCounterPartyAmount = maturedState.releasedCounterPartyAssetAmount;
-                result.releasedCounterPartyPremium = maturedState.releasedCounterPartyAssetPremiumAmount;
-            }
-            else { 
-                result.autoRollAmount = maturedState.autoRollDepositAssetAmount;
-                result.autoRollPremium = maturedState.autoRollDepositAssetPremiumAmount;
-                result.releasedAmount = maturedState.releasedDepositAssetAmount;
-                result.releasedPremium = maturedState.releasedDepositAssetPremiumAmount;
-            } 
-       } 
-       return result;
-   }
 
    //first, open t+1 round
    function rollToNext(uint256 _quota) external override onlyOwner {   
@@ -428,17 +385,60 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
            underSettlement = false;
        }
     }
+    
+   /*
+    *  Following operations can only be triggered from ISettlementAggregator with the settler role, 
+    *  ownership of the option is transferred to the settler after deployment
+    */
 
-   //then close t-1 round
-   function closePrevious(bool _execute) external override onlyOwner {   
+   //then dry run settlement and get accounting result
+   function dryRunSettlement(bool _execute) external override view onlyOwner returns(StructureData.SettlementAccountingResult memory _result) {
         require(underSettlement, "Not being settled");
-        if (currentRound <= StructureData.MATUREROUND + 1) { 
-            return;
-        }
+        require(currentRound > 1, "Nothing to settle");
+
+        StructureData.OptionState storage lockedOption = optionStates[currentRound - 1]; 
+        StructureData.SettlementAccountingResult memory result = StructureData.SettlementAccountingResult({
+            option: address(this),
+            round: currentRound - 1,
+            depositAmount: lockedOption.totalAmount,
+            executed: _execute,
+            autoRollAmount: 0,
+            autoRollPremium: 0,
+            releasedAmount: 0,
+            releasedPremium: 0,
+            autoRollCounterPartyAmount: 0,
+            autoRollCounterPartyPremium: 0,
+            releasedCounterPartyAmount: 0,
+            releasedCounterPartyPremium: 0
+        });
+       if (currentRound > StructureData.MATUREROUND + 1) { 
+            StructureData.OptionState memory previousOptionState = optionStates[currentRound - StructureData.MATUREROUND - 1];
+            StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState); 
+            if (_execute) { 
+                result.autoRollCounterPartyAmount = maturedState.autoRollCounterPartyAssetAmount;
+                result.autoRollCounterPartyPremium = maturedState.autoRollCounterPartyAssetPremiumAmount;
+                result.releasedCounterPartyAmount = maturedState.releasedCounterPartyAssetAmount;
+                result.releasedCounterPartyPremium = maturedState.releasedCounterPartyAssetPremiumAmount;
+            }
+            else { 
+                result.autoRollAmount = maturedState.autoRollDepositAssetAmount;
+                result.autoRollPremium = maturedState.autoRollDepositAssetPremiumAmount;
+                result.releasedAmount = maturedState.releasedDepositAssetAmount;
+                result.releasedPremium = maturedState.releasedDepositAssetPremiumAmount;
+            } 
+       } 
+       return result;
+   }
+
+   //then, make decision based on dry run result and close t-1 round
+   function closePrevious(bool _execute) external override onlyOwner  
+   returns(StructureData.MaturedState memory _maturedState, uint256 _depositAmount) {   
+        require(underSettlement, "Not being settled");
+        require (currentRound > StructureData.MATUREROUND + 1, "no matured");
         uint maturedRound = currentRound - StructureData.MATUREROUND - 1;
         StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
-        StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);  
-        optionVault.setMaturityState(maturedState, depositAsset, counterPartyAsset);
+        StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);   
+        StructureData.OptionState storage nextOption = optionStates[currentRound - 1];  
         previousOptionState.executed = _execute;
         if (_execute) {
             totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.
@@ -451,22 +451,20 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         if (previousOptionState.totalAmount > 0) { 
             autoRoll(_execute, previousOptionState.totalAmount, maturedState);
         }   
+        
         emit CloseOption(maturedRound);
+        return (maturedState, nextOption.totalAmount);
    }
 
    //at last, commit t round
    function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyOwner {  
-        if (currentRound <= 1) {
-            underSettlement = false;
-            return;
-        }
+        require (currentRound > 1, "not started");
         if(currentRound <= 2 && !underSettlement) {
            underSettlement = true;
        }
         require(underSettlement, "Not being settled");
         uint256 lockedRound = currentRound - 1;
-        StructureData.OptionState storage optionState = optionStates[lockedRound];
-        optionVault.setCommittedState(optionState, depositAsset, counterPartyAsset); 
+        StructureData.OptionState storage optionState = optionStates[lockedRound]; 
         optionState.strikePrice = _optionParameters.strikePrice;
         optionState.premiumRate = _optionParameters.premiumRate;
         optionState.pricePrecision = _optionParameters.pricePrecision;
