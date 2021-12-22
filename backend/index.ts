@@ -13,23 +13,41 @@ import { getDeployedContractHelper } from "./utilities/utilities";
 const app = express();
 const port = 3000;
 
-app.get("/", async (req, res) => {
-    const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    await getVaultInfo(hodlBoosterOption);
-    res.send("hello");
-});
+// app.get("/", async (req, res) => {
+//     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
+//         "WBTCHodlBoosterCallOption"
+//     ) as PKKTHodlBoosterOption;
+//     await getVaultInfo(hodlBoosterOption);
+//     res.send("hello");
+// });
 
-app.get("/users/:userId", async (req, res) => {
-    const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    await getVaultInfo(hodlBoosterOption);
-    const provider = new ethers.providers.JsonRpcProvider()
-    const user = provider.getSigner(req.params.userId);
-    await getUserNAV(hodlBoosterOption, user as Signer);
-});
+app.get("/", async (req, res) => {
+    const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
+    const response = await axios.post(url, {
+        query: `
+        {
+            users {
+                id
+                optionPositions {
+                    createdAtTimestamp
+                    optionBalance
+                }
+            }
+        }`
+    });
+    console.log(JSON.stringify(response.data.data, null, 4));
+    res.send(JSON.stringify(response.data.data, null, 4));
+})
+
+// app.get("/users/:userId", async (req, res) => {
+//     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
+//         "WBTCHodlBoosterCallOption"
+//     ) as PKKTHodlBoosterOption;
+//     await getVaultInfo(hodlBoosterOption);
+//     const provider = new ethers.providers.JsonRpcProvider()
+//     const user = provider.getSigner(req.params.userId);
+//     await getUserNAV(hodlBoosterOption, user as Signer);
+// });
 
 // Start the express server
 app.listen(port, () => {

@@ -18,13 +18,13 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     using SafeMath for uint256;
     using StructureData for StructureData.UserState;
 
-    event Deposit(address indexed account, uint256 indexed round,uint256 amount); 
+    event Deposit(address indexed from, address indexed account, uint256 indexed round, uint256 amount, address option);
     event Withdraw(address indexed account, address indexed asset, uint256 amount);
     event CloseOption(uint256 indexed round);
     event CommitOption(uint256 indexed round);
     event OpenOption(uint256 indexed round);
-    event OptionCreated(address indexed option, string indexed name);
-
+    event OptionCreated(address indexed option, string name);
+    event OptionTransfer(address from, address to, uint256 premium, uint256 round);
  
     uint256 public constant RATIOMULTIPLIER = 10000;
     uint8 internal depositAssetAmountDecimals;
@@ -77,7 +77,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
-        emit OptionCreated(address(this), name);
+        emit OptionCreated(address(this), symbol);
     }
 
     function setCounterPartyOption(address _counterParty) external {
@@ -297,7 +297,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         userState.pendingAsset = userState.pendingAsset.add(_amount); 
         optionState.totalAmount = optionState.totalAmount.add(_amount);
         
-        emit Deposit(_userAddress, _round, _amount);
+        emit Deposit(msg.sender, _userAddress, _round, _amount, address(this));
     }
 
  
@@ -447,6 +447,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
                 //can be used to calculate the user option selling operations
                 //utilizing some web3 indexed services, take etherscan api/graphql etc.
                 _transfer(address(this), userAddress, userState.lockedAsset);
+                emit OptionTransfer(address(this), userAddress, optionState.premiumRate, optionState.round);
             } 
             if (userState.assetToTerminateForNextRound != 0){
                 userState.assetToTerminate = userState.assetToTerminateForNextRound;
