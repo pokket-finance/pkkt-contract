@@ -113,10 +113,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
             totalReleasedDeposit :  totalReleasedDepositAssetAmount,
             totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount,
             totalOngoing : onGoingOption.totalAmount,
-            totalLocked: lockedOption.totalAmount,
-            //todo :implement
-            releasedDepositAvailable : false,
-            releasedCounterPartyAvailable: false
+            totalLocked: lockedOption.totalAmount  
        }); 
        return result;
     }

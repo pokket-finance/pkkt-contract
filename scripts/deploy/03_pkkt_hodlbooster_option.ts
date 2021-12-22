@@ -54,13 +54,7 @@ const main = async ({
     }
   });
 
-  await optionVaultContract.addOption(ethHodlBoosterCall.address);
-
-  console.log(`03 - Deployed ETH-USDT-HodlBooster-Call on ${network.name} to ${ethHodlBoosterCall.address}`); 
-  const ethHodlBoosterCallOptionContract = await ethers.getContractAt(
-    "PKKTHodlBoosterCallOption",
-    ethHodlBoosterCall.address
-  );
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Call on ${network.name} to ${ethHodlBoosterCall.address}`);  
 
   console.log("03 - Deploying ETH-USDT-HodlBooster-Put on", network.name);
 
@@ -87,10 +81,18 @@ const main = async ({
       StructureData: structureData.address,
     },
   });
+ 
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`); 
+  
+  await optionVaultContract.addOptionPair({
+    callOption: ethHodlBoosterCall.address,
+    putOption: ethHodlBoosterPut.address,
+    callOptionDeposit: NULL_ADDRESS,
+    putOptionDeposit: isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+  });
 
-  await optionVaultContract.addOption(ethHodlBoosterPut.address);
-  console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`);
-  const ethHodlBoosterPutOptionContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", ethHodlBoosterPut.address);
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Pair on ${network.name} to ${optionVaultContract.address}`);  
+ 
 
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Call on", network.name);
   const wbtcHodlBoosterCall = await deploy("WBTCPKKTHodlBoosterCallOption", {
@@ -115,9 +117,7 @@ const main = async ({
     libraries: {
       StructureData: structureData.address,
     },
-  });
-
-  await optionVaultContract.addOption(wbtcHodlBoosterCall.address);
+  }); 
   console.log(`03 - Deployed WBTC-USDT-HodlBooster-Call on ${network.name} to ${wbtcHodlBoosterCall.address}`); 
 
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Put on", network.name);
@@ -144,9 +144,19 @@ const main = async ({
       StructureData: structureData.address,
     },
   });
-
-  await optionVaultContract.addOption(wbtcHodlBoosterPut.address);
+ 
   console.log(`03 - Deployed WBTC-USDT-HodlBooster-Put on ${network.name} to ${wbtcHodlBoosterPut.address}`); 
+
+  
+  await optionVaultContract.addOptionPair({
+    callOption: wbtcHodlBoosterCall.address,
+    putOption: wbtcHodlBoosterPut.address,
+    callOptionDeposit: isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
+    putOptionDeposit: isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+  });
+
+  console.log(`03 - Deployed WBTC-USDT-HodlBooster-Pair on ${network.name} to ${optionVaultContract.address}`);  
+
 };
 main.tags = ["PKKTHodlBoosterCallOption"];
 

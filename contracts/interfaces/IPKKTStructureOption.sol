@@ -6,6 +6,7 @@ interface IPKKTStructureOption {
 
     function getAccountBalance() external view returns (StructureData.UserBalance memory); 
 
+    //ISettlementAggregator.balanceEnough needs to be called if there is any release amount
     function getOptionSnapShot() external view returns(StructureData.OptionSnapshot memory);
  
     

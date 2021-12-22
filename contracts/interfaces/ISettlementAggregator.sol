@@ -15,5 +15,7 @@ interface ISettlementAggregator {
 
     function commitCurrent(StructureData.OptionParameters[] memory _paramters) external;
 
+    function withdrawAsset(address _trader, address _asset) external;
 
+    function balanceEnough(address _asset) external view returns(bool);
 }

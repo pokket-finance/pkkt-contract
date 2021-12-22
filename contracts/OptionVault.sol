@@ -232,6 +232,26 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
           }
     }
 
+    function withdrawAsset(address _trader, address _asset) external override onlyRole(SETTLER_ROLE) {
+        int256 balance  = leftOverAmount[_asset]; 
+        require(balance > 0, "nothing to withdraw");
+         _withdraw(_trader, uint256(balance), _asset);
+         leftOverAmount[_asset] = 0;
+    }
+
+    function balanceEnough(address _asset) external override view returns(bool) {
+        int256 balance  = leftOverAmount[_asset]; 
+        if (balance >= 0) {
+            return true;
+        }
+        uint256 availableBalance = getAvailableBalance(_asset);
+        //todo: debit redeemable balances
+
+        if (int256(availableBalance) + balance >= 0) {
+            return true;
+        }
+        return false;
+    }
 
     function getDespositAddress(address _callOption, address _putOption) private view returns(address _callOptionDesposit, address _putOptionDeposit){
         uint256 count = optionPairs.length; 
