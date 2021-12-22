@@ -17,5 +17,5 @@ interface ISettlementAggregator {
 
     function withdrawAsset(address _trader, address _asset) external;
 
-    function balanceEnough(address _asset) external view returns(bool);
+    function balanceEnough(address _asset) external view returns(bool); 
 }

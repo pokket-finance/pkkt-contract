@@ -29,13 +29,18 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     mapping(address=>uint256) private releasedAmount; //debit
     mapping(address=>uint256) private depositAmount; //credit
     mapping(address=>int256) private leftOverAmount;  //history balance
+    
+    /*
+     * actual balance perspective
+     */
+    mapping(address=>uint256) private assetBalanceBeforeSettle;
+    mapping(address=>uint256) private assetRedeemableBeforeSettle;
 
     /*
      * accounting perspective(based on option pair)
      */ 
     StructureData.OptionPairDefinition[] private optionPairs;
-    StructureData.OptionPairExecutionAccountingResult[] public executionAccountingResult;
-    uint256 private pairCount;
+    StructureData.OptionPairExecutionAccountingResult[] public executionAccountingResult; 
 
 
     bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
@@ -83,7 +88,8 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         addOption(_pair.callOption);
         addOption(_pair.putOption);   
         optionPairs.push(_pair);
-        pairCount++;
+        addAssetIfNeeded(_pair.callOptionDeposit);
+        addAssetIfNeeded(_pair.putOptionDeposit); 
     }
 
     function removeOptionPair(StructureData.OptionPairDefinition memory _pair) external override onlyRole(DEFAULT_ADMIN_ROLE){
@@ -96,8 +102,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
                 pair.putOption == _pair.putOption) {
                 //fake remove
                 pair.callOption = address(0);
-                pair.putOption = address(0);
-                pairCount--;
+                pair.putOption = address(0); 
                 break;
             }
         }
@@ -148,7 +153,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
                 callOptionResult: noneExecuteCallOption,
                 putOptionResult: executePutOption
             });
-            executionAccountingResult.push(pairResult3); 
+            executionAccountingResult.push(pairResult3);  
         } 
     }
 
@@ -206,9 +211,18 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         uint256 assetCount = asset.length; 
         for(uint256 i = 0; i < assetCount; i++) {
             address assetAddress = asset[i];
+            
+            int256 leftOver = leftOverAmount[assetAddress]; 
+            if (leftOver < 0) //missing balance, fix it if trader deposits
+            {
+               int256 balanceChange = getBalanceChange(assetAddress);
+               leftOver = leftOver + balanceChange;
+            }
+
+            assetBalanceBeforeSettle[assetAddress] = getAvailableBalance(assetAddress);
+            assetBalanceBeforeSettle[assetAddress] = collectRedeemable(assetAddress);
             uint256 released = releasedAmount[assetAddress];
             uint256 deposit = depositAmount[assetAddress];
-            int256 leftOver = leftOverAmount[assetAddress]; 
             
             StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
                 newReleasedAmount: released,
@@ -222,8 +236,9 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             //todo: check overflow
             leftOverAmount[assetAddress] = leftOver + int256(deposit) - int256(released);
         }
-    }
-    
+    } 
+
+
     function commitCurrent(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
           uint256 count = _parameters.length;
           for(uint256 i = 0; i < count; i++) {
@@ -244,14 +259,15 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         if (balance >= 0) {
             return true;
         }
-        uint256 availableBalance = getAvailableBalance(_asset);
-        //todo: debit redeemable balances
-
-        if (int256(availableBalance) + balance >= 0) {
-            return true;
+        uint256 availableBalance = getAvailableBalance(_asset); 
+        if (availableBalance == 0) {
+            return false;
         }
-        return false;
+         
+        return (balance + getBalanceChange(_asset)) >= 0;
     }
+
+
 
     function getDespositAddress(address _callOption, address _putOption) private view returns(address _callOptionDesposit, address _putOptionDeposit){
         uint256 count = optionPairs.length; 
@@ -272,8 +288,38 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
        else{
           return getAddress().balance;
        }
+    } 
+    
+    //todo: fix
+    function getBalanceChange(address _asset) private view returns(int256){
+        uint256 availableBalance = getAvailableBalance(_asset); 
+         
+        uint256 balanceBeforeSettle = assetBalanceBeforeSettle[_asset];
+        uint256 redeemableBeforeSettle = assetRedeemableBeforeSettle[_asset];
+        uint256 redeemableNow = collectRedeemable(_asset); 
+        uint256 leastBalance = balanceBeforeSettle.add(redeemableNow).sub(redeemableBeforeSettle); 
+        return int256(availableBalance) - int256(leastBalance); 
     }
 
+    //todo: implement: pendingDeposit + released
+    function collectRedeemable(address _asset) private view returns(uint256) {
+         uint256 count = optionPairs.length;
+        for(uint256 i = 0; i < count; i++) {
+            StructureData.OptionPairDefinition memory pair = optionPairs[i];
+            if (pair.callOption == address(0) &&
+                pair.putOption == address(0)) {
+                continue;
+            }
+            if (pair.callOptionDeposit == _asset){
+                
+            }
+            
+            if (pair.putOptionDeposit == _asset){
+                
+            }
+        }
+        return 0;
+    }
     event Received(address indexed source, uint amount);
     receive() external payable { 
         emit Received(msg.sender, msg.value);
