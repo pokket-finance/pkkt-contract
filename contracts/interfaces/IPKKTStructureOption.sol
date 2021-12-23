@@ -9,7 +9,8 @@ interface IPKKTStructureOption {
     //ISettlementAggregator.balanceEnough needs to be called if there is any release amount
     function getOptionSnapShot() external view returns(StructureData.OptionSnapshot memory);
  
-    
+    function getWithdrawable(address _asset) external view returns(uint256); 
+
     function vaultAddress() external view returns(address);
 
     //deposit eth

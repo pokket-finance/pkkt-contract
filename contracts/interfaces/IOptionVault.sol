@@ -6,6 +6,6 @@ interface IOptionVault {
     function addOption(address _optionContract) external;
     function removeOption(address _optionContract) external;
     function getAddress() external view returns(address);
-    function withdraw(address _target, uint256 _amount, address _contractAddress) external;
+    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external;
      
 }

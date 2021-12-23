@@ -102,6 +102,16 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
        return result;
     }
 
+    function getWithdrawable(address _asset) external override view returns(uint256) {
+        if (_asset == depositAsset) { 
+            return optionStates[currentRound].totalAmount.add(totalReleasedDepositAssetAmount);
+        }
+        if (_asset == counterPartyAsset) {
+            return totalReleasedCounterPartyAssetAmount;
+        }
+        revert("invalid asset");
+    }
+
     function getOptionSnapShot() external override view returns(StructureData.OptionSnapshot memory) {
        StructureData.OptionState storage currentOption = optionStates[currentRound];
        StructureData.OptionState storage lockedOption = optionStates[underSettlement ? currentRound - 1 : currentRound];
@@ -137,7 +147,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
            totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.sub(_amount);
        }
        
-        optionVault.withdraw(msg.sender, _amount, _asset);
+        optionVault.withdraw(msg.sender, _amount, _asset, false);
     }
     function initiateWithraw(uint256 _assetToTerminate) external override {
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
@@ -221,7 +231,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     function withdraw(uint256 _amount, address _asset) external override { 
        require(_amount > 0, "!amount");  
        require(!underSettlement, "Being settled");  
-       require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address");
+       require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address"); 
        if (_asset == depositAsset) {
            //todo: 0 out released amount if missing balance from trader
            uint256 releasedAmount = releasedDepositAssetAmount[msg.sender];
@@ -241,15 +251,14 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
            }
        }
        else {
-
-           //todo: 0 out released amount if missing balance from trader
-           //same result as completeWithdraw
+ 
+           //same result as completeWithdraw 
            uint256 releasedAmount = releasedCounterPartyAssetAmount[msg.sender];
            require(releasedAmount >= _amount, "Exceed available");
            releasedCounterPartyAssetAmount[msg.sender] = releasedAmount.sub(_amount);
            totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.sub(_amount);
        }
-        optionVault.withdraw(msg.sender, _amount, _asset);
+        optionVault.withdraw(msg.sender, _amount, _asset, false);
         emit Withdraw(msg.sender, _asset, _amount);
     }
  
@@ -334,7 +343,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
          StructureData.OptionState storage optionState = optionStates[currentRound];
          optionState.totalAmount = optionState.totalAmount.sub(_amount);
-         optionVault.withdraw(msg.sender, _amount, depositAsset); 
+         optionVault.withdraw(msg.sender, _amount, depositAsset, true); 
          emit Withdraw(msg.sender, depositAsset, _amount);
     }
  

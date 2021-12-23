@@ -14,6 +14,7 @@ import {StructureData} from "./libraries/StructureData.sol";
 import "./interfaces/IOptionVault.sol"; 
 import "./interfaces/ISettlementAggregator.sol"; 
 import "./interfaces/IExecuteSettlement.sol"; 
+import "./interfaces/IPKKTStructureOption.sol";
 
 contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     
@@ -64,7 +65,10 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     }
 
      
-    function withdraw(address _target, uint256 _amount, address _contractAddress) external override onlyRole(OPTION_ROLE){
+    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external override onlyRole(OPTION_ROLE){
+         if (!_redeem) {
+             require(balanceEnough(_contractAddress), "Released amount not available yet");
+         }
         _withdraw(_target, _amount, _contractAddress);
     }
     function addAssetIfNeeded(address _asset) private{
@@ -74,6 +78,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         }
     } 
      function _withdraw(address _target, uint256 _amount, address _contractAddress) private{
+
         if (_contractAddress == address(0)) {
             payable(_target).transfer(_amount);
         }
@@ -220,7 +225,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             }
 
             assetBalanceBeforeSettle[assetAddress] = getAvailableBalance(assetAddress);
-            assetBalanceBeforeSettle[assetAddress] = collectRedeemable(assetAddress);
+            assetBalanceBeforeSettle[assetAddress] = collectWithdrawable(assetAddress);
             uint256 released = releasedAmount[assetAddress];
             uint256 deposit = depositAmount[assetAddress];
             
@@ -254,7 +259,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
          leftOverAmount[_asset] = 0;
     }
 
-    function balanceEnough(address _asset) external override view returns(bool) {
+    function balanceEnough(address _asset) public override view returns(bool) {
         int256 balance  = leftOverAmount[_asset]; 
         if (balance >= 0) {
             return true;
@@ -289,36 +294,32 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
           return getAddress().balance;
        }
     } 
-    
-    //todo: fix
+     
     function getBalanceChange(address _asset) private view returns(int256){
-        uint256 availableBalance = getAvailableBalance(_asset); 
-         
+        uint256 availableBalance = getAvailableBalance(_asset);  
         uint256 balanceBeforeSettle = assetBalanceBeforeSettle[_asset];
         uint256 redeemableBeforeSettle = assetRedeemableBeforeSettle[_asset];
-        uint256 redeemableNow = collectRedeemable(_asset); 
+        uint256 redeemableNow = collectWithdrawable(_asset); 
         uint256 leastBalance = balanceBeforeSettle.add(redeemableNow).sub(redeemableBeforeSettle); 
         return int256(availableBalance) - int256(leastBalance); 
     }
-
-    //todo: implement: pendingDeposit + released
-    function collectRedeemable(address _asset) private view returns(uint256) {
+ 
+    function collectWithdrawable(address _asset) private view returns(uint256) {
          uint256 count = optionPairs.length;
+         uint256 total = 0;
         for(uint256 i = 0; i < count; i++) {
             StructureData.OptionPairDefinition memory pair = optionPairs[i];
             if (pair.callOption == address(0) &&
                 pair.putOption == address(0)) {
                 continue;
             }
-            if (pair.callOptionDeposit == _asset){
-                
-            }
-            
-            if (pair.putOptionDeposit == _asset){
-                
-            }
+            if (pair.callOptionDeposit == _asset ||
+                pair.putOptionDeposit == _asset) {
+               total = total.add(IPKKTStructureOption(pair.callOption).getWithdrawable(_asset)); 
+               total = total.add(IPKKTStructureOption(pair.putOption).getWithdrawable(_asset)); 
+            }   
         }
-        return 0;
+        return total;
     }
     event Received(address indexed source, uint amount);
     receive() external payable { 
