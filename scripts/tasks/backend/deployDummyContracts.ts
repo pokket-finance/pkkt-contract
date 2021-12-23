@@ -8,6 +8,7 @@ import {
     WBTC_MULTIPLIER,
     NULL_ADDRESS
 } from "../../../constants/constants";
+import { PKKTHodlBoosterOption } from "../../../typechain";
 
 const main = async ({ fresh }, { network, ethers, deployments, getNamedAccounts }) => {
     const { deploy } = await deployments;
@@ -61,11 +62,13 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         ],
     });
 
+    const optionVault = await ethers.getContractAt(OptionVault.abi, OptionVault.address);
+
     const structureData = await deploy("StructureData", {
         from: deployer,
     });
 
-    await deployOptionContract(
+    const wbtcHodlBoosterCallOption = await deployOptionContract(
         "WBTCHodlBoosterCallOption",
         deployer,
         "PKKTHodlBoosterCallOption",
@@ -74,13 +77,13 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         "WBTCUSDCHodlBoosterCall",
         WBTC.address,
         USDC.address,
-        OptionVault,
+        optionVault,
         structureData.address,
         deploy,
         ethers
     );
 
-    await deployOptionContract(
+    const wbtcHodlBoosterPutOption = await deployOptionContract(
         "WBTCHodlBoosterPutOption",
         deployer,
         "PKKTHodlBoosterPutOption",
@@ -89,13 +92,24 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         "WBTCUSDCHodlBoosterPut",
         WBTC.address,
         USDC.address,
-        OptionVault,
+        optionVault,
         structureData.address,
         deploy,
         ethers
     )
+    
+    // wbtc ping-pong setup
+    wbtcHodlBoosterCallOption.setCounterPartyOption(wbtcHodlBoosterPutOption.address);
+    wbtcHodlBoosterPutOption.setCounterPartyOption(wbtcHodlBoosterCallOption.address);
 
-    await deployOptionContract(
+    await optionVault.addOptionPair({
+        callOption: wbtcHodlBoosterCallOption.address,
+        putOption: wbtcHodlBoosterPutOption.address,
+        callOptionDeposit: WBTC.address,
+        putOptionDeposit: USDC.address
+    });
+
+    const ethHodlBoosterCallOption = await deployOptionContract(
         "ETHHodlBoosterCallOption",
         deployer,
         "PKKTHodlBoosterCallOption",
@@ -104,13 +118,13 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         "ETHUSDCHodlBoosterCall",
         NULL_ADDRESS,
         USDC.address,
-        OptionVault,
+        optionVault,
         structureData.address,
         deploy,
         ethers
     )
 
-    await deployOptionContract(
+    const ethHodlBoosterPutOption = await deployOptionContract(
         "ETHHodlBoosterPutOption",
         deployer,
         "PKKTHodlBoosterPutOption",
@@ -119,11 +133,22 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         "ETHUSDCHodlBoosterPut",
         NULL_ADDRESS,
         USDC.address,
-        OptionVault,
+        optionVault,
         structureData.address,
         deploy,
         ethers
     )
+
+    await optionVault.addOptionPair({
+        callOption: ethHodlBoosterCallOption.address,
+        putOption: ethHodlBoosterPutOption.address,
+        callOptionDeposit: NULL_ADDRESS,
+        putOptionDeposit: USDC.address
+    })
+
+    // Eth Ping-pong setup
+    ethHodlBoosterCallOption.setCounterPartyOption(ethHodlBoosterPutOption.address);
+    ethHodlBoosterPutOption.setCounterPartyOption(ethHodlBoosterCallOption.address);
 }
 
 const deployOptionContract = async (
@@ -135,10 +160,10 @@ const deployOptionContract = async (
     optionSymbol: String,
     WBTCAddress: any,
     USDCAddress: any,
-    OptionVault: any,
+    optionVault: any,
     libraryAddress: any,
     deploy: any,
-    ethers: any) => {
+    ethers: any): Promise<PKKTHodlBoosterOption> => {
     const PKKTHodlBoosterOption = await deploy(deploymentName, {
         from: deployer,
         contract: optionType,
@@ -154,7 +179,8 @@ const deployOptionContract = async (
                     USDCAddress,
                     WBTC_DECIMALS,
                     USDC_DECIMALS,
-                    OptionVault.address
+                    optionVault.address,
+                    settler
                 ],
             },
         },
@@ -169,12 +195,10 @@ const deployOptionContract = async (
     );
     console.log(`Deployed ${optionName} at: ${pkktHodlBoosterOption.address}`);
 
-    await pkktHodlBoosterOption.transferOwnership(settler);
+    // await optionVault.addOption(pkktHodlBoosterOption.address);
+    // console.log(`Added ${optionName} to Option Vault at: ${optionVault.address}`);
 
-    const optionVault = await ethers.getContractAt(OptionVault.abi, OptionVault.address);
-
-    await optionVault.addOption(pkktHodlBoosterOption.address);
-    console.log(`Added ${optionName} to Option Vault at: ${optionVault.address}`);
+    return pkktHodlBoosterOption;
 }
 
 export default main;

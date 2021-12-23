@@ -13,49 +13,104 @@ import {
     USDC_MULTIPLIER,
     WBTC_MULTIPLIER,
     WBTC_PRICE_PRECISION,
-    RATIO_MULTIPLIER
+    ETH_PRICE_PRECISION,
+    RATIO_MULTIPLIER,
+    OptionExecution
 } from "../constants/constants";
 import { printOptionState, getDeployedContractHelper } from "./utilities/utilities";
+import { PKKTHodlBoosterPutOption } from "../typechain";
 
 async function main() {
     //const { settler, alice, bob, trader} = await getNamedAccounts();
     const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
-    const [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption] = await getDeployedContracts();
+    const [
+        usdc,
+        wbtc,
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getDeployedContracts();
     const users = [alice]
     await initializeUsers(usdc, wbtc, wbtcHodlBoosterCallOption, users);
     const wbtcQuota = BigNumber.from(25).mul(WBTC_MULTIPLIER);
 
-
+    const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
     const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
-    let parameters = {
-            pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: btcPrice, //10% up
-            premiumRate: 0.02 * RATIO_MULTIPLIER, //2% per week
-    };
 
+    let settleParams = [
+        {
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+        },
+        {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+        }
+    ];
+
+    let commitParams = [
+        {
+            pricePrecision: ETH_PRICE_PRECISION,
+            strikePrice: ethPrice,
+            premiumRate: 0.025 * RATIO_MULTIPLIER,
+            option: ethHodlBoosterCallOption.address
+        },
+        {
+            pricePrecision: ETH_PRICE_PRECISION,
+            strikePrice: ethPrice,
+            premiumRate: 0.025 * RATIO_MULTIPLIER,
+            option: ethHodlBoosterPutOption.address
+        },
+        {
+            pricePrecision: WBTC_PRICE_PRECISION,
+            strikePrice: btcPrice,
+            premiumRate: 0.025 * RATIO_MULTIPLIER,
+            option: wbtcHodlBoosterCallOption.address
+        },
+        {
+            pricePrecision: WBTC_PRICE_PRECISION,
+            strikePrice: btcPrice,
+            premiumRate: 0.025 * RATIO_MULTIPLIER,
+            option: wbtcHodlBoosterCallOption.address
+        }
+    ];
+    await optionVault.connect(settler as Signer).initiateSettlement();
+
+    let curSettleParams: any = [];
     const period = 6;
     for(let i = 0; i < period; ++i) {
         // Initializes epoch
-        await wbtcHodlBoosterCallOption.connect(settler as Signer).rollToNext(wbtcQuota);
+        //await wbtcHodlBoosterCallOption.connect(settler as Signer).rollToNext(wbtcQuota);
+        await optionVault.connect(settler as Signer).initiateSettlement();
 
         await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
             BigNumber.from(1).mul(WBTC_MULTIPLIER)
         );
-        await settlementPeriod(
-            optionVault,
-            wbtcHodlBoosterCallOption,
-            settler,
-            trader,
-            BigNumber.from(btcPrice),
-            parameters
-        );
-        // If we have something matured
-        if (i > 0) {
-            let wbtcInstruction = await optionVault.settlementInstruction(wbtc.address);
-            await wbtc.connect(trader as Signer).
-                transfer(wbtcInstruction.targetAddress, wbtcInstruction.amount);
-            await optionVault.connect(settler as Signer).finishSettlement();
+        if (i > 1) {
+            curSettleParams = settleParams
         }
+        // await settlementPeriod(
+        //     optionVault,
+        //     wbtcHodlBoosterCallOption,
+        //     settler,
+        //     curSettleParams,
+        //     commitParams
+        // );
+        await optionVault.connect(settler as Signer).settle(curSettleParams);
+        await optionVault.connect(settler as Signer).commitCurrent(commitParams);
+        await optionVault.connect(settler as Signer).withdrawAsset(settler.address, wbtc.address);
+        await printRoundInformation(wbtcHodlBoosterCallOption);
+        // If we have something matured
+        // if (i > 0) {
+        //     let wbtcInstruction = await optionVault.settlementInstruction(wbtc.address);
+        //     await wbtc.connect(trader as Signer).
+        //         transfer(wbtcInstruction.targetAddress, wbtcInstruction.amount);
+        //     await optionVault.connect(settler as Signer).finishSettlement();
+        // }
     }
 }
 
@@ -79,13 +134,15 @@ const settlementPeriod = async (
     optionVault: OptionVault,
     holdBoosterOption: PKKTHodlBoosterOption,
     settler: SignerWithAddress,
-    trader: SignerWithAddress,
-    quota: BigNumber,
-    parameters) => {
-    await optionVault.connect(settler as Signer).prepareSettlement();
-    await holdBoosterOption.connect(settler as Signer).closePrevious(false);
-    await holdBoosterOption.connect(settler as Signer).commitCurrent(parameters);
-    await optionVault.connect(settler as Signer).startSettlement(trader.address);
+    settleParams,
+    commitParams) => {
+    // await optionVault.connect(settler as Signer).prepareSettlement();
+    // await holdBoosterOption.connect(settler as Signer).closePrevious(false);
+    // await holdBoosterOption.connect(settler as Signer).commitCurrent(parameters);
+    // await optionVault.connect(settler as Signer).startSettlement(trader.address);
+    await optionVault.connect(settler as Signer).initiateSettlement();
+    await optionVault.connect(settler as Signer).settle(settleParams);
+    await optionVault.connect(settler as Signer).commitCurrent(commitParams);
     await printRoundInformation(holdBoosterOption);
 }
 
@@ -93,19 +150,39 @@ const getDeployedContracts = async (): Promise<[
     ERC20Mock,
     ERC20Mock,
     OptionVault,
-    PKKTHodlBoosterCallOption
+    PKKTHodlBoosterCallOption,
+    PKKTHodlBoosterPutOption,
+    PKKTHodlBoosterCallOption,
+    PKKTHodlBoosterPutOption
 ]> => {
     const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
     const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
     const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const ethHodlBoosterCallOption = await getDeployedContractHelper(
+        "ETHHodlBoosterCallOption"
+    ) as PKKTHodlBoosterCallOption;
+    const ethHodlBoosterPutOption = await getDeployedContractHelper(
+        "ETHHodlBoosterPutOption"
+    ) as PKKTHodlBoosterPutOption;
     const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
         "WBTCHodlBoosterCallOption"
     ) as PKKTHodlBoosterCallOption;
-    return [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption];
+    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterPutOption"
+    ) as PKKTHodlBoosterPutOption;
+    return [
+        usdc,
+        wbtc,
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ];
 }
 
-// // Helper function to get round and option state from Smart Contract
-// // Then print the information
+// Helper function to get round and option state from Smart Contract
+// Then print the information
 const printRoundInformation = async (hodlBoosterOption: PKKTHodlBoosterOption) => {
     let round = await hodlBoosterOption.currentRound();
     let optionState = await hodlBoosterOption.optionStates(round);

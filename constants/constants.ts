@@ -20,6 +20,7 @@ export const WBTC_DECIMALS = 8;
 export const USDC_MULTIPLIER = BigNumber.from(10).pow(USDC_DECIMALS);
 export const WBTC_MULTIPLIER = BigNumber.from(10).pow(WBTC_DECIMALS);
 export const WBTC_PRICE_PRECISION = 4;
+export const ETH_PRICE_PRECISION = 4;
 export const RATIO_MULTIPLIER = 10000;
 export const PKKT_VAULT_MAX="10000000000000000000000000";
 export const PKKT_FARM_MAX="10000000000000000000000000"; 
