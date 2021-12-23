@@ -29,7 +29,7 @@ library Utils {
     }
  
    function getAmountToTerminate(uint256 _maturedAmount, uint256 _assetToTerminate, uint256 _assetAmount) internal pure returns(uint256) {
-       if (_assetToTerminate == 0) return 0;
+       if (_assetToTerminate == 0 || _assetAmount == 0 || _maturedAmount == 0) return 0;
        return _assetToTerminate >= _assetAmount ?  _maturedAmount : _maturedAmount.mul(_assetToTerminate).div(_assetAmount);
    }
 

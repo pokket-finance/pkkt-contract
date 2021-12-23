@@ -137,14 +137,13 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             IExecuteSettlement putOption = IExecuteSettlement(pair.putOption);
             uint256 pending1 = callOption.rollToNext(MAX_INT);
             uint256 pending2 = putOption.rollToNext(MAX_INT);
-
-            if (currentRound == 1) {
-                if (pending1 > 0) { 
-                    depositAmount[pair.callOptionDeposit] = depositAmount[pair.callOptionDeposit].add(pending1);
-                }
-                if (pending2 > 0) { 
-                    depositAmount[pair.putOptionDeposit] = depositAmount[pair.putOptionDeposit].add(pending2);
-                }
+            if (pending1 > 0) { 
+                depositAmount[pair.callOptionDeposit] = depositAmount[pair.callOptionDeposit].add(pending1);
+            }
+            if (pending2 > 0) { 
+                depositAmount[pair.putOptionDeposit] = depositAmount[pair.putOptionDeposit].add(pending2);
+            }
+            if (currentRound <= 2) {
                 continue;
             }
             StructureData.SettlementAccountingResult memory noneExecuteCallOption = callOption.dryRunSettlement(false);
@@ -185,46 +184,42 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
             IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
             StructureData.MaturedState memory maturedState;
-            StructureData.MaturedState memory maturedState2;
-            uint256 deposit;
-            uint256 deposit2;
+            StructureData.MaturedState memory maturedState2; 
 
             if (pair.execute == StructureData.OptionExecution.NoExecution) {
-                (maturedState, deposit) = callOption.closePrevious(false);
-                (maturedState2, deposit2) = putOption.closePrevious(false); 
+                maturedState = callOption.closePrevious(false);
+                maturedState2 = putOption.closePrevious(false); 
             }
             else if (pair.execute == StructureData.OptionExecution.ExecuteCall) {
-                (maturedState, deposit) = callOption.closePrevious(true);
-                (maturedState2, deposit2) = putOption.closePrevious(false); 
+                maturedState = callOption.closePrevious(true);
+                maturedState2 = putOption.closePrevious(false); 
             }
             if (pair.execute == StructureData.OptionExecution.ExecutePut) {
-                (maturedState, deposit) = callOption.closePrevious(false);
-                (maturedState2, deposit2) = putOption.closePrevious(true); 
+                maturedState = callOption.closePrevious(false);
+                maturedState2 = putOption.closePrevious(true); 
             }
 
             if (maturedState.releasedDepositAssetAmount > 0) {
                 uint256 releasedDepositAssetAmount  = releasedAmount[callOptionDeposit];
-                releasedAmount[callOptionDeposit] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount); 
+                releasedAmount[callOptionDeposit] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount)
+                .add(maturedState.releasedDepositAssetPremiumAmount); 
             }
             if (maturedState.releasedCounterPartyAssetAmount > 0) {
                 uint256 releasedCounterPartyAssetAmount = releasedAmount[putOptionDeposit];
-                releasedAmount[putOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState.releasedCounterPartyAssetAmount); 
+                releasedAmount[putOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState.releasedCounterPartyAssetAmount)
+                .add(maturedState.releasedCounterPartyAssetPremiumAmount); 
             }  
-            if (deposit > 0) { 
-                depositAmount[callOptionDeposit] = depositAmount[callOptionDeposit].add(deposit);
-            }
             
             if (maturedState2.releasedDepositAssetAmount > 0) {
                 uint256 releasedDepositAssetAmount  = releasedAmount[putOptionDeposit];
-                releasedAmount[putOptionDeposit] = releasedDepositAssetAmount.add(maturedState2.releasedDepositAssetAmount); 
+                releasedAmount[putOptionDeposit] = releasedDepositAssetAmount.add(maturedState2.releasedDepositAssetAmount)
+                .add(maturedState2.releasedDepositAssetPremiumAmount); 
             }
             if (maturedState2.releasedCounterPartyAssetAmount > 0) {
                 uint256 releasedCounterPartyAssetAmount = releasedAmount[callOptionDeposit];
-                releasedAmount[callOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState2.releasedCounterPartyAssetAmount); 
+                releasedAmount[callOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState2.releasedCounterPartyAssetAmount)
+                .add(maturedState2.releasedCounterPartyAssetPremiumAmount);  
             }  
-            if (deposit2 > 0) { 
-                depositAmount[putOptionDeposit] = depositAmount[putOptionDeposit].add(deposit2);
-            }
         }
 
         uint256 assetCount = asset.length; 
@@ -241,7 +236,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             assetBalanceBeforeSettle[assetAddress] = getAvailableBalance(assetAddress);
             assetBalanceBeforeSettle[assetAddress] = collectWithdrawable(assetAddress);
             uint256 released = releasedAmount[assetAddress];
-            uint256 deposit = depositAmount[assetAddress];
+            uint256 deposit = depositAmount[assetAddress]; 
             
             StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
                 newReleasedAmount: released,

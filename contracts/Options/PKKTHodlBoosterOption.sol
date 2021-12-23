@@ -454,13 +454,12 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
 
    //then, make decision based on dry run result and close t-1 round
    function closePrevious(bool _execute) external override onlyRole(SETTLER_ROLE)  
-   returns(StructureData.MaturedState memory _maturedState, uint256 _depositAmount) {   
+   returns(StructureData.MaturedState memory _maturedState) {   
         require(underSettlement, "Not being settled");
         require (currentRound > StructureData.MATUREROUND + 1, "no matured");
         uint maturedRound = currentRound - StructureData.MATUREROUND - 1;
         StructureData.OptionState storage previousOptionState = optionStates[maturedRound];   
-        StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);   
-        StructureData.OptionState storage nextOption = optionStates[currentRound - 1];  
+        StructureData.MaturedState memory maturedState = _calculateMaturity(_execute, previousOptionState);    
         previousOptionState.executed = _execute;
         if (_execute) {
             totalReleasedCounterPartyAssetAmount = totalReleasedCounterPartyAssetAmount.
@@ -475,7 +474,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         }   
         
         emit CloseOption(maturedRound);
-        return (maturedState, nextOption.totalAmount);
+        return maturedState;
    }
 
    //at last, commit t round
@@ -568,17 +567,19 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
    function autoRoll(bool _counterParty, uint256 _totalAmount, StructureData.MaturedState memory _maturedState) private {
         uint256 userCount = usersInvolved.length; 
         if (!_counterParty) {
-            uint256 lockedRound = currentRound - 1;
+            uint256 lockedRound = currentRound - 1; 
             uint256 totalMatured = _maturedState.releasedDepositAssetAmount.add(_maturedState.releasedDepositAssetPremiumAmount);
             for (uint i=0; i < userCount; i++) {
                 address userAddress = usersInvolved[i];
                 StructureData.UserState storage userState = userStates[userAddress]; 
-                uint256 maturedAmount = totalMatured.div(userState.GetOngoingAsset(0)).mul(_totalAmount);
+                
+                uint256 ongoing = userState.GetOngoingAsset(0); 
+                uint256 maturedAmount = ongoing == 0 ? 0 : totalMatured.mul(_totalAmount).div(ongoing);
                 if (maturedAmount == 0) {
                     userState.assetToTerminate = 0;
                     continue;
                 }
-                uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
+                uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, ongoing);
                 if (amountToTerminate > 0) {
                     releasedDepositAssetAmount[userAddress] = 
                     releasedDepositAssetAmount[userAddress].add(amountToTerminate); 
@@ -596,12 +597,15 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         for (uint i=0; i < userCount; i++) {
             address userAddress = usersInvolved[i];
             StructureData.UserState storage userState = userStates[userAddress];  
-            uint256 maturedAmount = totalMatured2.div(userState.GetOngoingAsset(0)).mul(_totalAmount);
+            
+            uint256 ongoing = userState.GetOngoingAsset(0);
+            uint256 maturedAmount = ongoing == 0 ? 0 : totalMatured2.mul(_totalAmount).div(ongoing);
+
             if (maturedAmount == 0) {
                 userState.assetToTerminate = 0;
                 continue;
             }
-            uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, userState.GetOngoingAsset(0));
+            uint256 amountToTerminate = Utils.getAmountToTerminate(maturedAmount, userState.assetToTerminate, ongoing);
             if (amountToTerminate > 0) {
                 releasedCounterPartyAssetAmount[userAddress] = 
                 releasedCounterPartyAssetAmount[userAddress].add(amountToTerminate);
