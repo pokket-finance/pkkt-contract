@@ -14,12 +14,12 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  const { deployer, owner } = await getNamedAccounts(); 
+  const { deployer, owner, trader } = await getNamedAccounts(); 
   const isMainnet = network.name === "mainnet" || network.name == "hardhat"; 
   console.log("03 - Deploying OptionVault on", network.name);
   const optionVault = await deploy("OptionVault", {
     from: deployer,
-    args: [owner],
+    args: [trader],
     contract: "OptionVault"  
   });
   const optionVaultContract = await ethers.getContractAt("OptionVault", optionVault.address);
@@ -45,7 +45,8 @@ const main = async ({
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
           ETH_DECIMALS,
           USDT_DECIMALS,
-          optionVault.address
+          optionVault.address,
+          trader
         ],
       },
     },
@@ -54,13 +55,8 @@ const main = async ({
     }
   });
 
-  await optionVaultContract.addOption(ethHodlBoosterCall.address);
 
-  console.log(`03 - Deployed ETH-USDT-HodlBooster-Call on ${network.name} to ${ethHodlBoosterCall.address}`); 
-  const ethHodlBoosterCallOptionContract = await ethers.getContractAt(
-    "PKKTHodlBoosterCallOption",
-    ethHodlBoosterCall.address
-  );
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Call on ${network.name} to ${ethHodlBoosterCall.address}`);  
 
   console.log("03 - Deploying ETH-USDT-HodlBooster-Put on", network.name);
 
@@ -79,7 +75,8 @@ const main = async ({
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
           ETH_DECIMALS,
           USDT_DECIMALS,
-          optionVault.address
+          optionVault.address,
+          trader
         ],
       },
     },
@@ -87,10 +84,26 @@ const main = async ({
       StructureData: structureData.address,
     },
   });
+ 
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`); 
+  
 
-  await optionVaultContract.addOption(ethHodlBoosterPut.address);
-  console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`);
-  const ethHodlBoosterPutOptionContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", ethHodlBoosterPut.address);
+  const ethHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", ethHodlBoosterCall.address) as PKKTHodlBoosterCallOption;
+  await ethHodlBoosterCallContract.setCounterPartyOption(ethHodlBoosterPut.address);
+  const ethHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", ethHodlBoosterPut.address) as PKKTHodlBoosterPutOption;
+  await ethHodlBoosterPutContract.setCounterPartyOption(ethHodlBoosterCall.address);
+
+  await optionVaultContract.addOptionPair({
+    callOption: ethHodlBoosterCall.address,
+    putOption: ethHodlBoosterPut.address,
+    callOptionDeposit: NULL_ADDRESS,
+    putOptionDeposit: isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+  });
+ 
+
+
+  console.log(`03 - Deployed ETH-USDT-HodlBooster-Pair on ${network.name} to ${optionVaultContract.address}`);  
+ 
 
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Call on", network.name);
   const wbtcHodlBoosterCall = await deploy("WBTCPKKTHodlBoosterCallOption", {
@@ -108,16 +121,15 @@ const main = async ({
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
           WBTC_DECIMALS,
           USDT_DECIMALS,
-          optionVault.address
+          optionVault.address,
+          trader
         ]
       }
     },
     libraries: {
       StructureData: structureData.address,
     },
-  });
-
-  await optionVaultContract.addOption(wbtcHodlBoosterCall.address);
+  }); 
   console.log(`03 - Deployed WBTC-USDT-HodlBooster-Call on ${network.name} to ${wbtcHodlBoosterCall.address}`); 
 
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Put on", network.name);
@@ -136,7 +148,8 @@ const main = async ({
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
           WBTC_DECIMALS,
           USDT_DECIMALS,
-          optionVault.address
+          optionVault.address,
+          trader
         ],
       }
     },
@@ -144,9 +157,26 @@ const main = async ({
       StructureData: structureData.address,
     },
   });
-
-  await optionVaultContract.addOption(wbtcHodlBoosterPut.address);
+ 
   console.log(`03 - Deployed WBTC-USDT-HodlBooster-Put on ${network.name} to ${wbtcHodlBoosterPut.address}`); 
+ 
+  
+  const wbtcHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", wbtcHodlBoosterCall.address) as PKKTHodlBoosterCallOption;
+  await wbtcHodlBoosterCallContract.setCounterPartyOption(wbtcHodlBoosterPut.address);
+  const wbtcHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", wbtcHodlBoosterPut.address) as PKKTHodlBoosterPutOption;
+  await wbtcHodlBoosterPutContract.setCounterPartyOption(wbtcHodlBoosterCall.address);
+
+
+  await optionVaultContract.addOptionPair({
+    callOption: wbtcHodlBoosterCall.address,
+    putOption: wbtcHodlBoosterPut.address,
+    callOptionDeposit: isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS,
+    putOptionDeposit: isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+  });
+ 
+
+  console.log(`03 - Deployed WBTC-USDT-HodlBooster-Pair on ${network.name} to ${optionVaultContract.address}`);  
+
 };
 main.tags = ["PKKTHodlBoosterCallOption"];
 

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.4;
 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library Utils { 
      
+     using SafeMath for uint256;
       function StringConcat(bytes memory _base, bytes memory _value) internal pure returns (string memory) {
         string memory _tmpValue = new string(_base.length + _value.length);
         bytes memory _newValue = bytes(_tmpValue);
@@ -26,5 +28,9 @@ library Utils {
         return a - b;
     }
  
+   function getAmountToTerminate(uint256 _maturedAmount, uint256 _assetToTerminate, uint256 _assetAmount) internal pure returns(uint256) {
+       if (_assetToTerminate == 0) return 0;
+       return _assetToTerminate >= _assetAmount ?  _maturedAmount : _maturedAmount.mul(_assetToTerminate).div(_assetAmount);
+   }
 
 }

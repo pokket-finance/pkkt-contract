@@ -21,7 +21,8 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
       address _stableCoin,
       uint8 _underlyingDecimals,
       uint8 _stableCoinDecimals,
-      address _vaultAddress
+      address _vaultAddress,
+      address _settler
     ) public initializer { 
       PKKTHodlBoosterOption.initialize(
          name,
@@ -31,52 +32,10 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
          _stableCoinDecimals,
          _underlyingDecimals, 
          _vaultAddress,
-         true
+         true,
+         _settler
       );    
     }
 
-   
-     function _calculateMaturity(bool _execute, StructureData.OptionState memory _optionState) internal override
-     returns(StructureData.MaturedState memory) {
-       StructureData.MaturedState memory state = StructureData.MaturedState({
-          maturedDepositAssetAmount: 0,
-          maturedCounterPartyAssetAmount: 0,
-          executed: _execute,
-          round: _optionState.round
-       }); 
-        uint256 multipler = uint256(RATIOMULTIPLIER).add(_optionState.premiumRate);  
-        if (_execute) {  
-           state.maturedCounterPartyAssetAmount = _optionState.totalAmount.
-           mul(multipler).mul(10**(_optionState.pricePrecision + counterPartyAssetAmountDecimals)).div(_optionState.strikePrice).
-           div(RATIOMULTIPLIER).div(10** depositAssetAmountDecimals); 
-        }
-        else {
-           state.maturedDepositAssetAmount = _optionState.totalAmount.mul(multipler).div(RATIOMULTIPLIER);
 
-        }
- 
-        uint256 userCount = usersInvolved.length; 
-        for (uint i=0; i < userCount; i++) {
-            address userAddress = usersInvolved[i];
-            StructureData.UserState storage userState = userStates[userAddress]; 
-            //since the onGoingAsset for current round is not filled yet, we make 5 instead of 6 backward
-            uint256 ongoingAsset = userState.GetOngoingAsset(StructureData.MATUREROUND - 1);  
-            if (ongoingAsset == 0) {
-               pendingMaturedCounterPartyAssetAmount[userAddress] = 
-               pendingMaturedDepositAssetAmount[userAddress] = 0;
-               continue;
-            }
-            if (_execute) {  
-               uint256 assetCoinAmount = state.maturedCounterPartyAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
-               pendingMaturedCounterPartyAssetAmount[userAddress] = assetCoinAmount;  
-               pendingMaturedDepositAssetAmount[userAddress] = 0;
-            }
-            else {   
-                uint256 stableCoinAmount = state.maturedDepositAssetAmount.mul(ongoingAsset).div(_optionState.totalAmount);
-                pendingMaturedDepositAssetAmount[userAddress] = stableCoinAmount;  
-                pendingMaturedCounterPartyAssetAmount[userAddress] = 0;
-            } 
-         }
-         return state;
-     }
 }

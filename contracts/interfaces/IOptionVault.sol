@@ -6,18 +6,6 @@ interface IOptionVault {
     function addOption(address _optionContract) external;
     function removeOption(address _optionContract) external;
     function getAddress() external view returns(address);
-    function withdraw(address _target, uint256 _amount, address _contractAddress) external;
-
-    function prepareSettlement() external;
-    
-    function setCommittedState(StructureData.OptionState memory _currentState, address _depositAsset, address _counterPartyAsset)  external;   
-    function setMaturityState(StructureData.MaturedState memory _maturedState, address _depositAsset, address _counterPartyAsset) external; 
-    
-    function startSettlement(address _traderAddress) external;
-    function finishSettlement() external;
-
-    function allSettled() external view returns(bool);
-
-    
-    
+    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external;
+     
 }

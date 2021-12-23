@@ -4,10 +4,14 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
 
+    function setCounterPartyOption(address _counterParty) external;
+    
     function getAccountBalance() external view returns (StructureData.UserBalance memory); 
 
+    //ISettlementAggregator.balanceEnough needs to be called if there is any release amount
     function getOptionSnapShot() external view returns(StructureData.OptionSnapshot memory);
  
+    function getWithdrawable(address _asset) external view returns(uint256); 
 
     
     function vaultAddress() external view returns(address);
@@ -43,16 +47,13 @@ interface IPKKTStructureOption {
 
     //can only be called from counterparty option 
     function depositFromCounterParty(address[] memory _addresses, uint256[] memory _amounts) external;
-
-
-
+ 
 
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed 
     function getRoundData(uint256 _blockHeight) external view returns(StructureData.OptionState memory);
 
-    
  
 }
 
