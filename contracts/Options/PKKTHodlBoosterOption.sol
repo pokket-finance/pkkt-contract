@@ -75,7 +75,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
     } 
-    function setCounterPartyOption(address _counterParty) external {
+    function setCounterPartyOption(address _counterParty) external override onlyOwner {
         require(_counterParty != address(this), "Cannot set self as counter party");
         counterPartyOption = IPKKTStructureOption(_counterParty);
         counterParty = _counterParty;

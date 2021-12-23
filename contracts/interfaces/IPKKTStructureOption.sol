@@ -4,6 +4,8 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
 
+    function setCounterPartyOption(address _counterParty) external;
+    
     function getAccountBalance() external view returns (StructureData.UserBalance memory); 
 
     //ISettlementAggregator.balanceEnough needs to be called if there is any release amount
@@ -11,6 +13,7 @@ interface IPKKTStructureOption {
  
     function getWithdrawable(address _asset) external view returns(uint256); 
 
+    
     function vaultAddress() external view returns(address);
 
     //deposit eth
