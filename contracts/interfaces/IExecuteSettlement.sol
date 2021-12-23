@@ -10,7 +10,7 @@ interface IExecuteSettlement {
    function commitCurrent(StructureData.OptionParameters memory _optionParameters) external ; 
 
     //open a new option
-   function rollToNext(uint256 _quota) external; 
+   function rollToNext(uint256 _quota) external returns(uint256 _pendingAmount); 
  
    function dryRunSettlement(bool _execute) external view returns(StructureData.SettlementAccountingResult memory _result);
 }

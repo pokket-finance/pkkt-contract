@@ -7,8 +7,10 @@ interface ISettlementAggregator {
     function addOptionPair(StructureData.OptionPairDefinition memory _pair) external;
     function removeOptionPair(StructureData.OptionPairDefinition memory _pair) external;
 
+    function currentRound() external view returns(uint256);
     //rollToNext + dryRunSettlement
-    function initiateSettlement(bool _dryRun) external; 
+    //todo: specifying quota
+    function initiateSettlement() external; 
 
     //closePrevious + calculate cash flow 
     function settle(StructureData.OptionPairExecution[] memory _execution) external;

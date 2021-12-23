@@ -75,6 +75,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         // Address capable of initiating and finizalizing settlement
         _setupRole(SETTLER_ROLE, _settler);
+        _setupRole(SETTLER_ROLE, _vaultAddress);
         depositAsset = _depositAsset;
         counterPartyAsset = _counterPartyAsset;
         isEth = _depositAsset == address(0);
@@ -364,12 +365,17 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
     } 
 
 
+   /*
+    *  Following operations can only be triggered from ISettlementAggregator with the settler role
+    */
+
    //first, open t+1 round
-   function rollToNext(uint256 _quota) external override onlyRole(SETTLER_ROLE) {   
+   function rollToNext(uint256 _quota) external override onlyRole(SETTLER_ROLE) returns(uint256 _pendingAmount){   
 
        require(!underSettlement, "Being settled");
        underSettlement = true; 
-         quota = _quota;
+       quota = _quota;
+        currentRound = currentRound + 1;
         StructureData.OptionState memory currentOption =  
         StructureData.OptionState({
                             round: currentRound,
@@ -381,9 +387,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
                             executed: false,
                             callOrPut: callOrPut
                         });
-        currentRound = currentRound + 1;
         optionStates[currentRound] = currentOption; 
-        emit OpenOption(currentRound); 
        if (currentRound > 1) {
             uint256 userCount = usersInvolved.length;
             for (uint i=0; i < userCount; i++) {
@@ -398,12 +402,13 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
        else {
            underSettlement = false;
        }
+        emit OpenOption(currentRound); 
+        if (currentRound > 1) {
+            return optionStates[currentRound-1].totalAmount;
+        }
+        return 0;
     }
     
-   /*
-    *  Following operations can only be triggered from ISettlementAggregator with the settler role, 
-    *  ownership of the option is transferred to the settler after deployment
-    */
 
    //then dry run settlement and get accounting result
    function dryRunSettlement(bool _execute) external override view onlyRole(SETTLER_ROLE) returns(StructureData.SettlementAccountingResult memory _result) {

@@ -21,6 +21,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
      
+     uint256 public override currentRound; 
     /*
      * cash flow perspective (based on asset address)
      */
@@ -120,8 +121,9 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
 
-    function initiateSettlement(bool _dryRun) external override onlyRole(SETTLER_ROLE) {
-        if (_dryRun) { 
+    function initiateSettlement() external override onlyRole(SETTLER_ROLE) {
+        currentRound = currentRound + 1;
+        if (currentRound > 1) { 
             delete executionAccountingResult;
         } 
         uint256 count = optionPairs.length; 
@@ -133,9 +135,16 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             }
             IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
             IExecuteSettlement putOption = IExecuteSettlement(pair.putOption);
-            callOption.rollToNext(MAX_INT);
-            putOption.rollToNext(MAX_INT);
-            if (!_dryRun) {
+            uint256 pending1 = callOption.rollToNext(MAX_INT);
+            uint256 pending2 = putOption.rollToNext(MAX_INT);
+
+            if (currentRound == 1) {
+                if (pending1 > 0) { 
+                    depositAmount[pair.callOptionDeposit] = depositAmount[pair.callOptionDeposit].add(pending1);
+                }
+                if (pending2 > 0) { 
+                    depositAmount[pair.putOptionDeposit] = depositAmount[pair.putOptionDeposit].add(pending2);
+                }
                 continue;
             }
             StructureData.SettlementAccountingResult memory noneExecuteCallOption = callOption.dryRunSettlement(false);
@@ -165,8 +174,11 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     }
 
     function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(SETTLER_ROLE) {  
-        //_execution should be 0 length if 
-        uint256 count = _execution.length;
+
+        uint256 count = _execution.length; 
+        if (currentRound <= 2) {
+            require(count == 0, "no matured round");
+        }
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory pair = _execution[i];
             (address callOptionDeposit, address putOptionDeposit) = getDespositAddress(pair.callOption, pair.putOption); 
@@ -247,7 +259,11 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
 
 
     function commitCurrent(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
-          uint256 count = _parameters.length;
+
+          uint256 count = _parameters.length;        
+          if (currentRound == 1) {
+             require(count == 0, "no locked round");
+          }
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
               IExecuteSettlement(parameter.option).commitCurrent(parameter);
