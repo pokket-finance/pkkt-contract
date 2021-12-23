@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol"; 
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "hardhat/console.sol";
  
 import {Utils} from "../libraries/Utils.sol";  
@@ -13,7 +13,8 @@ import {StructureData} from "../libraries/StructureData.sol";
 import "../interfaces/IPKKTStructureOption.sol";
 import "../interfaces/IExecuteSettlement.sol"; 
 import "../interfaces/IOptionVault.sol"; 
-abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable, IPKKTStructureOption, IExecuteSettlement {
+
+abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -51,6 +52,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
      mapping(address=>uint256) private releasedDepositAssetAmount;
      mapping(address=>uint256) private releasedCounterPartyAssetAmount;  
 
+    bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
+    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
@@ -62,11 +65,16 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         uint8 _depositAssetAmountDecimals,
         uint8 _counterPartyAssetAmountDecimals,
         address _vaultAddress,
-        bool _callOrPut
+        bool _callOrPut,
+        address _settler
     ) internal initializer {
         require(_vaultAddress != address(0), "Empty vault address");
         ERC20Upgradeable.__ERC20_init(name, symbol);
-        OwnableUpgradeable.__Ownable_init();
+        AccessControlUpgradeable.__AccessControl_init();
+        // Contract deployer will be able to grant and revoke trading role
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        // Address capable of initiating and finizalizing settlement
+        _setupRole(SETTLER_ROLE, _settler);
         depositAsset = _depositAsset;
         counterPartyAsset = _counterPartyAsset;
         isEth = _depositAsset == address(0);
@@ -75,7 +83,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
     } 
-    function setCounterPartyOption(address _counterParty) external override onlyOwner {
+    function setCounterPartyOption(address _counterParty) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_counterParty != address(this), "Cannot set self as counter party");
         counterPartyOption = IPKKTStructureOption(_counterParty);
         counterParty = _counterParty;
@@ -357,7 +365,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
 
 
    //first, open t+1 round
-   function rollToNext(uint256 _quota) external override onlyOwner {   
+   function rollToNext(uint256 _quota) external override onlyRole(SETTLER_ROLE) {   
 
        require(!underSettlement, "Being settled");
        underSettlement = true; 
@@ -398,7 +406,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
     */
 
    //then dry run settlement and get accounting result
-   function dryRunSettlement(bool _execute) external override view onlyOwner returns(StructureData.SettlementAccountingResult memory _result) {
+   function dryRunSettlement(bool _execute) external override view onlyRole(SETTLER_ROLE) returns(StructureData.SettlementAccountingResult memory _result) {
         require(underSettlement, "Not being settled");
         require(currentRound > 1, "Nothing to settle");
 
@@ -437,7 +445,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
    }
 
    //then, make decision based on dry run result and close t-1 round
-   function closePrevious(bool _execute) external override onlyOwner  
+   function closePrevious(bool _execute) external override onlyRole(SETTLER_ROLE)  
    returns(StructureData.MaturedState memory _maturedState, uint256 _depositAmount) {   
         require(underSettlement, "Not being settled");
         require (currentRound > StructureData.MATUREROUND + 1, "no matured");
@@ -463,7 +471,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, OwnableUpgradeable,
    }
 
    //at last, commit t round
-   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyOwner {  
+   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyRole(SETTLER_ROLE) {  
         require (currentRound > 1, "not started");
         if(currentRound <= 2 && !underSettlement) {
            underSettlement = true;
