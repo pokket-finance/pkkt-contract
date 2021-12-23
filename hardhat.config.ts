@@ -13,6 +13,7 @@ import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
 import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
+import generateSubgraphManifest from "./scripts/tasks/backend/generateSubgraphManifest";
 
 dotenv.config();
 
@@ -124,3 +125,6 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
 
 task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
   .addFlag("fresh", "If set, deletes the existing network deployments folder");
+
+task("generate-subgraph-manifest", "Adds necessary information to the subgraph manifest (subgraph.yaml)", generateSubgraphManifest)
+  .addOptionalParam("startBlock", "startblock for subgraph to begin indexing at, does not need to be set for local network");
