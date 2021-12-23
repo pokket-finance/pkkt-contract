@@ -74,6 +74,7 @@ const initializeUsers = async (usdc: ERC20Mock, wbtc: ERC20Mock, hodlBoosterOpti
     }
 }
 
+// Executes one complete settlement period for the PKKTHodlBoosterOption
 const settlementPeriod = async (
     optionVault: OptionVault,
     holdBoosterOption: PKKTHodlBoosterOption,
@@ -102,84 +103,6 @@ const getDeployedContracts = async (): Promise<[
     ) as PKKTHodlBoosterCallOption;
     return [usdc, wbtc, optionVault, wbtcHodlBoosterCallOption];
 }
-
-// Generate option data on the rinkeby test network
-// const generateOptionData = async (
-//     settler: SignerWithAddress,
-//     alice: SignerWithAddress,
-//     bob: SignerWithAddress,
-//     trader: SignerWithAddress,
-//     usdc: ERC20Mock,
-//     wbtc: ERC20Mock,
-//     optionVault: OptionVault,
-//     wbtcHodlBoosterCall: PKKTHodlBoosterCallOption
-// ) => {
-//     try {
-
-//         // Essentially initialzes process
-//         await wbtcHodlBoosterCall.connect(settler as Signer).rollToNext(parameters);
-
-//         await wbtcHodlBoosterCall.connect(alice as Signer).deposit(
-//             BigNumber.from(2).mul(WBTC_MULTIPLIER)
-//         );
-//         await wbtcHodlBoosterCall.connect(bob as Signer).deposit(
-//             BigNumber.from(5).mul(WBTC_MULTIPLIER).div(10)
-//         );
-
-//         parameters = {
-//             quota: BigNumber.from(10).mul(WBTC_MULTIPLIER),
-//             pricePrecision: WBTC_PRICE_PRECISION,
-//             strikePriceRatio: 0.1 * RATIO_MULTIPLIER, //10% up
-//             premiumRate: 0.02 * RATIO_MULTIPLIER, //2% per week
-//             callOrPut: true
-//         };
-//         await settlementPeriod(
-//             optionVault,
-//             wbtcHodlBoosterCall,
-//             settler,
-//             trader,
-//             price,
-//             parameters
-//         );
-
-//         const period = 1;
-//         for(let i = 0; i < period; ++i) {
-
-//             await wbtcHodlBoosterCall.connect(alice as Signer).deposit(
-//                 BigNumber.from(1).mul(WBTC_MULTIPLIER)
-//             );
-//             await wbtcHodlBoosterCall.connect(bob as Signer).deposit(
-//                 BigNumber.from(1).mul(WBTC_MULTIPLIER)
-//             );
-
-//             parameters = {
-//                 quota: BigNumber.from(2).mul(WBTC_MULTIPLIER), //5eth
-//                 pricePrecision: WBTC_PRICE_PRECISION,
-//                 strikePriceRatio: 0.1 * RATIO_MULTIPLIER, //10% up
-//                 premiumRate: 0.005 * RATIO_MULTIPLIER, //1% per week
-//                 callOrPut: true
-//             }
-//             await settlementPeriod(
-//                 optionVault,
-//                 wbtcHodlBoosterCall,
-//                 settler,
-//                 trader,
-//                 price,
-//                 parameters
-//             );
-//         }
-
-//         let wbtcInstruction = await optionVault.settlementInstruction(wbtc.address);
-//         await wbtc.connect(trader as Signer).
-//             transfer(wbtcInstruction.targetAddress, wbtcInstruction.amount);
-//         await optionVault.connect(settler as Signer).finishSettlement();
-//     } catch(err) {
-//         console.error(err);
-//     }
-// }
-
-// Executes one complete settlement period for the PKKTHodlBoosterOption
-
 
 // // Helper function to get round and option state from Smart Contract
 // // Then print the information
