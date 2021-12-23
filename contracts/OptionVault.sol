@@ -93,8 +93,8 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         addOption(_pair.callOption);
         addOption(_pair.putOption);   
         optionPairs.push(_pair);
-        IPKKTStructureOption(_pair.callOption).setCounterPartyOption(_pair.putOption);
-        IPKKTStructureOption(_pair.putOption).setCounterPartyOption(_pair.callOption);
+        //IPKKTStructureOption(_pair.callOption).setCounterPartyOption(_pair.putOption);
+        //IPKKTStructureOption(_pair.putOption).setCounterPartyOption(_pair.callOption);
         addAssetIfNeeded(_pair.callOptionDeposit);
         addAssetIfNeeded(_pair.putOptionDeposit); 
     }

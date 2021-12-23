@@ -21,7 +21,8 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
       address _stableCoin,
       uint8 _underlyingDecimals,
       uint8 _stableCoinDecimals,
-      address _vaultAddress
+      address _vaultAddress,
+      address _settler
     ) public initializer { 
       PKKTHodlBoosterOption.initialize(
          name,
@@ -31,7 +32,8 @@ contract PKKTHodlBoosterPutOption is PKKTHodlBoosterOption {
          _stableCoinDecimals,
          _underlyingDecimals, 
          _vaultAddress,
-         true
+         true,
+         _settler
       );    
     }
 
