@@ -303,8 +303,7 @@ describe("PKKT Hodl Booster", async function () {
           
           //have 0.5wbtc going on
           var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
-          assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
-          await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+          assert.equal(wbtcResult.leftOverAmount.toString(), "0");
 
           var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
           assert.equal(ethResult.leftOverAmount.toString(), "0");
@@ -352,6 +351,10 @@ describe("PKKT Hodl Booster", async function () {
               option: wbtcHodlBoosterPut.address
             },
             ]); 
+            //0.5 wbt not moved last time
+            wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+            assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
+            await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
 
             await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
             var available = await wbtcHodlBoosterCall.connect(alice as Signer).getAccountBalance();
