@@ -44,81 +44,7 @@ describe.only("PKKT Hodl Booster", async function () {
       [deployer, settler, alice, bob, carol, trader] = await ethers.getSigners(); 
         
     });
-     
-    async function renderExecutionPlan(index: BigNumberish, renderCategory: boolean){
 
-      var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
-      var key = accounting.callOptionResult.option.concat(accounting.putOptionResult.option);
-      var pair = optionPairs.get(key);
-      if (!pair){
-        return;
-      }
-      
-      var newDepositAssetAmount = accounting.callOptionResult.depositAmount.div(pair.callOptionAssetMultiplier);
-      var newCounterPartyAssetAmount = accounting.putOptionResult.depositAmount.div(pair.putOptionAssetMultiplier);
-      var maturedCallOptionState = await pair.callOption.optionStates(accounting.callOptionResult.round.sub(BigNumber.from(1)));
-      var maturedPutOptionState = await pair.putOption.optionStates(accounting.putOptionResult.round.sub(BigNumber.from(1)));
-      if (renderCategory){
-        console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
-        console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
-        console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${maturedCallOptionState.strikePrice.div(pair.strikePriceMultiplier)}/${maturedPutOptionState.strikePrice.div(pair.strikePriceMultiplier)}`);
-        console.log(`Decision|${pair.callOptionAssetName}-debt|${pair.putOptionAssetName}-debt|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
-      }
-      var callAssetAutoRoll = (accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
-      .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium))
-      .div(pair.callOptionAssetMultiplier);
-      var putAssetAutoRull = (accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyAmount)
-      .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollAmount))
-      .div(pair.putOptionAssetMultiplier);
-      
-      var callAssetReleased = (accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
-      .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium))
-      .div(pair.callOptionAssetMultiplier);
-
-      
-      var putAssetReleased = (accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
-      .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium))
-      .div(pair.putOptionAssetMultiplier);
-      var decision = "";
-      if (accounting.execute == OptionExecution.NoExecution){
-        decision = "No Exercise";
-      }
-      else if (accounting.execute == OptionExecution.ExecuteCall){
-        decision = "Exercise Call";
-      }
-      else{
-
-        decision = "Exercise Put";
-      }
-      console.log(`${decision}\t|${callAssetAutoRoll}\t|${putAssetAutoRull}\t|${callAssetReleased}\t|${putAssetReleased}`);
-       
-    }
-    async function renderExecutionPlans() { 
-      console.log("================ Decision for exercise ================");
-      await renderExecutionPlan(0, true);
-      await renderExecutionPlan(1, false);
-      await renderExecutionPlan(2, false);
-      await renderExecutionPlan(3, true);
-      await renderExecutionPlan(4, false);
-      await renderExecutionPlan(5, false);
-    }
-
-    async function renderCashFlowForAsset(assetName: string, assetAddress: string, multipler:BigNumberish){
-      var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress); 
-      var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
-      sub(assetCashFlow.newReleasedAmount)).div(multipler);
-
-      console.log(`${assetName}\t|${assetCashFlow.newDepositAmount.div(multipler)}\t|${assetCashFlow.newReleasedAmount.div(multipler)}\t|${assetCashFlow.leftOverAmount.div(multipler)}\t|${assetBalance}`);
-     
-    }
-    async function renderCashFlow(){
-      console.log("================ Actual movement of money ================");
-      console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)");
-      await renderCashFlowForAsset("ETH", NULL_ADDRESS, ETHMultiplier);
-      await renderCashFlowForAsset("WBTC", wbtc.address, WBTCMultiplier);
-      await renderCashFlowForAsset("USDT", usdt.address, USDTMultiplier);
-    }
-    
     context("operations", function () {
         beforeEach(async function () {
         
@@ -637,25 +563,25 @@ describe.only("PKKT Hodl Booster", async function () {
 
           await vault.connect(settler as Signer).commitCurrent([
             {
-              strikePrice:ethPrice*1.05,
+              strikePrice:ethPrice*1.04,
               pricePrecision:ETHPricePrecision,
               premiumRate: 0.025 * RatioMultipler,
               option: ethHodlBoosterCall.address
             },  
             {
-              strikePrice:ethPrice*0.95,
+              strikePrice:ethPrice*0.96,
               pricePrecision:ETHPricePrecision,
               premiumRate: 0.025 * RatioMultipler,
               option: ethHodlBoosterPut.address
             },
             {
-              strikePrice:btcPrice*1.05,
+              strikePrice:btcPrice*1.04,
               pricePrecision:WBTCPicePrecision,
               premiumRate: 0.025 * RatioMultipler,
               option: wbtcHodlBoosterCall.address
             }, 
             {
-              strikePrice:btcPrice * 0.95,
+              strikePrice:btcPrice * 0.96,
               pricePrecision:WBTCPicePrecision,
               premiumRate: 0.025 * RatioMultipler,
               option: wbtcHodlBoosterPut.address
@@ -667,7 +593,87 @@ describe.only("PKKT Hodl Booster", async function () {
         it("physical balance perspective", async function () {
         });
       }); 
-   
+        
+
+      async function renderExecutionPlans() { 
+        console.log("================ Decision for exercise ================");
+        await renderExecutionPlan(0, true);
+        await renderExecutionPlan(1, false);
+        await renderExecutionPlan(2, false);
+        console.log("");
+        await renderExecutionPlan(3, true);
+        await renderExecutionPlan(4, false);
+        await renderExecutionPlan(5, false);
+      }
+  
+      async function renderCashFlow(){
+        console.log("================ Actual movement of money ================");
+        console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)");
+        await renderCashFlowForAsset("ETH", NULL_ADDRESS, ETHMultiplier);
+        await renderCashFlowForAsset("WBTC", wbtc.address, WBTCMultiplier);
+        await renderCashFlowForAsset("USDT", usdt.address, USDTMultiplier);
+      }
+
+      async function renderCashFlowForAsset(assetName: string, assetAddress: string, multipler:BigNumberish){
+        var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress); 
+        //todo: how to handle decimal
+        var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
+        sub(assetCashFlow.newReleasedAmount)).div(multipler);
+  
+        console.log(`${assetName}\t|${assetCashFlow.newDepositAmount.div(multipler)}\t|${assetCashFlow.newReleasedAmount.div(multipler)}\t|${assetCashFlow.leftOverAmount.div(multipler)}\t|${assetBalance}`);
+       
+      }
+      async function renderExecutionPlan(index: BigNumberish, renderCategory: boolean){
+
+        var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
+        var key = accounting.callOptionResult.option.concat(accounting.putOptionResult.option);
+        var pair = optionPairs.get(key);
+        if (!pair){
+          return;
+        }
+        
+        //todo: how to handle decimal
+        var newDepositAssetAmount = accounting.callOptionResult.depositAmount.div(pair.callOptionAssetMultiplier);
+        var newCounterPartyAssetAmount = accounting.putOptionResult.depositAmount.div(pair.putOptionAssetMultiplier);
+        var maturedCallOptionState = await pair.callOption.optionStates(accounting.callOptionResult.round.sub(BigNumber.from(1)));
+        var maturedPutOptionState = await pair.putOption.optionStates(accounting.putOptionResult.round.sub(BigNumber.from(1)));
+        if (renderCategory){
+          console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
+          console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
+          console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${maturedCallOptionState.strikePrice.div(pair.strikePriceMultiplier)}/${maturedPutOptionState.strikePrice.div(pair.strikePriceMultiplier)}`);
+          console.log(`Decision|${pair.callOptionAssetName}-T-1 carried|${pair.putOptionAssetName}-T-1 carried|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
+        }
+       
+       var callAssetAutoRoll = (accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
+        .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium))
+        .div(pair.callOptionAssetMultiplier);
+        var putAssetAutoRull = (accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
+        .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollPremium))
+        .div(pair.putOptionAssetMultiplier);
+        
+        var callAssetReleased = (accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
+        .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium))
+        .div(pair.callOptionAssetMultiplier);
+  
+        
+        var putAssetReleased = (accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
+        .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium))
+        .div(pair.putOptionAssetMultiplier);
+        var decision = "";
+        if (accounting.execute == OptionExecution.NoExecution){
+          decision = "No Exercise";
+        }
+        else if (accounting.execute == OptionExecution.ExecuteCall){
+          decision = "Exercise Call";
+        }
+        else{
+  
+          decision = "Exercise Put";
+        }
+        console.log(`${decision}\t|${callAssetAutoRoll}\t|${putAssetAutoRull}\t|${callAssetReleased}\t|${putAssetReleased}`);
+         
+      }
+      
   });
 
   
