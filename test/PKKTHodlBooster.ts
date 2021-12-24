@@ -22,6 +22,7 @@ const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);
 const ETHPricePrecision = 4;
 const WBTCPicePrecision = 4; 
 const RatioMultipler = 10000; //precision xx.xx%
+ 
 
 describe("PKKT Hodl Booster", async function () {
     let ethHodlBoosterCall: PKKTHodlBoosterCallOption;
@@ -41,7 +42,23 @@ describe("PKKT Hodl Booster", async function () {
       [deployer, settler, alice, bob, carol, trader] = await ethers.getSigners(); 
         
     });
+     
 
+    async function renderCashFlow(){
+      var ethCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS); 
+      var ethBalance = (ethCashFlow.leftOverAmount.add(ethCashFlow.newDepositAmount).sub(ethCashFlow.newReleasedAmount)).div(ETHMultiplier);
+      var btcCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+      var btcBalance = (btcCashFlow.leftOverAmount.add(btcCashFlow.newDepositAmount).sub(btcCashFlow.newReleasedAmount)).div(WBTCMultiplier);
+      var usdtCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(usdt.address);
+      var usdtBalance = (usdtCashFlow.leftOverAmount.add(usdtCashFlow.newDepositAmount).sub(usdtCashFlow.newReleasedAmount)).div(USDTMultiplier);
+      console.log("================Actual movement of money================");
+      console.log("Token  |Epoch deposit  |actual withdraw request  |residue(+)/deficit(-)  |movable(+)/required(-)");
+      console.log(`ETH  |${ethCashFlow.newDepositAmount.div(ETHMultiplier)}  |${ethCashFlow.newReleasedAmount.div(ETHMultiplier)}  |${ethCashFlow.leftOverAmount.div(ETHMultiplier)}  |${ethBalance}`);
+      console.log(`WBTC  |${btcCashFlow.newDepositAmount.div(WBTCMultiplier)}  |${btcCashFlow.newReleasedAmount.div(WBTCMultiplier)}  |${btcCashFlow.leftOverAmount.div(WBTCMultiplier)}  |${btcBalance}`);
+      console.log(`USDT  |${usdtCashFlow.newDepositAmount.div(USDTMultiplier)}  |${usdtCashFlow.newReleasedAmount.div(USDTMultiplier)}  |${usdtCashFlow.leftOverAmount.div(USDTMultiplier)}  |${usdtBalance}`);
+  
+    }
+    
     context("User operations", function () {
         beforeEach(async function () {
         
@@ -171,7 +188,7 @@ describe("PKKT Hodl Booster", async function () {
           await usdt.connect(carol as Signer).approve(wbtcHodlBoosterPut.address, BigNumber.from(1000000).mul(USDTMultiplier)); 
 
         });
-        
+
         afterEach(async function () {
  
         });
@@ -454,6 +471,70 @@ describe("PKKT Hodl Booster", async function () {
         });
 
         it("trader perspective", async function () {
+          
+          /* open round 1*/
+          await vault.connect(settler as Signer).initiateSettlement(); 
+
+          //call option: 
+          //alice: 5 eth
+          //alice: 2 btc
+          await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
+          await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));
+          //call option: 
+          //bob: 4000 usd-eth
+          //bob: 50000 usd-btc
+          await ethHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(4000).mul(USDTMultiplier));
+          await wbtcHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
+
+          
+          /* open round 2*/
+          await vault.connect(settler as Signer).initiateSettlement();
+          //more user deposit
+          //call option:
+          //bob: 1 eth
+          await ethHodlBoosterCall.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});
+          //put option:
+          //alice: 100000 usd-btc
+          await wbtcHodlBoosterPut.connect(alice as Signer).deposit(BigNumber.from(100000).mul(USDTMultiplier));
+
+
+         const ethPrice = 4000 * (10**ETHPricePrecision);
+         const btcPrice = 50000 * (10**WBTCPicePrecision);
+          //no matured round yet
+          await vault.connect(settler as Signer).settle([]); 
+
+          await renderCashFlow();
+
+          //set the strikeprice and premium of user deposits collected in round 1
+          await vault.connect(settler as Signer).commitCurrent([
+          {
+            strikePrice:ethPrice,
+            pricePrecision:ETHPricePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: ethHodlBoosterCall.address
+          }, 
+          //fake
+          {
+            strikePrice:ethPrice,
+            pricePrecision:ETHPricePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: ethHodlBoosterPut.address
+          },
+          {
+            strikePrice:btcPrice,
+            pricePrecision:WBTCPicePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: wbtcHodlBoosterCall.address
+          },
+          //fake
+          {
+            strikePrice:btcPrice,
+            pricePrecision:WBTCPicePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: wbtcHodlBoosterPut.address
+          },
+          ]);
+
         });
 
         it("physical balance perspective", async function () {
