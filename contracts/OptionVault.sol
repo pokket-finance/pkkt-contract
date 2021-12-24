@@ -201,9 +201,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             if (pair.execute == StructureData.OptionExecution.ExecutePut) {
                 maturedState = callOption.closePrevious(false);
                 maturedState2 = putOption.closePrevious(true); 
-            }
-             console.log("currentRound %d: releasedDepositAssetAmount:%d releasedCounterPartyAssetAmount:%d", currentRound, 
-               maturedState.releasedDepositAssetAmount,maturedState.releasedCounterPartyAssetAmount );
+            } 
             if (maturedState.releasedDepositAssetAmount > 0) {
                 uint256 releasedDepositAssetAmount  = releasedAmount[callOptionDeposit];
                 releasedAmount[callOptionDeposit] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount)
