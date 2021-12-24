@@ -303,10 +303,13 @@ describe("PKKT Hodl Booster", async function () {
           
           //have 0.5wbtc going on
           var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+          assert.equal(wbtcResult.newReleasedAmount.toString(), "0");
+          assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
           assert.equal(wbtcResult.leftOverAmount.toString(), "0");
-
           var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
           assert.equal(ethResult.leftOverAmount.toString(), "0");
+          assert.equal(ethResult.newDepositAmount.toString(), "0");
+          assert.equal(ethResult.newReleasedAmount.toString(), "0");
           var usdtResult = await vault.connect(settler as Signer).settlementCashflowResult(usdt.address);
           assert.equal(usdtResult.leftOverAmount.toString(), "0");
 
@@ -351,10 +354,15 @@ describe("PKKT Hodl Booster", async function () {
               option: wbtcHodlBoosterPut.address
             },
             ]); 
-            //0.5 wbt not moved last time
+            //0.5 not moved last time + 1 newly deposit - 0.5 released - 2.5%*0.5 released premium
             wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
             assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
+            assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(1).mul(WBTCMultiplier).toString());
+            assert.equal(wbtcResult.newReleasedAmount.toString(), BigNumber.from(5125).mul(WBTCMultiplier).div(10000).toString());
+            btcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
             await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+            btcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+            assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(9875).mul(WBTCMultiplier).div(10000).toString());
 
             await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
             var available = await wbtcHodlBoosterCall.connect(alice as Signer).getAccountBalance();
@@ -371,7 +379,7 @@ describe("PKKT Hodl Booster", async function () {
             await wbtcHodlBoosterCall.connect(bob as Signer).initiateWithraw(BigNumber.from(1).mul(WBTCMultiplier));
             //later on he changes his mind to allow part of it 
             await wbtcHodlBoosterCall.connect(bob as Signer).cancelWithdraw(BigNumber.from(5).mul(WBTCMultiplier).div(10)); 
-             //alice want to stop part of  the auto roll 
+             //alice want to stop part of  the auto roll (3 auto roll + 2 release)
             await ethHodlBoosterCall.connect(alice as Signer).initiateWithraw(BigNumber.from(2).mul(ETHMultiplier));
           
 
@@ -381,7 +389,7 @@ describe("PKKT Hodl Booster", async function () {
             await vault.connect(settler as Signer).settle([{
               callOption: ethHodlBoosterCall.address,
               putOption: ethHodlBoosterPut.address,
-              execute: OptionExecution.NoExecution
+              execute: OptionExecution.ExecuteCall
             }, 
             {
               callOption: wbtcHodlBoosterCall.address,
@@ -420,6 +428,7 @@ describe("PKKT Hodl Booster", async function () {
    
               //alice got the 2*4000*1.02 executed usdc
               available = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance();
+              var s = await ethHodlBoosterCall.connect(alice as Signer).getOptionSnapShot();
               assert.equal(available.releasedCounterPartyAssetAmount.toString(), "8160000000");
               assert.equal(available.releasedDepositAssetAmount.toString(), "0");  
               //bob got 0.5*1.02 none executed btc
@@ -428,9 +437,10 @@ describe("PKKT Hodl Booster", async function () {
               assert.equal(available2.releasedDepositAssetAmount.toString(), "51000000");  
               
               var usdtInstruction = await vault.settlementCashflowResult(usdt.address);
-              console.log("usdtInstruction:", usdtInstruction.leftOverAmount.toString());
-              if (usdtInstruction.leftOverAmount.lt(0)){
-                  await usdt.connect(trader as Signer).transfer(vault.address, -usdtInstruction.leftOverAmount);
+              var diff = usdtInstruction.leftOverAmount.add(usdtInstruction.newDepositAmount).sub(usdtInstruction.newReleasedAmount);
+              console.log("usdtInstruction:", diff.toString());
+              if (diff.lt(0)){
+                  await usdt.connect(trader as Signer).transfer(vault.address, -diff);
               }
               var usdtBalance = await usdt.connect(alice as Signer).balanceOf(alice.address);
               await ethHodlBoosterCall.connect(alice as Signer).withdraw(available.releasedCounterPartyAssetAmount, usdt.address);
