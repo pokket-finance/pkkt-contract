@@ -17,7 +17,7 @@ const CAP = BigNumber.from(1000).mul(WEI);
 
 const MAX = BigNumber.from(500).mul(WEI);
 
-describe("PKKT Farm (Proxy)", async function () {
+describe.skip("PKKT Farm (Proxy)", async function () {
     let pkktToken: PKKTToken;
     let pkktFarm: PKKTFarm;
     let deployer: SignerWithAddress; 

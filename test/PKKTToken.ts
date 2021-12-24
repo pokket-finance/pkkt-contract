@@ -11,7 +11,7 @@ import { WEI } from "../constants/constants";
 
 const CAP = BigNumber.from(1000).mul(WEI);
 
-describe("PKKT Token", async function () {
+describe.skip("PKKT Token", async function () {
     let pkktToken: PKKTToken;
     let deployer: SignerWithAddress;
     let alice: SignerWithAddress;

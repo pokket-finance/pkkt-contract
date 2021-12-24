@@ -184,7 +184,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory pair = _execution[i];
             (address callOptionDeposit, address putOptionDeposit) = getDespositAddress(pair.callOption, pair.putOption); 
-            console.log("currentRound %d: callOptionDeposit:%s putOptionDeposit:%s", currentRound, callOptionDeposit,putOptionDeposit );
+            //console.log("currentRound %d: callOptionDeposit:%s putOptionDeposit:%s", currentRound, callOptionDeposit,putOptionDeposit );
             IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
             IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
             StructureData.MaturedState memory maturedState;
