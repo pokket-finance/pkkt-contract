@@ -6,6 +6,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "hardhat/console.sol";
  
 import {Utils} from "../libraries/Utils.sol";  
@@ -14,7 +17,7 @@ import "../interfaces/IPKKTStructureOption.sol";
 import "../interfaces/IExecuteSettlement.sol"; 
 import "../interfaces/IOptionVault.sol"; 
 
-abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, IPKKTStructureOption, IExecuteSettlement {
+abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -69,6 +72,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         address _settler
     ) internal initializer {
         require(_vaultAddress != address(0), "Empty vault address");
+        __ReentrancyGuard_init();
         ERC20Upgradeable.__ERC20_init(name, symbol);
         AccessControlUpgradeable.__AccessControl_init();
         // Contract deployer will be able to grant and revoke trading role
@@ -137,7 +141,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
        return result;
     }
 
-    function completeWithdraw(uint256 _amount, address _asset) external override { 
+    function completeWithdraw(uint256 _amount, address _asset) external override nonReentrant { 
        require(_amount > 0, "!amount");  
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");  
@@ -237,7 +241,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
     }
     
     
-    function withdraw(uint256 _amount, address _asset) external override { 
+    function withdraw(uint256 _amount, address _asset) external override nonReentrant { 
        require(_amount > 0, "!amount");  
        require(!underSettlement, "Being settled");  
        require(_asset == depositAsset || _asset == counterPartyAsset, "Invalid asset address"); 
@@ -273,7 +277,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
  
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
-    function redeposit(uint256 _amount) external override { 
+    function redeposit(uint256 _amount) external override nonReentrant { 
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount"); 
        uint256 releasedAmount = releasedDepositAssetAmount[msg.sender];
@@ -309,7 +313,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         } 
     }
     //deposit eth
-    function depositETH() external payable override { 
+    function depositETH() external payable override nonReentrant{ 
        require(currentRound > 0, "!Started");
        require(isEth, "!ETH");
        require(msg.value > 0, "!value"); 
@@ -320,7 +324,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint256 _amount) external override {   
+    function deposit(uint256 _amount) external override nonReentrant{   
         require(currentRound > 0, "!Started");
         require(!isEth, "!ERC20");
         require(_amount > 0, "!amount"); 
@@ -345,7 +349,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
     }
 
  
-    function redeem(uint256 _amount) external override {  
+    function redeem(uint256 _amount) external override nonReentrant{  
          require(_amount > 0, "!amount"); 
          StructureData.UserState storage userState =  userStates[msg.sender]; 
          require(userState.pendingAsset >= _amount, "Exceeds available");
@@ -475,7 +479,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
    }
 
    //at last, commit t round
-   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyRole(SETTLER_ROLE) {  
+   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyRole(SETTLER_ROLE) nonReentrant{  
         require (currentRound > 1, "not started");
         if(currentRound <= 2 && !underSettlement) {
            underSettlement = true;
