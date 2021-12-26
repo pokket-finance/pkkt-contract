@@ -152,9 +152,9 @@ describe.only("PKKT Hodl Booster", async function () {
             putOption: ethHodlBoosterPut,
             callOptionAssetName: "ETH",
             putOptionAssetName: "USDT",
-            callOptionAssetMultiplier: ETHMultiplier,
-            putOptionAssetMultiplier: USDTMultiplier,
-            strikePriceMultiplier: 10000
+            callOptionAssetDecimals: ETH_DECIMALS,
+            putOptionAssetDecimals: USDT_DECIMALS,
+            strikePriceDecimals: 4
           };
           optionPairs.set(pair.callOption.address.concat(pair.putOption.address), pair);
 
@@ -170,9 +170,9 @@ describe.only("PKKT Hodl Booster", async function () {
             putOption: wbtcHodlBoosterPut,
             callOptionAssetName: "WBTC",
             putOptionAssetName: "USDT",
-            callOptionAssetMultiplier: WBTCMultiplier,
-            putOptionAssetMultiplier: USDTMultiplier,
-            strikePriceMultiplier: 10000
+            callOptionAssetDecimals: WBTC_DECIMALS,
+            putOptionAssetDecimals: USDT_DECIMALS,
+            strikePriceDecimals: 4
           };
           
           optionPairs.set(pair.callOption.address.concat(pair.putOption.address), pair);
@@ -631,34 +631,36 @@ describe.only("PKKT Hodl Booster", async function () {
         if (!pair){
           return;
         }
-        
+        ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.putOptionAssetDecimals)
         //todo: how to handle decimal
-        var newDepositAssetAmount = accounting.callOptionResult.depositAmount.div(pair.callOptionAssetMultiplier);
-        var newCounterPartyAssetAmount = accounting.putOptionResult.depositAmount.div(pair.putOptionAssetMultiplier);
+        var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.callOptionAssetDecimals);
+        var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.putOptionAssetDecimals);
         var maturedCallOptionState = await pair.callOption.optionStates(accounting.callOptionResult.round.sub(BigNumber.from(1)));
         var maturedPutOptionState = await pair.putOption.optionStates(accounting.putOptionResult.round.sub(BigNumber.from(1)));
+        var callStrikePrice = ethers.utils.formatUnits(maturedCallOptionState.strikePrice, pair.strikePriceDecimals);
+        var putStrikePrice = ethers.utils.formatUnits(maturedPutOptionState.strikePrice, pair.strikePriceDecimals);
         if (renderCategory){
           console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
           console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
-          console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${maturedCallOptionState.strikePrice.div(pair.strikePriceMultiplier)}/${maturedPutOptionState.strikePrice.div(pair.strikePriceMultiplier)}`);
+          console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${callStrikePrice}/${putStrikePrice}`);
           console.log(`Decision|${pair.callOptionAssetName}-T-1 carried|${pair.putOptionAssetName}-T-1 carried|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
         }
        
-       var callAssetAutoRoll = (accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
+       var callAssetAutoRoll = ethers.utils.formatUnits((accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
         .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium))
-        .div(pair.callOptionAssetMultiplier);
-        var putAssetAutoRull = (accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
+        , pair.callOptionAssetDecimals);
+        var putAssetAutoRull = ethers.utils.formatUnits((accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
         .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollPremium))
-        .div(pair.putOptionAssetMultiplier);
+        , pair.putOptionAssetDecimals);
         
-        var callAssetReleased = (accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
+        var callAssetReleased =  ethers.utils.formatUnits((accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
         .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium))
-        .div(pair.callOptionAssetMultiplier);
+        , pair.callOptionAssetDecimals);
   
         
-        var putAssetReleased = (accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
+        var putAssetReleased = ethers.utils.formatUnits((accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
         .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium))
-        .div(pair.putOptionAssetMultiplier);
+        , pair.putOptionAssetDecimals);
         var decision = "";
         if (accounting.execute == OptionExecution.NoExecution){
           decision = "No Exercise";

@@ -5,9 +5,9 @@ import { PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption, ERC20Mock, OptionV
 export type OptionPair = {
     callOption: PKKTHodlBoosterCallOption;
     putOption: PKKTHodlBoosterPutOption; 
-    callOptionAssetMultiplier: BigNumberish;
-    putOptionAssetMultiplier: BigNumberish;
-    strikePriceMultiplier:BigNumberish;
+    callOptionAssetDecimals: BigNumberish;
+    putOptionAssetDecimals: BigNumberish;
+    strikePriceDecimals:BigNumberish;
     callOptionAssetName: string;
     putOptionAssetName: string;
 
