@@ -2,7 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { NULL_ADDRESS, USDT_ADDRESS, ROPSTEN_USDT_ADDRESS, WBTC_ADDRESS, ROPSTEN_WBTC_ADDRESS, USDT_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS} from "../../constants/constants"; 
 import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
-import { OptionVault, PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption } from "../../typechain";
+import { OptionVault, PKKTHodlBoosterOption} from "../../typechain";
 import * as dotenv from "dotenv";  
 import { deployContract } from "../../test/utilities/deploy";
 import { deployUpgradeableContract } from "../../test/utilities/deployUpgradable";
@@ -32,7 +32,7 @@ const main = async ({
 
   const ethHodlBoosterCall = await deploy("ETHPKKTHodlBoosterCallOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterCallOption",
+    contract: "PKKTHodlBoosterOption",
     proxy: {
       owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
@@ -46,6 +46,7 @@ const main = async ({
           ETH_DECIMALS,
           USDT_DECIMALS,
           optionVault.address,
+          true,
           trader
         ],
       },
@@ -62,7 +63,7 @@ const main = async ({
 
   const ethHodlBoosterPut = await deploy("ETHPKKTHodlBoosterPutOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterPutOption",
+    contract: "PKKTHodlBoosterOption",
     proxy: {
       owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
@@ -70,12 +71,13 @@ const main = async ({
         methodName: "initialize",
         args: [
           "ETH-USDT-HodlBooster-Put",
-          "ETHUSDTHodlBoosterPut",
-          isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS,
+          "ETHUSDTHodlBoosterPut", 
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          ETH_DECIMALS,
+          NULL_ADDRESS,
           USDT_DECIMALS,
+          ETH_DECIMALS,
           optionVault.address,
+          false,
           trader
         ],
       },
@@ -88,9 +90,9 @@ const main = async ({
   console.log(`03 - Deployed ETH-USDT-HodlBooster-Put on ${network.name} to ${ethHodlBoosterPut.address}`); 
   
 
-  const ethHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", ethHodlBoosterCall.address) as PKKTHodlBoosterCallOption;
+  const ethHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterOption", ethHodlBoosterCall.address) as PKKTHodlBoosterOption;
   await ethHodlBoosterCallContract.setCounterPartyOption(ethHodlBoosterPut.address);
-  const ethHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", ethHodlBoosterPut.address) as PKKTHodlBoosterPutOption;
+  const ethHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterOption", ethHodlBoosterPut.address) as PKKTHodlBoosterOption;
   await ethHodlBoosterPutContract.setCounterPartyOption(ethHodlBoosterCall.address);
 
   await optionVaultContract.addOptionPair({
@@ -108,7 +110,7 @@ const main = async ({
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Call on", network.name);
   const wbtcHodlBoosterCall = await deploy("WBTCPKKTHodlBoosterCallOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterCallOption" ,
+    contract: "PKKTHodlBoosterOption" ,
     proxy: {
       owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
@@ -122,6 +124,7 @@ const main = async ({
           WBTC_DECIMALS,
           USDT_DECIMALS,
           optionVault.address,
+          true,
           trader
         ]
       }
@@ -135,7 +138,7 @@ const main = async ({
   console.log("03 - Deploying WBTC-USDT-HodlBooster-Put on", network.name);
   const wbtcHodlBoosterPut = await deploy("WBTCPKKTHodlBoosterPutOption", {
     from: deployer,
-    contract: "PKKTHodlBoosterPutOption" ,
+    contract: "PKKTHodlBoosterOption" ,
     proxy: {
       owner: owner,
       proxyContract: "OpenZeppelinTransparentProxy",
@@ -144,11 +147,12 @@ const main = async ({
         args: [
           "WBTC-USDT-HodlBooster-Call",
           "WBTCUSDTHodlBoosterPut", 
-          isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
           isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          WBTC_DECIMALS,
+          isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
           USDT_DECIMALS,
+          WBTC_DECIMALS,
           optionVault.address,
+          false,
           trader
         ],
       }
@@ -161,9 +165,9 @@ const main = async ({
   console.log(`03 - Deployed WBTC-USDT-HodlBooster-Put on ${network.name} to ${wbtcHodlBoosterPut.address}`); 
  
   
-  const wbtcHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterCallOption", wbtcHodlBoosterCall.address) as PKKTHodlBoosterCallOption;
+  const wbtcHodlBoosterCallContract = await ethers.getContractAt("PKKTHodlBoosterOption", wbtcHodlBoosterCall.address) as PKKTHodlBoosterOption;
   await wbtcHodlBoosterCallContract.setCounterPartyOption(wbtcHodlBoosterPut.address);
-  const wbtcHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterPutOption", wbtcHodlBoosterPut.address) as PKKTHodlBoosterPutOption;
+  const wbtcHodlBoosterPutContract = await ethers.getContractAt("PKKTHodlBoosterOption", wbtcHodlBoosterPut.address) as PKKTHodlBoosterOption;
   await wbtcHodlBoosterPutContract.setCounterPartyOption(wbtcHodlBoosterCall.address);
 
 

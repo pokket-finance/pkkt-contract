@@ -33,10 +33,13 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     mapping(address=>int256) private leftOverAmount;  //history balance
     
     /*
-     * actual balance perspective
+     *  actual balance perspective
+     *  withdrawable = redeemable + released
+     *  balance = withdrawable + leftOver  
      */
-    mapping(address=>uint256) private assetBalanceBeforeSettle;
-    mapping(address=>uint256) private assetRedeemableBeforeSettle;
+    mapping(address=>uint256) private assetBalanceAfterSettle;
+    mapping(address=>uint256) private assetWithdrawableAfterSettle;
+    mapping(address=>uint256) private assetTraderWithdrawn;
 
     /*
      * accounting perspective(based on option pair)
@@ -181,6 +184,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory pair = _execution[i];
             (address callOptionDeposit, address putOptionDeposit) = getDespositAddress(pair.callOption, pair.putOption); 
+            //console.log("currentRound %d: callOptionDeposit:%s putOptionDeposit:%s", currentRound, callOptionDeposit,putOptionDeposit );
             IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
             IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
             StructureData.MaturedState memory maturedState;
@@ -197,14 +201,13 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             if (pair.execute == StructureData.OptionExecution.ExecutePut) {
                 maturedState = callOption.closePrevious(false);
                 maturedState2 = putOption.closePrevious(true); 
-            }
-
+            } 
             if (maturedState.releasedDepositAssetAmount > 0) {
                 uint256 releasedDepositAssetAmount  = releasedAmount[callOptionDeposit];
                 releasedAmount[callOptionDeposit] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount)
                 .add(maturedState.releasedDepositAssetPremiumAmount); 
             }
-            if (maturedState.releasedCounterPartyAssetAmount > 0) {
+            else if (maturedState.releasedCounterPartyAssetAmount > 0) {
                 uint256 releasedCounterPartyAssetAmount = releasedAmount[putOptionDeposit];
                 releasedAmount[putOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState.releasedCounterPartyAssetAmount)
                 .add(maturedState.releasedCounterPartyAssetPremiumAmount); 
@@ -215,28 +218,57 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
                 releasedAmount[putOptionDeposit] = releasedDepositAssetAmount.add(maturedState2.releasedDepositAssetAmount)
                 .add(maturedState2.releasedDepositAssetPremiumAmount); 
             }
-            if (maturedState2.releasedCounterPartyAssetAmount > 0) {
+            else if (maturedState2.releasedCounterPartyAssetAmount > 0) {
                 uint256 releasedCounterPartyAssetAmount = releasedAmount[callOptionDeposit];
                 releasedAmount[callOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState2.releasedCounterPartyAssetAmount)
                 .add(maturedState2.releasedCounterPartyAssetPremiumAmount);  
             }  
         }
+        if (currentRound > 1) {
+            uint256 count2 = optionPairs.length; 
+            for(uint256 i = 0; i < count2; i++) {
+                StructureData.OptionPairDefinition memory pair = optionPairs[i];
+                if (pair.callOption == address(0) &&
+                    pair.putOption == address(0)) {
+                    continue;
+                }
+                IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
+                IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
+                callOption.commitCurrent();
+                putOption.commitCurrent();
+            } 
+        }
+
 
         uint256 assetCount = asset.length; 
         for(uint256 i = 0; i < assetCount; i++) {
             address assetAddress = asset[i];
-            
-            int256 leftOver = leftOverAmount[assetAddress]; 
-            if (leftOver < 0) //missing balance, fix it if trader deposits
-            {
-               int256 balanceChange = getBalanceChange(assetAddress);
-               leftOver = leftOver + balanceChange;
-            }
-
-            assetBalanceBeforeSettle[assetAddress] = getAvailableBalance(assetAddress);
-            assetBalanceBeforeSettle[assetAddress] = collectWithdrawable(assetAddress);
             uint256 released = releasedAmount[assetAddress];
             uint256 deposit = depositAmount[assetAddress]; 
+            int256 leftOver = leftOverAmount[assetAddress]; 
+            
+            //no snaphot previously, so, no balance change
+            int256 balanceChange = currentRound == 2 ? int256(0) : (getBalanceChange(assetAddress) - int256(deposit) + int256(released));
+            /*if (leftOver >= 0 && balanceChange >= 0) { 
+                console.log("currentRound %d leftOver:%d balanceChange:%d", currentRound, uint256(leftOver) , uint256(balanceChange));
+            }
+            else if (leftOver >= 0) { 
+                console.log("currentRound %d leftOver:%d balanceChange:-%d", currentRound, uint256(leftOver) , uint256(-balanceChange));
+            }
+            else if (balanceChange >= 0) { 
+                console.log("currentRound %d leftOver:-%d balanceChange:%d", currentRound, uint256(-leftOver) , uint256(balanceChange));
+            }
+            else{ 
+                console.log("currentRound %d leftOver:-%d balanceChange:-%d", currentRound, uint256(-leftOver) , uint256(-balanceChange));
+            }*/
+            leftOver = leftOver + balanceChange;
+
+            assetTraderWithdrawn[assetAddress] = 0;
+            assetBalanceAfterSettle[assetAddress] = getAvailableBalance(assetAddress);
+            assetWithdrawableAfterSettle[assetAddress] = collectWithdrawable(assetAddress);
+            //console.log("asset %s balance:%d withdrawable:%d", assetAddress, assetBalanceAfterSettle[assetAddress], assetWithdrawableAfterSettle[assetAddress]);
+
+            //console.log("asset %s released:%d deposit:%d", assetAddress, released, deposit);
             
             StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
                 newReleasedAmount: released,
@@ -253,21 +285,23 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     } 
 
 
-    function commitCurrent(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
+    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
 
           uint256 count = _parameters.length;        
           if (currentRound == 1) {
-             require(count == 0, "no locked round");
+             require(count == 0, "nothing to set");
           }
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
-              IExecuteSettlement(parameter.option).commitCurrent(parameter);
+              IExecuteSettlement(parameter.option).setOptionParameters(parameter);
           }
     }
 
+    //todo: whitelist / nonReentrancy check
     function withdrawAsset(address _trader, address _asset) external override onlyRole(SETTLER_ROLE) {
         int256 balance  = leftOverAmount[_asset]; 
         require(balance > 0, "nothing to withdraw");
+        assetTraderWithdrawn[_asset] = uint256(balance);
          _withdraw(_trader, uint256(balance), _asset);
          leftOverAmount[_asset] = 0;
     }
@@ -309,12 +343,13 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     } 
      
     function getBalanceChange(address _asset) private view returns(int256){
-        uint256 availableBalance = getAvailableBalance(_asset);  
-        uint256 balanceBeforeSettle = assetBalanceBeforeSettle[_asset];
-        uint256 redeemableBeforeSettle = assetRedeemableBeforeSettle[_asset];
-        uint256 redeemableNow = collectWithdrawable(_asset); 
-        uint256 leastBalance = balanceBeforeSettle.add(redeemableNow).sub(redeemableBeforeSettle); 
-        return int256(availableBalance) - int256(leastBalance); 
+        int256 availableBalance = int256(getAvailableBalance(_asset));  
+        int256 balanceAfterSettle = int256(assetBalanceAfterSettle[_asset]);
+        int256 withdrawableAfterSettle = int256(assetWithdrawableAfterSettle[_asset]);
+        int256 withdrawableNow = int256(collectWithdrawable(_asset)); 
+        int256 traderWithdraw = int256(assetTraderWithdrawn[_asset]); 
+        int256 leastBalance =  balanceAfterSettle + withdrawableNow - withdrawableAfterSettle; 
+        return availableBalance - leastBalance + traderWithdraw; 
     }
  
     function collectWithdrawable(address _asset) private view returns(uint256) {
@@ -328,8 +363,8 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
             }
             if (pair.callOptionDeposit == _asset ||
                 pair.putOptionDeposit == _asset) {
-               total = total.add(IPKKTStructureOption(pair.callOption).getWithdrawable(_asset)); 
-               total = total.add(IPKKTStructureOption(pair.putOption).getWithdrawable(_asset)); 
+               total = total.add(IPKKTStructureOption(pair.callOption).getWithdrawable(_asset))
+               .add(IPKKTStructureOption(pair.putOption).getWithdrawable(_asset)); 
             }   
         }
         return total;

@@ -13,15 +13,12 @@ import { getDeployedContractHelper } from "./utilities/utilities";
 const app = express();
 const port = 3000;
 
-// app.get("/", async (req, res) => {
-//     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
-//         "WBTCHodlBoosterCallOption"
-//     ) as PKKTHodlBoosterOption;
-//     await getVaultInfo(hodlBoosterOption);
-//     res.send("hello");
-// });
-
 app.get("/", async (req, res) => {
+    
+    res.send("hello");
+});
+
+app.get("/graph", async (req, res) => {
     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
     const response = await axios.post(url, {
         query: `

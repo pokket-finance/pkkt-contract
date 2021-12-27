@@ -1,12 +1,13 @@
 import { ethers } from "hardhat";
 import { assert, Assertion, expect } from "chai";
 import { Contract } from "@ethersproject/contracts"; 
-import { BigNumber, Signer } from "ethers";
+import { BigNumber, BigNumberish, Signer } from "ethers";
 
 import { deployContract } from "./utilities/deploy";
 import { deployUpgradeableContract } from "./utilities/deployUpgradable"; 
 import {advanceBlockTo} from "./utilities/timer"; 
-import { PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption, ERC20Mock, OptionVault } from "../typechain";
+import {OptionPair} from "./utilities/optionPair";
+import { PKKTHodlBoosterOption, ERC20Mock, OptionVault } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS } from "../constants/constants";
 import { AssertionError } from "assert/strict";
@@ -21,13 +22,13 @@ const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
 const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);   
 const ETHPricePrecision = 4;
 const WBTCPicePrecision = 4; 
-const RatioMultipler = 10000; //precision xx.xx%
-
-describe("PKKT Hodl Booster", async function () {
-    let ethHodlBoosterCall: PKKTHodlBoosterCallOption;
-    let wbtcHodlBoosterCall: PKKTHodlBoosterCallOption;
-    let ethHodlBoosterPut: PKKTHodlBoosterPutOption;
-    let wbtcHodlBoosterPut: PKKTHodlBoosterPutOption;
+const RatioMultipler = 10000; //precision xx.xx% 
+ 
+describe.only("PKKT Hodl Booster", async function () {
+    let ethHodlBoosterCall: PKKTHodlBoosterOption;
+    let wbtcHodlBoosterCall: PKKTHodlBoosterOption;
+    let ethHodlBoosterPut: PKKTHodlBoosterOption;
+    let wbtcHodlBoosterPut: PKKTHodlBoosterOption;
     let deployer: SignerWithAddress; 
     let settler: SignerWithAddress;
     let alice: SignerWithAddress; 
@@ -37,12 +38,14 @@ describe("PKKT Hodl Booster", async function () {
     let usdt: ERC20Mock;
     let wbtc: ERC20Mock; 
     let vault: OptionVault;
+    let optionPairs: Map<string, OptionPair>
+    
     before(async function () {
       [deployer, settler, alice, bob, carol, trader] = await ethers.getSigners(); 
         
     });
 
-    context("User operations", function () {
+    context("operations", function () {
         beforeEach(async function () {
         
           this.owner = deployer as Signer;  
@@ -73,7 +76,7 @@ describe("PKKT Hodl Booster", async function () {
           ) as ERC20Mock;
            
           ethHodlBoosterCall = await deployUpgradeableContract(
-            "PKKTHodlBoosterCallOption",
+            "PKKTHodlBoosterOption",
             deployer as Signer,
             [
               "ETH-USDT-HodlBooster-Call",
@@ -83,12 +86,13 @@ describe("PKKT Hodl Booster", async function () {
               ETH_DECIMALS,
               USDT_DECIMALS,
               vault.address,
+              true,
               settler.address
             ]
-          ) as PKKTHodlBoosterCallOption;  
+          ) as PKKTHodlBoosterOption;  
                      
           wbtcHodlBoosterCall = await deployUpgradeableContract(
-            "PKKTHodlBoosterCallOption",
+            "PKKTHodlBoosterOption",
             deployer as Signer,
             [
               "WBTC-USDT-HodlBooster-Call",
@@ -98,37 +102,40 @@ describe("PKKT Hodl Booster", async function () {
               WBTC_DECIMALS,
               USDT_DECIMALS,
               vault.address,
+              true,
               settler.address
             ]
-          ) as PKKTHodlBoosterCallOption;  
+          ) as PKKTHodlBoosterOption;  
           ethHodlBoosterPut = await deployUpgradeableContract(
-            "PKKTHodlBoosterPutOption",
+            "PKKTHodlBoosterOption",
             deployer as Signer,
             [
               "ETH-USDT-HodlBooster-Put",
               "ETHUSDTHodlBoosterPut",
-              NULL_ADDRESS,
               usdt.address,
-              ETH_DECIMALS,
+              NULL_ADDRESS,
               USDT_DECIMALS,
+              ETH_DECIMALS,
               vault.address,
+              false,
               settler.address
             ]
-          ) as PKKTHodlBoosterPutOption;  
+          ) as PKKTHodlBoosterOption;  
           wbtcHodlBoosterPut = await deployUpgradeableContract(
-            "PKKTHodlBoosterPutOption",
+            "PKKTHodlBoosterOption",
             deployer as Signer,
             [
               "WBTC-USDT-HodlBooster-Put",
               "WBTCUSDTHodlBoosterPut",
-              wbtc.address,
               usdt.address,
-              WBTC_DECIMALS,
+              wbtc.address,
               USDT_DECIMALS,
+              WBTC_DECIMALS,
               vault.address,
+              false,
               settler.address
             ]
-          ) as PKKTHodlBoosterPutOption;  
+          ) as PKKTHodlBoosterOption;  
 
           //ping-pong setup
           ethHodlBoosterCall.setCounterPartyOption(ethHodlBoosterPut.address);
@@ -143,6 +150,18 @@ describe("PKKT Hodl Booster", async function () {
             putOptionDeposit: usdt.address
           });
 
+          optionPairs = new Map<string, OptionPair>();
+          var pair = {
+            callOption: ethHodlBoosterCall,
+            putOption: ethHodlBoosterPut,
+            callOptionAssetName: "ETH",
+            putOptionAssetName: "USDT",
+            callOptionAssetDecimals: ETH_DECIMALS,
+            putOptionAssetDecimals: USDT_DECIMALS,
+            strikePriceDecimals: 4
+          };
+          optionPairs.set(pair.callOption.address.concat(pair.putOption.address), pair);
+
           await vault.addOptionPair({
             callOption: wbtcHodlBoosterCall.address,
             putOption: wbtcHodlBoosterPut.address,
@@ -150,6 +169,17 @@ describe("PKKT Hodl Booster", async function () {
             putOptionDeposit: usdt.address
           }); 
 
+           pair = {
+            callOption: wbtcHodlBoosterCall,
+            putOption: wbtcHodlBoosterPut,
+            callOptionAssetName: "WBTC",
+            putOptionAssetName: "USDT",
+            callOptionAssetDecimals: WBTC_DECIMALS,
+            putOptionAssetDecimals: USDT_DECIMALS,
+            strikePriceDecimals: 4
+          };
+          
+          optionPairs.set(pair.callOption.address.concat(pair.putOption.address), pair);
 
           await usdt.transfer(alice.address,  BigNumber.from(1000000).mul(USDTMultiplier));
           await usdt.transfer(bob.address,  BigNumber.from(1000000).mul(USDTMultiplier));
@@ -171,7 +201,7 @@ describe("PKKT Hodl Booster", async function () {
           await usdt.connect(carol as Signer).approve(wbtcHodlBoosterPut.address, BigNumber.from(1000000).mul(USDTMultiplier)); 
 
         });
-        
+
         afterEach(async function () {
  
         });
@@ -272,7 +302,7 @@ describe("PKKT Hodl Booster", async function () {
  
           await vault.connect(settler as Signer).settle([]);
 
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
           {
             strikePrice:ethPrice,
             pricePrecision:ETHPricePrecision,
@@ -303,10 +333,13 @@ describe("PKKT Hodl Booster", async function () {
           
           //have 0.5wbtc going on
           var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+          assert.equal(wbtcResult.newReleasedAmount.toString(), "0");
+          assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
           assert.equal(wbtcResult.leftOverAmount.toString(), "0");
-
           var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
           assert.equal(ethResult.leftOverAmount.toString(), "0");
+          assert.equal(ethResult.newDepositAmount.toString(), "0");
+          assert.equal(ethResult.newReleasedAmount.toString(), "0");
           var usdtResult = await vault.connect(settler as Signer).settlementCashflowResult(usdt.address);
           assert.equal(usdtResult.leftOverAmount.toString(), "0");
 
@@ -323,7 +356,7 @@ describe("PKKT Hodl Booster", async function () {
             putOption: wbtcHodlBoosterPut.address,
             execute: OptionExecution.NoExecution
           }]);
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
             {
               strikePrice:ethPrice,
               pricePrecision:ETHPricePrecision,
@@ -351,10 +384,15 @@ describe("PKKT Hodl Booster", async function () {
               option: wbtcHodlBoosterPut.address
             },
             ]); 
-            //0.5 wbt not moved last time
+            //0.5 not moved last time + 1 newly deposit - 0.5 released - 2.5%*0.5 released premium
             wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
             assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
+            assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(1).mul(WBTCMultiplier).toString());
+            assert.equal(wbtcResult.newReleasedAmount.toString(), BigNumber.from(5125).mul(WBTCMultiplier).div(10000).toString());
+            btcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
             await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+            btcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+            assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(9875).mul(WBTCMultiplier).div(10000).toString());
 
             await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
             var available = await wbtcHodlBoosterCall.connect(alice as Signer).getAccountBalance();
@@ -371,7 +409,7 @@ describe("PKKT Hodl Booster", async function () {
             await wbtcHodlBoosterCall.connect(bob as Signer).initiateWithraw(BigNumber.from(1).mul(WBTCMultiplier));
             //later on he changes his mind to allow part of it 
             await wbtcHodlBoosterCall.connect(bob as Signer).cancelWithdraw(BigNumber.from(5).mul(WBTCMultiplier).div(10)); 
-             //alice want to stop part of  the auto roll 
+             //alice want to stop part of  the auto roll (3 auto roll + 2 release)
             await ethHodlBoosterCall.connect(alice as Signer).initiateWithraw(BigNumber.from(2).mul(ETHMultiplier));
           
 
@@ -381,14 +419,14 @@ describe("PKKT Hodl Booster", async function () {
             await vault.connect(settler as Signer).settle([{
               callOption: ethHodlBoosterCall.address,
               putOption: ethHodlBoosterPut.address,
-              execute: OptionExecution.NoExecution
+              execute: OptionExecution.ExecuteCall
             }, 
             {
               callOption: wbtcHodlBoosterCall.address,
               putOption: wbtcHodlBoosterPut.address,
               execute: OptionExecution.NoExecution
             }]);
-            await vault.connect(settler as Signer).commitCurrent([
+            await vault.connect(settler as Signer).setOptionParameters([
               {
                 strikePrice:ethPrice,
                 pricePrecision:ETHPricePrecision,
@@ -420,6 +458,7 @@ describe("PKKT Hodl Booster", async function () {
    
               //alice got the 2*4000*1.02 executed usdc
               available = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance();
+              var s = await ethHodlBoosterCall.connect(alice as Signer).getOptionSnapShot();
               assert.equal(available.releasedCounterPartyAssetAmount.toString(), "8160000000");
               assert.equal(available.releasedDepositAssetAmount.toString(), "0");  
               //bob got 0.5*1.02 none executed btc
@@ -428,9 +467,10 @@ describe("PKKT Hodl Booster", async function () {
               assert.equal(available2.releasedDepositAssetAmount.toString(), "51000000");  
               
               var usdtInstruction = await vault.settlementCashflowResult(usdt.address);
-              console.log("usdtInstruction:", usdtInstruction.leftOverAmount.toString());
-              if (usdtInstruction.leftOverAmount.lt(0)){
-                  await usdt.connect(trader as Signer).transfer(vault.address, -usdtInstruction.leftOverAmount);
+              var diff = usdtInstruction.leftOverAmount.add(usdtInstruction.newDepositAmount).sub(usdtInstruction.newReleasedAmount);
+               
+              if (diff.lt(0)){
+                  await usdt.connect(trader as Signer).transfer(vault.address, -diff);
               }
               var usdtBalance = await usdt.connect(alice as Signer).balanceOf(alice.address);
               await ethHodlBoosterCall.connect(alice as Signer).withdraw(available.releasedCounterPartyAssetAmount, usdt.address);
@@ -444,12 +484,331 @@ describe("PKKT Hodl Booster", async function () {
         });
 
         it("trader perspective", async function () {
+
+          /* open round 1*/
+          await vault.connect(settler as Signer).initiateSettlement();  
+          console.log(`Open Round ${await vault.currentRound()}` );
+
+          //call option: 
+          //alice: 5 eth
+          //alice: 2 btc
+          await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
+          await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));
+          //call option: 
+          //bob: 4000 usd-eth
+          //bob: 50000 usd-btc
+          await ethHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(4000).mul(USDTMultiplier));
+          await wbtcHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
+
+          await renderTVL();
+
+          
+          /* open round 2*/
+          await vault.connect(settler as Signer).initiateSettlement();
+          console.log(`Open Round ${await vault.currentRound()}` );
+          //more user deposit
+          //call option:
+          //bob: 1 eth
+          await ethHodlBoosterCall.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});
+          //put option:
+          //alice: 100000 usd-btc
+          await wbtcHodlBoosterPut.connect(alice as Signer).deposit(BigNumber.from(100000).mul(USDTMultiplier));
+
+          
+          await renderTVL();
+
+          //no matured round yet
+          await vault.connect(settler as Signer).settle([]);  
+          await renderCashFlow();
+
+          
+          await renderTVL();
+
+         const ethPrice = 4000 * (10**ETHPricePrecision);
+         const btcPrice = 50000 * (10**WBTCPicePrecision);
+          //set the strikeprice and premium of user deposits collected in round 1
+          await vault.connect(settler as Signer).setOptionParameters([
+          {
+            strikePrice:ethPrice*1.05,
+            pricePrecision:ETHPricePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: ethHodlBoosterCall.address
+          },  
+          {
+            strikePrice:ethPrice*0.95,
+            pricePrecision:ETHPricePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: ethHodlBoosterPut.address
+          },
+          {
+            strikePrice:btcPrice*1.05,
+            pricePrecision:WBTCPicePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: wbtcHodlBoosterCall.address
+          }, 
+          {
+            strikePrice:btcPrice * 0.95,
+            pricePrecision:WBTCPicePrecision,
+            premiumRate: 0.025 * RatioMultipler,
+            option: wbtcHodlBoosterPut.address
+          },
+          ]);
+          /* open round 3*/
+          await vault.connect(settler as Signer).initiateSettlement();   
+          console.log(`Open Round ${await vault.currentRound()}` );
+          await ethHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw();
+          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();
+
+          await renderTVL();
+          await renderExecutionPlans();
+
+          await vault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCall.address,
+            putOption: ethHodlBoosterPut.address,
+            execute: OptionExecution.NoExecution
+          }, 
+          {
+            callOption: wbtcHodlBoosterCall.address,
+            putOption: wbtcHodlBoosterPut.address,
+            execute: OptionExecution.NoExecution
+          }])
+
+          
+         var result = await renderCashFlow();
+
+          var ethBalance = await ethers.provider.getBalance(trader.address); 
+          await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS); 
+          var ethBalance2 = await ethers.provider.getBalance(trader.address); 
+          assert.equal(ethBalance2.sub(ethBalance).toString(), result[0].assetBalance.toString());
+          var wbtcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+          await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address); 
+          var wbtcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+          assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString());
+          var usdtBalance = await usdt.connect(trader as Signer).balanceOf(trader.address);
+          await vault.connect(settler as Signer).withdrawAsset(trader.address, usdt.address); 
+          var usdtBalance2 = await usdt.connect(trader as Signer).balanceOf(trader.address);
+          assert.equal(usdtBalance2.sub(usdtBalance).toString(), result[2].assetBalance.toString());
+
+
+          await vault.connect(settler as Signer).setOptionParameters([
+            {
+              strikePrice:ethPrice*1.04,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.02 * RatioMultipler,
+              option: ethHodlBoosterCall.address
+            },  
+            {
+              strikePrice:ethPrice*0.96,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.02 * RatioMultipler,
+              option: ethHodlBoosterPut.address
+            },
+            {
+              strikePrice:btcPrice*1.04,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.02 * RatioMultipler,
+              option: wbtcHodlBoosterCall.address
+            }, 
+            {
+              strikePrice:btcPrice * 0.96,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.02 * RatioMultipler,
+              option: wbtcHodlBoosterPut.address
+            },
+            ]);
+
+            await renderTVL();
+
+            
+          /* open round 4*/
+          await vault.connect(settler as Signer).initiateSettlement();   
+          console.log(`Open Round ${await vault.currentRound()}` );
+          await renderTVL();
+          await renderExecutionPlans();
+
+          await vault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCall.address,
+            putOption: ethHodlBoosterPut.address,
+            execute: OptionExecution.ExecuteCall
+          }, 
+          {
+            callOption: wbtcHodlBoosterCall.address,
+            putOption: wbtcHodlBoosterPut.address,
+            execute: OptionExecution.NoExecution
+          }]);
+          await vault.connect(settler as Signer).setOptionParameters([
+            {
+              strikePrice:ethPrice*1.03,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: ethHodlBoosterCall.address
+            },  
+            {
+              strikePrice:ethPrice*0.97,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: ethHodlBoosterPut.address
+            },
+            {
+              strikePrice:btcPrice*1.03,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: wbtcHodlBoosterCall.address
+            }, 
+            {
+              strikePrice:btcPrice * 0.97,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: wbtcHodlBoosterPut.address
+            },
+            ]);
+
+          await renderTVL();
+          await renderExecutionPlans();
+
         });
 
         it("physical balance perspective", async function () {
         });
       }); 
-   
+        
+
+       
+      //can be useful for user perspective code
+      async function renderTVL() {
+        
+        var options = [ethHodlBoosterCall, ethHodlBoosterPut, wbtcHodlBoosterCall, wbtcHodlBoosterPut];
+        
+        for(var i = 0; i < options.length; i++)
+        {
+          var option = options[i]; 
+          var name = await option.name();
+          var assetDecimals = await  option.depositAssetAmountDecimals(); 
+          var counterPartyDecimals = await option.counterPartyAssetAmountDecimals();
+          var optionTVL = await option.getOptionSnapShot();
+          
+          var assetEnough = await vault.balanceEnough(await option.depositAsset());
+          var counterPartyEnough = await vault.balanceEnough(await option.counterPartyAsset());
+
+          var accountBalances = [{account: "alice", ...await option.connect(alice as Signer).getAccountBalance()},
+          {account: "bob", ...await option.connect(bob as Signer).getAccountBalance()}];
+          var assetSuffix = optionTVL.totalReleasedDeposit.gt(0) ? (assetEnough ? "（available)" :"(missing)") : "";
+          var counterPartySuffix = optionTVL.totalReleasedCounterParty.gt(0) ? (counterPartyEnough ? "（available)" :"(missing)") : "";
+          console.log(`${name}: Active: ${ethers.utils.formatUnits(optionTVL.totalOngoing, assetDecimals)}, Locked: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, ` + 
+          `Pending: ${ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals)}, Released: ${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}, ` + 
+          `Released CounterParty:${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}`);
+          for(var j = 0 ; j < accountBalances.length; j++) {
+            var accountBalance = accountBalances[j];
+            console.log(`\t${accountBalance.account}: Active: ${ethers.utils.formatUnits(accountBalance.ongoingDepositAssetAmount, assetDecimals)}, `+ 
+            `Locked: ${ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals)}, ` + 
+            `Pending: ${ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals)}, `+ 
+            `Released: ${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}, `+ 
+            `Released CounterParty: ${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}`);
+          }
+        }
+      }
+     
+
+      //can be useful for trader perspective code
+      async function renderExecutionPlans() { 
+        console.log("================ Decision for exercise ================");
+        
+        await renderExecutionPlan(0, true);
+        await renderExecutionPlan(1, false);
+        await renderExecutionPlan(2, false);
+        console.log("");
+        await renderExecutionPlan(3, true);
+        await renderExecutionPlan(4, false);
+        await renderExecutionPlan(5, false); 
+      }
+  
+      
+      async function renderCashFlow(): Promise<{assetAddress: string; assetBalance: BigNumber}[]>{
+        console.log("================ Actual movement of money ================");
+        console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)"); 
+        
+        return [await renderCashFlowForAsset("ETH", NULL_ADDRESS, ETH_DECIMALS),
+        await renderCashFlowForAsset("WBTC", wbtc.address, WBTC_DECIMALS),
+        await renderCashFlowForAsset("USDT", usdt.address, USDT_DECIMALS)];
+      }
+
+      async function renderCashFlowForAsset(assetName: string, assetAddress: string, decimals:BigNumberish):Promise<{
+        assetAddress: string;
+        assetBalance: BigNumber}>{
+        var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);  
+        var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
+        sub(assetCashFlow.newReleasedAmount));
+  
+        console.log(`${assetName}\t|${ethers.utils.formatUnits(assetCashFlow.newDepositAmount, decimals)}\t|`+ 
+        `${ethers.utils.formatUnits(assetCashFlow.newReleasedAmount, decimals)}\t|${ethers.utils.formatUnits(assetCashFlow.leftOverAmount, decimals)}\t|` + 
+        `${ethers.utils.formatUnits(assetBalance, decimals)}`);
+        return  {assetAddress, assetBalance} ;
+      }
+      async function renderExecutionPlan(index: BigNumberish, renderCategory: boolean){
+
+        var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
+        var key = accounting.callOptionResult.option.concat(accounting.putOptionResult.option);
+        var pair = optionPairs.get(key);
+        if (!pair){
+          return;
+        } 
+        var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.callOptionAssetDecimals);
+        var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.putOptionAssetDecimals);
+        var maturedCallOptionState = await pair.callOption.optionStates(accounting.callOptionResult.round.sub(BigNumber.from(1)));
+        var maturedPutOptionState = await pair.putOption.optionStates(accounting.putOptionResult.round.sub(BigNumber.from(1)));
+        var callStrikePrice = ethers.utils.formatUnits(maturedCallOptionState.strikePrice, pair.strikePriceDecimals);
+        var putStrikePrice = ethers.utils.formatUnits(maturedPutOptionState.strikePrice, pair.strikePriceDecimals);
+        if (renderCategory){
+          console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
+          console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
+          console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${callStrikePrice}/${putStrikePrice}`);
+          console.log(`Decision|${pair.callOptionAssetName}-debt|${pair.putOptionAssetName}-debt|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
+        }
+        /*console.log(accounting.callOptionResult.autoRollAmount.toString() + " ," + accounting.callOptionResult.autoRollPremium.toString() + ", " + 
+        accounting.putOptionResult.autoRollCounterPartyAmount.toString() + " , " + accounting.putOptionResult.autoRollCounterPartyPremium.toString() + "," +
+        accounting.callOptionResult.releasedAmount.toString() + "," + accounting.callOptionResult.releasedPremium.toString() + ", " + 
+        accounting.putOptionResult.releasedCounterPartyAmount.toString() + ", " + accounting.putOptionResult.releasedCounterPartyPremium.toString());
+
+        console.log(accounting.callOptionResult.autoRollCounterPartyAmount.toString() + " ," + accounting.callOptionResult.autoRollCounterPartyPremium.toString() + ", " + 
+        accounting.putOptionResult.autoRollAmount.toString() + " , " + accounting.putOptionResult.autoRollPremium.toString() + "," +
+        accounting.callOptionResult.releasedCounterPartyAmount.toString() + "," + accounting.callOptionResult.releasedCounterPartyPremium.toString() + "," + 
+        accounting.putOptionResult.releasedAmount.toString() + ", " + accounting.putOptionResult.releasedPremium.toString());*/
+
+       var callAssetAutoRoll =accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
+        .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium);
+        var putAssetAutoRull = accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
+        .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollPremium);
+        
+        var callAssetReleased =  accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
+        .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium);
+  
+        
+        var putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
+        .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium);
+
+        var depositDebt = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount.add(callAssetAutoRoll).sub(callAssetReleased), 
+        pair.callOptionAssetDecimals);
+        var counterPartyDebt =  ethers.utils.formatUnits(accounting.putOptionResult.depositAmount.add(putAssetAutoRull).sub(putAssetReleased),
+        pair.putOptionAssetDecimals);
+
+        var callAssetReleasedStr = ethers.utils.formatUnits(callAssetReleased, pair.callOptionAssetDecimals);
+        var putAssetReleasedStr = ethers.utils.formatUnits(putAssetReleased, pair.putOptionAssetDecimals);
+
+        var decision = "";
+        if (accounting.execute == OptionExecution.NoExecution){
+          decision = "No Exercise";
+        }
+        else if (accounting.execute == OptionExecution.ExecuteCall){
+          decision = "Exercise Call";
+        }
+        else{
+  
+          decision = "Exercise Put";
+        }
+        console.log(`${decision}\t|${depositDebt}\t|${counterPartyDebt}\t|${callAssetReleasedStr}\t|${putAssetReleasedStr}`);
+         
+      }
+      
   });
 
   

@@ -25,7 +25,7 @@ const USDCMultiplier = BigNumber.from(10).pow(USDCDecimals);
 const DAIMultiplier = BigNumber.from(10).pow(DAIDecimals);
  
 
-describe("PKKT Vault (Proxy)", async function () {
+describe.skip("PKKT Vault (Proxy)", async function () {
     let pkktToken: PKKTToken;
     let pkktVault: PKKTVault;
     let deployer: SignerWithAddress; 
