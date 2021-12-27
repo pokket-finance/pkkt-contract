@@ -302,7 +302,7 @@ describe.only("PKKT Hodl Booster", async function () {
  
           await vault.connect(settler as Signer).settle([]);
 
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
           {
             strikePrice:ethPrice,
             pricePrecision:ETHPricePrecision,
@@ -356,7 +356,7 @@ describe.only("PKKT Hodl Booster", async function () {
             putOption: wbtcHodlBoosterPut.address,
             execute: OptionExecution.NoExecution
           }]);
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
             {
               strikePrice:ethPrice,
               pricePrecision:ETHPricePrecision,
@@ -426,7 +426,7 @@ describe.only("PKKT Hodl Booster", async function () {
               putOption: wbtcHodlBoosterPut.address,
               execute: OptionExecution.NoExecution
             }]);
-            await vault.connect(settler as Signer).commitCurrent([
+            await vault.connect(settler as Signer).setOptionParameters([
               {
                 strikePrice:ethPrice,
                 pricePrecision:ETHPricePrecision,
@@ -527,7 +527,7 @@ describe.only("PKKT Hodl Booster", async function () {
          const ethPrice = 4000 * (10**ETHPricePrecision);
          const btcPrice = 50000 * (10**WBTCPicePrecision);
           //set the strikeprice and premium of user deposits collected in round 1
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
           {
             strikePrice:ethPrice*1.05,
             pricePrecision:ETHPricePrecision,
@@ -553,11 +553,12 @@ describe.only("PKKT Hodl Booster", async function () {
             option: wbtcHodlBoosterPut.address
           },
           ]);
- 
-          await renderTVL();
           /* open round 3*/
-          await vault.connect(settler as Signer).initiateSettlement();  
+          await vault.connect(settler as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
+          await ethHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw();
+          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();
+
           await renderTVL();
           await renderExecutionPlans();
 
@@ -589,7 +590,7 @@ describe.only("PKKT Hodl Booster", async function () {
           assert.equal(usdtBalance2.sub(usdtBalance).toString(), result[2].assetBalance.toString());
 
 
-          await vault.connect(settler as Signer).commitCurrent([
+          await vault.connect(settler as Signer).setOptionParameters([
             {
               strikePrice:ethPrice*1.04,
               pricePrecision:ETHPricePrecision,
@@ -617,6 +618,54 @@ describe.only("PKKT Hodl Booster", async function () {
             ]);
 
             await renderTVL();
+
+            
+          /* open round 4*/
+          await vault.connect(settler as Signer).initiateSettlement();   
+          console.log(`Open Round ${await vault.currentRound()}` );
+          await renderTVL();
+          await renderExecutionPlans();
+
+          await vault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCall.address,
+            putOption: ethHodlBoosterPut.address,
+            execute: OptionExecution.ExecuteCall
+          }, 
+          {
+            callOption: wbtcHodlBoosterCall.address,
+            putOption: wbtcHodlBoosterPut.address,
+            execute: OptionExecution.NoExecution
+          }]);
+          await vault.connect(settler as Signer).setOptionParameters([
+            {
+              strikePrice:ethPrice*1.03,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: ethHodlBoosterCall.address
+            },  
+            {
+              strikePrice:ethPrice*0.97,
+              pricePrecision:ETHPricePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: ethHodlBoosterPut.address
+            },
+            {
+              strikePrice:btcPrice*1.03,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: wbtcHodlBoosterCall.address
+            }, 
+            {
+              strikePrice:btcPrice * 0.97,
+              pricePrecision:WBTCPicePrecision,
+              premiumRate: 0.01 * RatioMultipler,
+              option: wbtcHodlBoosterPut.address
+            },
+            ]);
+
+          await renderTVL();
+          await renderExecutionPlans();
+
         });
 
         it("physical balance perspective", async function () {

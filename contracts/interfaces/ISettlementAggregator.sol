@@ -15,7 +15,7 @@ interface ISettlementAggregator {
     //closePrevious + calculate cash flow 
     function settle(StructureData.OptionPairExecution[] memory _execution) external;
 
-    function commitCurrent(StructureData.OptionParameters[] memory _paramters) external;
+    function setOptionParameters(StructureData.OptionParameters[] memory _paramters) external;
 
     function withdrawAsset(address _trader, address _asset) external;
 

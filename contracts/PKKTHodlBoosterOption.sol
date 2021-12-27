@@ -104,7 +104,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
 
 
     function getAccountBalance() external override view returns (StructureData.UserBalance memory) {
-       StructureData.UserState storage userState = userStates[msg.sender];
+       StructureData.UserState storage userState = userStates[msg.sender]; 
        StructureData.UserBalance memory result = StructureData.UserBalance({
            pendingDepositAssetAmount:userState.pendingAsset,
            releasedDepositAssetAmount: releasedDepositAssetAmount[msg.sender],
@@ -129,14 +129,14 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
        StructureData.OptionState storage currentOption = optionStates[currentRound];
        StructureData.OptionState storage lockedOption = optionStates[underSettlement ? currentRound - 1 : currentRound];
        StructureData.OptionState storage onGoingOption = optionStates[underSettlement ? currentRound - 2 : currentRound - 1];
-
+       
        //StructureData.OptionState storage currentOption = optionStates[currentRound];
        StructureData.OptionSnapshot memory result = StructureData.OptionSnapshot({
             totalPending: currentOption.totalAmount,
             totalReleasedDeposit :  totalReleasedDepositAssetAmount,
             totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount,
             totalOngoing : onGoingOption.totalAmount,
-            totalLocked: lockedOption.totalAmount  
+            totalLocked: underSettlement ? lockedOption.totalAmount : 0
        }); 
        return result;
     }
@@ -368,7 +368,12 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
    //first, open t+1 round
    function rollToNext(uint256 _quota) external override onlyRole(SETTLER_ROLE) returns(uint256 _pendingAmount){   
 
-       require(!underSettlement, "Being settled");
+       require(!underSettlement, "Being settled"); 
+
+       if (currentRound > 1) {
+           require(optionStates[currentRound-1].strikePrice > 0,  "Strike Price not set");
+       } 
+
        underSettlement = true; 
        quota = _quota;
         currentRound = currentRound + 1;
@@ -470,18 +475,16 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
         return maturedState;
    }
 
-   //at last, commit t round
-   function commitCurrent(StructureData.OptionParameters memory _optionParameters) external override onlyRole(SETTLER_ROLE) nonReentrant{  
+   //next, commit t round
+   function commitCurrent() external override onlyRole(SETTLER_ROLE) nonReentrant {  
         require (currentRound > 1, "not started");
         if(currentRound <= 2 && !underSettlement) {
            underSettlement = true;
        }
         require(underSettlement, "Not being settled");
+        
         uint256 lockedRound = currentRound - 1;
         StructureData.OptionState storage optionState = optionStates[lockedRound]; 
-        optionState.strikePrice = _optionParameters.strikePrice;
-        optionState.premiumRate = _optionParameters.premiumRate;
-        optionState.pricePrecision = _optionParameters.pricePrecision;
         //mint for the current option
         _mint(address(this), optionState.totalAmount);
         uint256 userCount = usersInvolved.length;
@@ -511,7 +514,18 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
         underSettlement = false;
    }
        
-
+   //at last, specify option parameters
+   function setOptionParameters(StructureData.OptionParameters memory _optionParameters) external override onlyRole(SETTLER_ROLE) {
+        
+        require (currentRound > 1, "not started"); 
+        require(!underSettlement, "Being settled"); 
+        uint256 previousRound = currentRound - 1;
+        StructureData.OptionState storage optionState = optionStates[previousRound]; 
+        require(optionState.strikePrice == 0, "Strike Price already set");
+        optionState.strikePrice = _optionParameters.strikePrice;
+        optionState.premiumRate = _optionParameters.premiumRate;
+        optionState.pricePrecision = _optionParameters.pricePrecision;
+   }
 
    
      function _calculateMaturity(bool _execute, StructureData.OptionState memory _optionState) private view

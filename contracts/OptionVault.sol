@@ -224,6 +224,21 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
                 .add(maturedState2.releasedCounterPartyAssetPremiumAmount);  
             }  
         }
+        if (currentRound > 1) {
+            uint256 count2 = optionPairs.length; 
+            for(uint256 i = 0; i < count2; i++) {
+                StructureData.OptionPairDefinition memory pair = optionPairs[i];
+                if (pair.callOption == address(0) &&
+                    pair.putOption == address(0)) {
+                    continue;
+                }
+                IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
+                IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
+                callOption.commitCurrent();
+                putOption.commitCurrent();
+            } 
+        }
+
 
         uint256 assetCount = asset.length; 
         for(uint256 i = 0; i < assetCount; i++) {
@@ -270,15 +285,15 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     } 
 
 
-    function commitCurrent(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
+    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
 
           uint256 count = _parameters.length;        
           if (currentRound == 1) {
-             require(count == 0, "nothing to commit");
+             require(count == 0, "nothing to set");
           }
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
-              IExecuteSettlement(parameter.option).commitCurrent(parameter);
+              IExecuteSettlement(parameter.option).setOptionParameters(parameter);
           }
     }
 
