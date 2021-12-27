@@ -75,43 +75,75 @@ async function main() {
             pricePrecision: WBTC_PRICE_PRECISION,
             strikePrice: btcPrice,
             premiumRate: 0.025 * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterCallOption.address
+            option: wbtcHodlBoosterPutOption.address
         }
     ];
+    // round 1
     await optionVault.connect(settler as Signer).initiateSettlement();
+    await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+        BigNumber.from(1).mul(WBTC_MULTIPLIER)
+    );
+    await printRoundInformation(wbtcHodlBoosterCallOption);
+
+    // round 2
+    await optionVault.connect(settler as Signer).initiateSettlement();
+    await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+        BigNumber.from(1).mul(WBTC_MULTIPLIER)
+    );
+    await optionVault.connect(settler as Signer).settle([]);
+    await optionVault.connect(settler as Signer).commitCurrent(commitParams);
+    await printRoundInformation(wbtcHodlBoosterCallOption);
+
+    // round 3
+    await optionVault.connect(settler as Signer).initiateSettlement();
+    await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+        BigNumber.from(1).mul(WBTC_MULTIPLIER)
+    );
+    await optionVault.connect(settler as Signer).settle(settleParams);
+    await optionVault.connect(settler as Signer).commitCurrent(commitParams);
+    await printRoundInformation(wbtcHodlBoosterCallOption);
+
+    // round 4
+    await optionVault.connect(settler as Signer).initiateSettlement();
+    await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+        BigNumber.from(1).mul(WBTC_MULTIPLIER)
+    );
+    await optionVault.connect(settler as Signer).settle(settleParams);
+    await optionVault.connect(settler as Signer).commitCurrent(commitParams);
+    await printRoundInformation(wbtcHodlBoosterCallOption);
 
     let curSettleParams: any = [];
     const period = 6;
-    for(let i = 0; i < period; ++i) {
-        // Initializes epoch
-        //await wbtcHodlBoosterCallOption.connect(settler as Signer).rollToNext(wbtcQuota);
-        await optionVault.connect(settler as Signer).initiateSettlement();
+    // for(let i = 0; i < period; ++i) {
+    //     // Initializes epoch
+    //     //await wbtcHodlBoosterCallOption.connect(settler as Signer).rollToNext(wbtcQuota);
+    //     await optionVault.connect(settler as Signer).initiateSettlement();
 
-        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-            BigNumber.from(1).mul(WBTC_MULTIPLIER)
-        );
-        if (i > 1) {
-            curSettleParams = settleParams
-        }
-        // await settlementPeriod(
-        //     optionVault,
-        //     wbtcHodlBoosterCallOption,
-        //     settler,
-        //     curSettleParams,
-        //     commitParams
-        // );
-        await optionVault.connect(settler as Signer).settle(curSettleParams);
-        await optionVault.connect(settler as Signer).commitCurrent(commitParams);
-        await optionVault.connect(settler as Signer).withdrawAsset(settler.address, wbtc.address);
-        await printRoundInformation(wbtcHodlBoosterCallOption);
-        // If we have something matured
-        // if (i > 0) {
-        //     let wbtcInstruction = await optionVault.settlementInstruction(wbtc.address);
-        //     await wbtc.connect(trader as Signer).
-        //         transfer(wbtcInstruction.targetAddress, wbtcInstruction.amount);
-        //     await optionVault.connect(settler as Signer).finishSettlement();
-        // }
-    }
+    //     await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+    //         BigNumber.from(1).mul(WBTC_MULTIPLIER)
+    //     );
+    //     if (i > 1) {
+    //         curSettleParams = settleParams
+    //     }
+    //     // await settlementPeriod(
+    //     //     optionVault,
+    //     //     wbtcHodlBoosterCallOption,
+    //     //     settler,
+    //     //     curSettleParams,
+    //     //     commitParams
+    //     // );
+    //     await optionVault.connect(settler as Signer).settle(curSettleParams);
+    //     await optionVault.connect(settler as Signer).commitCurrent(commitParams);
+    //     await optionVault.connect(settler as Signer).withdrawAsset(settler.address, wbtc.address);
+    //     await printRoundInformation(wbtcHodlBoosterCallOption);
+    //     // If we have something matured
+    //     // if (i > 0) {
+    //     //     let wbtcInstruction = await optionVault.settlementInstruction(wbtc.address);
+    //     //     await wbtc.connect(trader as Signer).
+    //     //         transfer(wbtcInstruction.targetAddress, wbtcInstruction.amount);
+    //     //     await optionVault.connect(settler as Signer).finishSettlement();
+    //     // }
+    // }
 }
 
 const initializeUsers = async (usdc: ERC20Mock, wbtc: ERC20Mock, hodlBoosterOption, users: SignerWithAddress[]): Promise<void> => {
