@@ -615,8 +615,7 @@ describe.only("PKKT Hodl Booster", async function () {
       }
 
       async function renderCashFlowForAsset(assetName: string, assetAddress: string, multipler:BigNumberish){
-        var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress); 
-        //todo: how to handle decimal
+        var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);  
         var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
         sub(assetCashFlow.newReleasedAmount)).div(multipler);
   
@@ -630,9 +629,7 @@ describe.only("PKKT Hodl Booster", async function () {
         var pair = optionPairs.get(key);
         if (!pair){
           return;
-        }
-        ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.putOptionAssetDecimals)
-        //todo: how to handle decimal
+        } 
         var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.callOptionAssetDecimals);
         var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.putOptionAssetDecimals);
         var maturedCallOptionState = await pair.callOption.optionStates(accounting.callOptionResult.round.sub(BigNumber.from(1)));
@@ -643,24 +640,29 @@ describe.only("PKKT Hodl Booster", async function () {
           console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
           console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
           console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${callStrikePrice}/${putStrikePrice}`);
-          console.log(`Decision|${pair.callOptionAssetName}-T-1 carried|${pair.putOptionAssetName}-T-1 carried|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
+          console.log(`Decision|${pair.callOptionAssetName}-debt|${pair.putOptionAssetName}-debt|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
         }
        
-       var callAssetAutoRoll = ethers.utils.formatUnits((accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
-        .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium))
-        , pair.callOptionAssetDecimals);
-        var putAssetAutoRull = ethers.utils.formatUnits((accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
-        .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollPremium))
-        , pair.putOptionAssetDecimals);
+       var callAssetAutoRoll =accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
+        .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium);
+        var putAssetAutoRull = accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
+        .add(accounting.putOptionResult.autoRollAmount).add(accounting.putOptionResult.autoRollPremium);
         
-        var callAssetReleased =  ethers.utils.formatUnits((accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
-        .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium))
-        , pair.callOptionAssetDecimals);
+        var callAssetReleased =  accounting.callOptionResult.releasedAmount.add(accounting.callOptionResult.releasedPremium)
+        .add(accounting.putOptionResult.releasedCounterPartyAmount).add(accounting.putOptionResult.releasedCounterPartyPremium);
   
         
-        var putAssetReleased = ethers.utils.formatUnits((accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
-        .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium))
-        , pair.putOptionAssetDecimals);
+        var putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount.add(accounting.callOptionResult.releasedCounterPartyPremium)
+        .add(accounting.putOptionResult.releasedAmount).add(accounting.putOptionResult.releasedPremium);
+
+        var depositDebt = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount.add(callAssetAutoRoll).sub(callAssetReleased), 
+        pair.callOptionAssetDecimals);
+        var counterPartyDebt =  ethers.utils.formatUnits(accounting.putOptionResult.depositAmount.add(putAssetAutoRull).sub(putAssetReleased),
+        pair.putOptionAssetDecimals);
+
+        var callAssetReleasedStr = ethers.utils.formatUnits(callAssetReleased, pair.callOptionAssetDecimals);
+        var putAssetReleasedStr = ethers.utils.formatUnits(putAssetReleased, pair.putOptionAssetDecimals);
+
         var decision = "";
         if (accounting.execute == OptionExecution.NoExecution){
           decision = "No Exercise";
@@ -672,7 +674,7 @@ describe.only("PKKT Hodl Booster", async function () {
   
           decision = "Exercise Put";
         }
-        console.log(`${decision}\t|${callAssetAutoRoll}\t|${putAssetAutoRull}\t|${callAssetReleased}\t|${putAssetReleased}`);
+        console.log(`${decision}\t|${depositDebt}\t|${counterPartyDebt}\t|${callAssetReleasedStr}\t|${putAssetReleasedStr}`);
          
       }
       
