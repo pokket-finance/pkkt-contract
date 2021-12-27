@@ -11,13 +11,13 @@ import {
 } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "hardhat/console.sol";
  
-import {Utils} from "../libraries/Utils.sol";  
-import {StructureData} from "../libraries/StructureData.sol";     
-import "../interfaces/IPKKTStructureOption.sol";
-import "../interfaces/IExecuteSettlement.sol"; 
-import "../interfaces/IOptionVault.sol"; 
+import {Utils} from "./libraries/Utils.sol";  
+import {StructureData} from "./libraries/StructureData.sol";     
+import "./interfaces/IPKKTStructureOption.sol";
+import "./interfaces/IExecuteSettlement.sol"; 
+import "./interfaces/IOptionVault.sol"; 
 
-abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IPKKTStructureOption, IExecuteSettlement {
+contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -30,8 +30,8 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
     event OpenOption(uint256 indexed round);
  
     uint256 public constant RATIOMULTIPLIER = 10000;
-    uint8 internal depositAssetAmountDecimals;
-    uint8 internal counterPartyAssetAmountDecimals;
+    uint8 public depositAssetAmountDecimals;
+    uint8 public counterPartyAssetAmountDecimals;
       
     address public depositAsset;
     address public counterPartyAsset;
@@ -70,7 +70,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
         address _vaultAddress,
         bool _callOrPut,
         address _settler
-    ) internal initializer {
+    ) public initializer {
         require(_vaultAddress != address(0), "Empty vault address");
         __ReentrancyGuard_init();
         ERC20Upgradeable.__ERC20_init(name, symbol);
@@ -535,7 +535,7 @@ abstract contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgrad
 
            _optionState.totalAmount.mul(10**(_optionState.pricePrecision + counterPartyAssetAmountDecimals)).
            div(_optionState.strikePrice).div(10** depositAssetAmountDecimals); 
-            
+ 
            uint256 maturedCounterPartyAssetPremiumAmount = maturedCounterPartyAssetAmount.mul(_optionState.premiumRate).div(RATIOMULTIPLIER); 
            if (_optionState.totalTerminate > 0) { 
                state.releasedCounterPartyAssetAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);

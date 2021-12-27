@@ -1,10 +1,10 @@
 
 import { BigNumberish } from "ethers";
-import { PKKTHodlBoosterCallOption, PKKTHodlBoosterPutOption, ERC20Mock, OptionVault } from "../../typechain";
+import { PKKTHodlBoosterOption,ERC20Mock, OptionVault } from "../../typechain";
 
 export type OptionPair = {
-    callOption: PKKTHodlBoosterCallOption;
-    putOption: PKKTHodlBoosterPutOption; 
+    callOption: PKKTHodlBoosterOption;
+    putOption: PKKTHodlBoosterOption; 
     callOptionAssetDecimals: BigNumberish;
     putOptionAssetDecimals: BigNumberish;
     strikePriceDecimals:BigNumberish;
