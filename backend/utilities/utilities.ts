@@ -44,3 +44,31 @@ export function printOptionState(optionState: OptionState) {
         console.log(`${key}: ${value}`);
     }
 }
+
+/**
+ * Gets the tvl option data
+ * @param options ethcall, ethput, wbtccall, wbtcput options
+ * @param vault vault managing the options
+ * @returns tvl option data including ongoing, locked, pending, released, and released counterparty
+ */
+export async function getTVLOptionData(options, vault) {
+    let optionData: any = [];
+    for(const option of options) {
+        let name = await option.name();
+        let assetDecimals = await option.depositAssetAmountDecimals();
+        let counterPartyDecimals = await option.counterPartyAssetAmountDecimals();
+        let optionTVL = await option.getOptionSnapShot();
+
+        optionData.push(
+            {
+                name,
+                active: ethers.utils.formatUnits(optionTVL.totalOngoing, assetDecimals),
+                locked: ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals),
+                pending: ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals),
+                released: ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals),
+                releasedCounterParty: ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)
+            }
+        );
+    }
+    return optionData;
+}

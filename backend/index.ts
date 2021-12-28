@@ -1,20 +1,44 @@
-import { PKKTHodlBoosterOption } from "../typechain";
 import axios from "axios";
 import express from "express";
 import * as dotenv from "dotenv";
 dotenv.config();
-import { ethers } from "hardhat";
-import { Signer } from "ethers";
 
-import { getVaultInfo } from "./getVaultInfo";
-import { getUserNAV } from "./getUserNAV";
-import { getDeployedContractHelper } from "./utilities/utilities";
+import {
+    getTVLOptionData,
+    getDeployedContractHelper
+} from "./utilities/utilities";
+
+import {
+    PKKTHodlBoosterOption,
+    OptionVault
+} from "../typechain";
 
 const app = express();
 const port = 3000;
 
 app.get("/", async (req, res) => {
-    
+    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+
+    const ethHodlBoosterCallOption = await getDeployedContractHelper(
+        "ETHHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const ethHodlBoosterPutOption = await getDeployedContractHelper(
+        "ETHHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+    const options = [
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ]
+    let optionData = await getTVLOptionData(options, optionVault);
+    console.log(JSON.stringify(optionData, null, 4));
     res.send("hello");
 });
 
