@@ -1,5 +1,8 @@
 import axios from "axios";
 import express from "express";
+import path from "path";
+import { ethers } from "hardhat";
+import { Signer } from "ethers";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -12,13 +15,24 @@ import {
     PKKTHodlBoosterOption,
     OptionVault
 } from "../typechain";
+import {
+    ETH_PRICE_PRECISION,
+    WBTC_PRICE_PRECISION,
+    RATIO_MULTIPLIER
+} from "../constants/constants";
 
 const app = express();
 const port = 3000;
 
-app.get("/", async (req, res) => {
-    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+// config
+// Decode Form URL encoded data
+app.use(express.urlencoded());
 
+app.get("/initiateEpoch", async (req, res) => {
+    res.sendFile(path.join(__dirname, "/views/initiateEpoch.html"));
+});
+
+app.post("/initiateEpoch", async (req, res) => {
     const ethHodlBoosterCallOption = await getDeployedContractHelper(
         "ETHHodlBoosterCallOption"
     ) as PKKTHodlBoosterOption;
@@ -31,34 +45,59 @@ app.get("/", async (req, res) => {
     const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
         "WBTCHodlBoosterPutOption"
     ) as PKKTHodlBoosterOption;
-    const options = [
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ]
-    let optionData = await getTVLOptionData(options, optionVault);
-    console.log(JSON.stringify(optionData, null, 4));
-    res.send("hello");
+    const ethCallPremium = parseFloat(req.body.ethCallPremium);
+    const ethPutPremium = parseFloat(req.body.ethPutPremium);
+    const wbtcCallPremium = parseFloat(req.body.wbtcCallPremium);
+    const wbtcPutPremium = parseFloat(req.body.wbtcPutPremium);
+    let optionParameters = [
+        {
+            pricePrecision: ETH_PRICE_PRECISION,
+            strikePrice: req.body.ethCallStrike,
+            premiumRate: ethCallPremium * RATIO_MULTIPLIER,
+            option: ethHodlBoosterCallOption.address
+        },
+        {
+            pricePrecision: ETH_PRICE_PRECISION,
+            strikePrice: req.body.ethPutStrike,
+            premiumRate: ethPutPremium * RATIO_MULTIPLIER,
+            option: ethHodlBoosterPutOption.address
+        },
+        {
+            pricePrecision: WBTC_PRICE_PRECISION,
+            strikePrice: req.body.wbtcCallStrike,
+            premiumRate: wbtcCallPremium * RATIO_MULTIPLIER,
+            option: wbtcHodlBoosterCallOption.address
+        },
+        {
+            pricePrecision: WBTC_PRICE_PRECISION,
+            strikePrice: req.body.wbtcPutStrike,
+            premiumRate: wbtcPutPremium * RATIO_MULTIPLIER,
+            option: wbtcHodlBoosterPutOption.address
+        }
+    ];
+    const [, settler] = await ethers.getSigners();
+    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+    res.send(JSON.stringify(req.body));
 });
 
-app.get("/graph", async (req, res) => {
-    const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
-    const response = await axios.post(url, {
-        query: `
-        {
-            users {
-                id
-                optionPositions {
-                    createdAtTimestamp
-                    optionBalance
-                }
-            }
-        }`
-    });
-    console.log(JSON.stringify(response.data.data, null, 4));
-    res.send(JSON.stringify(response.data.data, null, 4));
-})
+// app.get("/graph", async (req, res) => {
+//     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
+//     const response = await axios.post(url, {
+//         query: `
+//         {
+//             users {
+//                 id
+//                 optionPositions {
+//                     createdAtTimestamp
+//                     optionBalance
+//                 }
+//             }
+//         }`
+//     });
+//     console.log(JSON.stringify(response.data.data, null, 4));
+//     res.send(JSON.stringify(response.data.data, null, 4));
+// })
 
 // app.get("/users/:userId", async (req, res) => {
 //     const hodlBoosterOption: PKKTHodlBoosterOption = await getDeployedContractHelper(
