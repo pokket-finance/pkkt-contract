@@ -130,7 +130,8 @@ task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction",
 
 task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
 
-task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData);
+task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData)
+  .addParam("command", "number of the command you want to generate data");
 
 task("generate-subgraph-manifest", "Adds necessary information to the subgraph manifest (subgraph.yaml)", generateSubgraphManifest)
   .addOptionalParam("startBlock", "startblock for subgraph to begin indexing at, does not need to be set for local network");

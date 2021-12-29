@@ -17,7 +17,7 @@ import {
 } from "../../../constants/constants";
 import { getDeployedContractHelper } from "./utilities";
 
-async function main(taskArgs, { ethers, deployments }) {
+async function main({ command }, { ethers, deployments }) {
     const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
     const [
         usdc,
@@ -72,31 +72,33 @@ async function main(taskArgs, { ethers, deployments }) {
             option: wbtcHodlBoosterPutOption.address
         }
     ];
-    // round 1
-    await optionVault.connect(settler as Signer).initiateSettlement();
-    await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-        BigNumber.from(1).mul(WBTC_MULTIPLIER)
-    );
-   // await printRoundInformation(wbtcHodlBoosterCallOption);
 
+    if (command == 1) {
+        // round 1
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+            BigNumber.from(1).mul(WBTC_MULTIPLIER)
+        );
 
-    // round 2
-    // await optionVault.connect(settler as Signer).initiateSettlement();
-    // await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-    //     BigNumber.from(1).mul(WBTC_MULTIPLIER)
-    // );
-    // await optionVault.connect(settler as Signer).settle([]);
+        // round 2
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+            BigNumber.from(1).mul(WBTC_MULTIPLIER)
+        );
+        await optionVault.connect(settler as Signer).settle([]);
+    }
     // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-    // // //await printRoundInformation(wbtcHodlBoosterCallOption);
 
-    // // // round 3
-    // await optionVault.connect(settler as Signer).initiateSettlement();
-    // await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-    //     BigNumber.from(1).mul(WBTC_MULTIPLIER)
-    // );
+    // round 3
+    else if (command == 2) {
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+            BigNumber.from(1).mul(WBTC_MULTIPLIER)
+        );
+    }
+
     // await optionVault.connect(settler as Signer).settle(settleParams);
     // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-    // //await printRoundInformation(wbtcHodlBoosterCallOption);
 
     // // round 4
     // await optionVault.connect(settler as Signer).initiateSettlement();
@@ -105,7 +107,6 @@ async function main(taskArgs, { ethers, deployments }) {
     // );
     // await optionVault.connect(settler as Signer).settle(settleParams);
     // await optionVault.connect(settler as Signer).commitCurrent(commitParams);
-    //await printRoundInformation(wbtcHodlBoosterCallOption);
 }
 
 const getDeployedContracts = async (ethers, deployments): Promise<[
