@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.4;
 
+import './Utils.sol';
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library StructureData {
      
+    using SafeMath for uint256;
      uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
- 
+     using Utils for uint256;
      struct OptionParameters {
          address option;
          uint256 strikePrice;  // strike price if executed
@@ -44,7 +47,7 @@ library StructureData {
 
     struct UserState {
         uint256 pendingAsset; //for current round
-        uint256 lockedAsset;//asset undersettlement
+        uint256 tempLocked;//asset not sent to trader yet, but closed for deposit
         uint256[MATUREROUND] ongoingAsset; //for previous 7 rounds
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
@@ -56,15 +59,13 @@ library StructureData {
     struct OptionSnapshot {
         uint256 totalPending;
         uint256 totalLocked;
-        uint256 totalOngoing;
         uint256 totalReleasedDeposit;
         uint256 totalReleasedCounterParty; 
     }
 
     struct UserBalance {
         uint256 pendingDepositAssetAmount; 
-        uint256 lockedDepositAssetAmount; 
-        uint256 ongoingDepositAssetAmount;
+        uint256 lockedDepositAssetAmount;  
         uint256 releasedDepositAssetAmount;
         uint256 releasedCounterPartyAssetAmount;
     }
@@ -86,7 +87,34 @@ library StructureData {
         }
         return userState.ongoingAsset[uint8(previousCursor)];
     }
-  
+
+    function deriveWithdrawRequest(UserState storage userState, uint256 premiumRate) internal view returns (uint256 _onGoingRoundAmount, uint256 _lockedRoundAmount) {
+       if (userState.tempLocked == 0) {
+           return (userState.assetToTerminateForNextRound, 0);
+       }
+       uint256 onGoing = GetOngoingAsset(userState, 0);
+       if (onGoing == 0) {
+           return (0, userState.assetToTerminateForNextRound);
+       }
+       uint256 virtualOnGoing = onGoing.withPremium(premiumRate);
+       if (userState.assetToTerminateForNextRound < virtualOnGoing) {
+           return (userState.assetToTerminateForNextRound, 0);
+       }
+       else {
+           return (userState.assetToTerminateForNextRound, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
+       }
+    }
+    function deriveVirtualLocked(UserState storage userState, uint256 premiumRate) internal view returns (uint256) {
+        uint256 onGoing = GetOngoingAsset(userState, 0);
+        if (onGoing == 0) {
+            return userState.tempLocked;
+        }
+        if (userState.tempLocked == 0) {
+            return onGoing.withPremium(premiumRate);
+        }
+        return userState.tempLocked.add(onGoing.withPremium(premiumRate));
+        
+    }
     struct OptionPairDefinition{
         address callOption;
         address putOption;
