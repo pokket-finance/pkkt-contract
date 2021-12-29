@@ -18,7 +18,8 @@ import {
 import {
     ETH_PRICE_PRECISION,
     WBTC_PRICE_PRECISION,
-    RATIO_MULTIPLIER
+    RATIO_MULTIPLIER,
+    OptionExecution
 } from "../constants/constants";
 
 const app = express();
@@ -96,28 +97,45 @@ app.get("/", async (req, res) => {
         wbtcHodlBoosterPutOption
     ]
     const optionTVLData = await getTVLOptionData(options, optionVault);
-    // let optionDataTable = document.getElementById("optionTVLData") as HTMLElement;
-    // for(let option of optionTVLData) {
-    //     let newRow = document.createElement("tr");
-    //     let nameData = document.createElement("td");
-    //     nameData.innerHTML = option.name;
-    //     let activeData = document.createElement("td");
-    //     activeData.innerHTML = option.active;
-    //     let lockedData = document.createElement("td");
-    //     lockedData.innerHTML = option.locked;
-    //     let releasedData = document.createElement("td");
-    //     releasedData.innerHTML = option.released;
-    //     let releasedCounterPartyData = document.createElement("td");
-    //     releasedCounterPartyData.innerHTML = option.releasedCounterParty;
-    //     newRow.appendChild(nameData); 
-    //     newRow.appendChild(activeData);
-    //     newRow.appendChild(lockedData);
-    //     newRow.appendChild(releasedData);
-    //     newRow.appendChild(releasedCounterPartyData);
-    //     optionDataTable.appendChild(newRow);   
-    // }
     res.render("optionTVLData", { optionTVLData });
 });
+
+app.get("/exerciseDecision", async (req, res) => {
+    res.render("exerciseDecision");
+});
+
+async function getExerciseDecisionData(vault, settler, callOptionAssetDecimals) {
+    let exerciseDecisionData: any = [];
+    for(let index = 0; index < 6; ++index) {
+        let accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
+        let decision;
+        if (accounting.execute == OptionExecution.NoExecution) {
+            decision = "No Exercise";
+        }
+        else if (accounting.execute == OptionExecution.ExecuteCall) {
+            decision = "Exercise call";
+        }
+        else {
+            decision = "Exercise Put";
+        }
+
+        let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
+                                    .add(accounting.callOptionResult.autoRollPremium)
+                                    .add(accounting.putOptionResult.autoRollCounterPartyAmount)
+                                    .add(accounting.putOptionResult.autoRollCounterPartyPremium);
+        let callAssetReleased = accounting.callOptionResult.releasedAmount
+                                    .add(accounting.callOptionResult.releasedPremium)
+                                    .add(accounting.putOptionResult.releasedCounterPartyAmount)
+                                    .add(accounting.putOptionResult.releasedCounterPartyPremium);
+        
+        let depositDebt = ethers.utils.formatUnits(
+            accounting.callOptionResult.depositAmount
+                .add(callAssetAutoRoll)
+                .sub(callAssetReleased),
+            callOptionAssetDecimals
+        );
+    }
+}
 
 async function getOptionContracts(): Promise<[
     OptionVault,
