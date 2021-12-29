@@ -16,6 +16,7 @@ import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
 import generateSubgraphManifest from "./scripts/tasks/backend/generateSubgraphManifest";
 import initializeUsers from "./scripts/tasks/backend/initializeUsers";
 import generateOptionData from "./scripts/tasks/backend/generateOptionData";
+import sendUserCoins from "./scripts/tasks/backend/sendUserCoins";
 
 dotenv.config();
 
@@ -126,9 +127,12 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
   .addParam("libraryname", "Name of the library to deploy with contract");
 
 task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
-  .addFlag("fresh", "If set, deletes the existing network deployments folder");
+  .addFlag("fresh", "If set, deletes the existing network deployments folder")
+  .addFlag("init", "If set, init the first round");
 
 task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
+task("send-coins", "Send test coins to specific address", sendUserCoins)
+.addParam("target", "target address");
 
 task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData)
   .addParam("command", "number of the command you want to generate data");
