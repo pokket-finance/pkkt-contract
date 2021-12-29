@@ -33,6 +33,8 @@ const main = async (taskArgs, { ethers, deployments }) => {
     ) as PKKTHodlBoosterOption;
     const users = [alice, bob];
     for (let user of users) {
+        
+        console.log(`${user.address} `);
         await usdc.transfer(user.address, BigNumber.from(1000000).mul(USDC_MULTIPLIER));
         await usdc.connect(user as Signer).approve(
             ethHodlBoosterPutOption.address,
