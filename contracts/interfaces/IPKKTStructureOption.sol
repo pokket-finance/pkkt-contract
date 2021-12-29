@@ -46,7 +46,7 @@ interface IPKKTStructureOption {
     function redepositToCounterParty(uint256 _amount) external;
 
     //can only be called from counterparty option 
-    function depositFromCounterParty(address[] memory _addresses, uint256[] memory _amounts) external;
+    function depositFromCounterParty(address[] memory _addresses, uint256[] memory _amounts, uint256[] memory _terminates) external;
  
 
     //used to render the history at client side, reading the minting transactions of a specific address,

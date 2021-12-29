@@ -96,12 +96,13 @@ library StructureData {
        if (onGoing == 0) {
            return (0, userState.assetToTerminateForNextRound);
        }
+       onGoing = onGoing.sub(userState.assetToTerminate);
        uint256 virtualOnGoing = onGoing.withPremium(premiumRate);
        if (userState.assetToTerminateForNextRound < virtualOnGoing) {
            return (userState.assetToTerminateForNextRound, 0);
        }
        else {
-           return (userState.assetToTerminateForNextRound, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
+           return (virtualOnGoing, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
        }
     }
     function deriveVirtualLocked(UserState storage userState, uint256 premiumRate) internal view returns (uint256) {
@@ -109,6 +110,7 @@ library StructureData {
         if (onGoing == 0) {
             return userState.tempLocked;
         }
+        onGoing = onGoing.sub(userState.assetToTerminate);
         if (userState.tempLocked == 0) {
             return onGoing.withPremium(premiumRate);
         }
