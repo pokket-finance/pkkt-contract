@@ -1,5 +1,5 @@
 import fsPromises from "fs/promises";
-import { BigNumber } from "ethers";
+import { BigNumber, Signer } from "ethers";
 
 import {
     USDC_DECIMALS,
@@ -9,16 +9,28 @@ import {
     NULL_ADDRESS,
     ETH_DECIMALS
 } from "../../../constants/constants";
-import { PKKTHodlBoosterOption } from "../../../typechain";
+import { PKKTHodlBoosterOption,OptionVault } from "../../../typechain";
+import { getDeployedContractHelper } from "./utilities";
 
-const main = async ({ fresh }, { network, ethers, deployments, getNamedAccounts }) => {
+const main = async ({ fresh, init }, { network, ethers, deployments, getNamedAccounts }) => {
     const { deploy } = await deployments;
+    const [deployerSigner, settlerSigner] = await ethers.getSigners();
     const { deployer, settler } = await getNamedAccounts();
     if(fresh) {
         const dir = `./deployments/${network.name}`;
         await removeDirectory(dir);
     }
     await deployContracts(deployer, settler, deploy, ethers);
+    
+    if (init) {
+        const optionVault = await getDeployedContractHelper(
+            "OptionVault",
+            ethers,
+            deployments
+        ) as OptionVault;
+        await optionVault.connect(settlerSigner as Signer).initiateSettlement();
+        console.log("Initialized the current round to :" + (await (await optionVault.currentRound()).toString()));
+    }
 }
 
 // Remove the given directory
@@ -57,7 +69,7 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
     });
 
     console.log("Deployed WBTC at " + WBTC.address);
-    
+
     const OptionVault = await deploy("OptionVault", {
         contract: "OptionVault",
         from: deployer,
@@ -165,7 +177,6 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         callOptionDeposit: NULL_ADDRESS,
         putOptionDeposit: USDC.address
     });
-
 }
 
 const deployOptionContract = async (
