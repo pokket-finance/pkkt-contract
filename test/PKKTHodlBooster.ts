@@ -228,15 +228,15 @@ describe.only("PKKT Hodl Booster", async function () {
 
           var ethOptionBalance = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance(); 
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(9).mul(ETHMultiplier).toString()); 
-          assert.equal(ethOptionBalance.ongoingDepositAssetAmount.toString(), "0"); 
+          assert.equal(ethOptionBalance.lockedDepositAssetAmount.toString(), "0"); 
           
           var btcOptionBalance = await wbtcHodlBoosterCall.connect(alice as Signer).getAccountBalance();
           assert.equal(btcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2).mul(WBTCMultiplier).toString()); 
-          assert.equal(btcOptionBalance.ongoingDepositAssetAmount.toString(), "0"); 
+          assert.equal(btcOptionBalance.lockedDepositAssetAmount.toString(), "0"); 
 
           btcOptionBalance = await wbtcHodlBoosterCall.connect(bob as Signer).getAccountBalance();
           assert.equal(btcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString()); 
-          assert.equal(btcOptionBalance.ongoingDepositAssetAmount.toString(), "0");  
+          assert.equal(btcOptionBalance.lockedDepositAssetAmount.toString(), "0");  
 
           var round = await ethHodlBoosterCall.currentRound();
           var optionState = await ethHodlBoosterCall.optionStates(round);
@@ -694,12 +694,12 @@ describe.only("PKKT Hodl Booster", async function () {
           {account: "bob", ...await option.connect(bob as Signer).getAccountBalance()}];
           var assetSuffix = optionTVL.totalReleasedDeposit.gt(0) ? (assetEnough ? "（available)" :"(missing)") : "";
           var counterPartySuffix = optionTVL.totalReleasedCounterParty.gt(0) ? (counterPartyEnough ? "（available)" :"(missing)") : "";
-          console.log(`${name}: Active: ${ethers.utils.formatUnits(optionTVL.totalOngoing, assetDecimals)}, Locked: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, ` + 
+          console.log(`${name}: Active: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, Locked: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, ` + 
           `Pending: ${ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals)}, Released: ${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}, ` + 
           `Released CounterParty:${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}`);
           for(var j = 0 ; j < accountBalances.length; j++) {
             var accountBalance = accountBalances[j];
-            console.log(`\t${accountBalance.account}: Active: ${ethers.utils.formatUnits(accountBalance.ongoingDepositAssetAmount, assetDecimals)}, `+ 
+            console.log(`\t${accountBalance.account}: `+ 
             `Locked: ${ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals)}, ` + 
             `Pending: ${ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals)}, `+ 
             `Released: ${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}, `+ 

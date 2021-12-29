@@ -189,6 +189,8 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
        
         optionVault.withdraw(msg.sender, _amount, _asset, false);
     }
+
+
     function initiateWithraw(uint256 _assetToTerminate) external override {
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
         require(currentRound > 1, "No on going");
@@ -227,6 +229,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
         StructureData.UserState storage userState =  userStates[msg.sender]; 
         if (underSettlement) {  
             require(_assetToTerminate <= userState.assetToTerminateForNextRound, "Exceed available");
+            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.sub(_assetToTerminate); 
             if (currentRound == 2) { 
                 StructureData.OptionState storage previousOption = optionStates[currentRound - 1]; 
                 previousOption.totalTerminate = previousOption.totalTerminate.sub(_assetToTerminate);  
@@ -234,8 +237,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             else { 
                 //store temporarily
                 assetToTerminateForNextRound = assetToTerminateForNextRound.sub(_assetToTerminate); 
-            } 
- 
+            }  
         }
         else {  
             require(_assetToTerminate <= userState.assetToTerminate, "Exceed available");
@@ -366,7 +368,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
        uint256[] memory terminates = new uint256[](1);
        addresses[0] = msg.sender;
        amounts[0] = _amount;
-       terminates[0] = _amount;
+       terminates[0] = 0;
        counterPartyOption.depositFromCounterParty(addresses, amounts, terminates);
     }
 
@@ -639,7 +641,6 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
            }
            state.autoRollCounterPartyAssetAmount = maturedCounterPartyAssetAmount.sub(state.releasedCounterPartyAssetAmount);
            state.autoRollCounterPartyAssetPremiumAmount = maturedCounterPartyAssetPremiumAmount.sub(state.releasedCounterPartyAssetPremiumAmount);
-           //if executed, debit the 
         }
         else { 
            uint256 maturedDepositAssetAmount = _optionState.totalAmount;

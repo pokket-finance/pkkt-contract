@@ -98,7 +98,7 @@ library StructureData {
        }
        onGoing = onGoing.sub(userState.assetToTerminate);
        uint256 virtualOnGoing = onGoing.withPremium(premiumRate);
-       if (userState.assetToTerminateForNextRound < virtualOnGoing) {
+       if (userState.assetToTerminateForNextRound <= virtualOnGoing) {
            return (userState.assetToTerminateForNextRound, 0);
        }
        else {
