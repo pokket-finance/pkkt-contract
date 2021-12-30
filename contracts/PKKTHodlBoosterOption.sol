@@ -108,11 +108,12 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
            pendingDepositAssetAmount:userState.pendingAsset,
            releasedDepositAssetAmount: releasedDepositAssetAmount[msg.sender],
            releasedCounterPartyAssetAmount: releasedCounterPartyAssetAmount[msg.sender],
-           lockedDepositAssetAmount:0 
+           lockedDepositAssetAmount:0,
+           terminatingDepositAssetAmount: 0
        });
-       if (underSettlement) { 
+       if (underSettlement) {  
            if (currentRound > 2) {
-               result.lockedDepositAssetAmount = userState.deriveVirtualLocked(optionStates[currentRound - 2].premiumRate);
+               result.lockedDepositAssetAmount = userState.deriveVirtualLocked(optionStates[currentRound - 2].premiumRate, true);
            }
            else { 
                 result.lockedDepositAssetAmount = userState.tempLocked;
@@ -120,6 +121,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
        }
        else {
            result.lockedDepositAssetAmount = userState.ongoingAsset;
+           result.terminatingDepositAssetAmount = userState.assetToTerminate;
        }
        return result;
     }
@@ -144,7 +146,8 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             totalPending: currentOption.totalAmount,
             totalReleasedDeposit :  totalReleasedDepositAssetAmount,
             totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount,
-            totalLocked : 0 
+            totalLocked : 0,
+            totalTerminating : 0
        }); 
        if (underSettlement) { 
            lockedOption = optionStates[currentRound - 1];
@@ -155,12 +158,13 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
               );
            }
            else{
-               result.totalLocked = lockedOption.totalAmount;
+               result.totalLocked = lockedOption.totalAmount; 
            }
        }
        else if (currentRound > 1) {
            onGoingOption = optionStates[currentRound - 1];
            result.totalLocked = onGoingOption.totalAmount;
+           //result.terminatingDepositAssetAmount = onGoingOption.totalTerminate;
        }
        return result;
     }
@@ -196,7 +200,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             }
             else {
                 StructureData.OptionState storage onGoingOption = optionStates[currentRound - 2];
-                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
+                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate, false); 
                 require(newAssetToTerminate <=  totalLocked, "Exceeds available");   
                 //store temporarily
                 assetToTerminateForNextRound = assetToTerminateForNextRound.add(_assetToTerminate); 
@@ -253,7 +257,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             }
             else {
                 StructureData.OptionState storage onGoingOption = optionStates[currentRound - 2];
-                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
+                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate, false); 
                 uint256 diff = totalLocked.sub(userState.assetToTerminateForNextRound);
                 if (diff > 0) { 
                     userState.assetToTerminateForNextRound = totalLocked;

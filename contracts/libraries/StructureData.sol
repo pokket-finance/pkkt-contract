@@ -72,6 +72,7 @@ library StructureData {
     struct OptionSnapshot {
         uint256 totalPending;
         uint256 totalLocked;
+        uint256 totalTerminating;
         uint256 totalReleasedDeposit;
         uint256 totalReleasedCounterParty; 
     }
@@ -79,6 +80,7 @@ library StructureData {
     struct UserBalance {
         uint256 pendingDepositAssetAmount; 
         uint256 lockedDepositAssetAmount;  
+        uint256 terminatingDepositAssetAmount;
         uint256 releasedDepositAssetAmount;
         uint256 releasedCounterPartyAssetAmount;
     }
@@ -102,12 +104,14 @@ library StructureData {
            return (virtualOnGoing, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
        }
     }
-    function deriveVirtualLocked(UserState memory userState, uint256 premiumRate) internal pure returns (uint256) {
+    function deriveVirtualLocked(UserState memory userState, uint256 premiumRate, bool includeTerminate) internal pure returns (uint256) {
         uint256 onGoing = userState.ongoingAsset;
         if (onGoing == 0) {
             return userState.tempLocked;
         }
-        onGoing = onGoing.sub(userState.assetToTerminate);
+        if (!includeTerminate){ 
+          onGoing = onGoing.sub(userState.assetToTerminate);
+        }
         if (userState.tempLocked == 0) {
             return onGoing.withPremium(premiumRate);
         }
@@ -115,7 +119,8 @@ library StructureData {
         
     }
 
-       
+        
+
      function calculateMaturity(bool _execute, StructureData.OptionState memory _optionState, bool _callOrPut, 
      uint8 _depositAssetAmountDecimals, uint8 _counterPartyAssetAmountDecimals) internal pure
      returns(StructureData.MaturedState memory) {
