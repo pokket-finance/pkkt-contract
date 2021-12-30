@@ -6,6 +6,9 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library StructureData {
      
     using SafeMath for uint256;
+    
+    bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
+    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
      uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
      using Utils for uint256;
      struct OptionParameters {
@@ -117,6 +120,54 @@ library StructureData {
         return userState.tempLocked.add(onGoing.withPremium(premiumRate));
         
     }
+
+       
+     function calculateMaturity(bool _execute, StructureData.OptionState memory _optionState, bool _callOrPut, 
+     uint8 _depositAssetAmountDecimals, uint8 _counterPartyAssetAmountDecimals) internal pure
+     returns(StructureData.MaturedState memory) {
+       StructureData.MaturedState memory state = StructureData.MaturedState({
+          releasedDepositAssetAmount: 0,
+          releasedDepositAssetPremiumAmount: 0,
+          autoRollDepositAssetAmount: 0,
+          autoRollDepositAssetPremiumAmount: 0,
+          releasedCounterPartyAssetAmount: 0, 
+          releasedCounterPartyAssetPremiumAmount: 0,
+          autoRollCounterPartyAssetAmount: 0,
+          autoRollCounterPartyAssetPremiumAmount: 0,
+          round: _optionState.round
+       });  
+        if (_execute) {  
+
+           uint256 maturedCounterPartyAssetAmount = _callOrPut ? 
+            _optionState.totalAmount.mul(_optionState.strikePrice).mul(10**_counterPartyAssetAmountDecimals).
+           div(10**(_optionState.pricePrecision + _depositAssetAmountDecimals))  :  
+
+           _optionState.totalAmount.mul(10**(_optionState.pricePrecision + _counterPartyAssetAmountDecimals)).
+           div(_optionState.strikePrice).div(10** _depositAssetAmountDecimals); 
+ 
+           uint256 maturedCounterPartyAssetPremiumAmount = maturedCounterPartyAssetAmount.premium(_optionState.premiumRate); 
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedCounterPartyAssetAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedCounterPartyAssetPremiumAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollCounterPartyAssetAmount = maturedCounterPartyAssetAmount.sub(state.releasedCounterPartyAssetAmount);
+           state.autoRollCounterPartyAssetPremiumAmount = maturedCounterPartyAssetPremiumAmount.sub(state.releasedCounterPartyAssetPremiumAmount);
+        }
+        else { 
+           uint256 maturedDepositAssetAmount = _optionState.totalAmount;
+           uint256 maturedDepositAssetPremiumAmount = maturedDepositAssetAmount.premium(_optionState.premiumRate);
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedDepositAssetAmount = Utils.getAmountToTerminate(maturedDepositAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedDepositAssetPremiumAmount = Utils.getAmountToTerminate(maturedDepositAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollDepositAssetAmount = maturedDepositAssetAmount.sub(state.releasedDepositAssetAmount);
+           state.autoRollDepositAssetPremiumAmount = maturedDepositAssetPremiumAmount.sub(state.releasedDepositAssetPremiumAmount);
+
+        }
+         return state;
+     }
+
+
     struct OptionPairDefinition{
         address callOption;
         address putOption;

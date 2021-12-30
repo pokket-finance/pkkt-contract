@@ -293,7 +293,7 @@ describe.only("PKKT Hodl Booster", async function () {
           await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
           //bob deposit 1 btc
           await wbtcHodlBoosterCall.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
-          //bob stop previous auto rolling
+          //bob stop auto rolling of round 1, will be able to complete withdraw after the settlement next round
           await wbtcHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw();
 
 

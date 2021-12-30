@@ -46,30 +46,27 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
      */ 
     StructureData.OptionPairDefinition[] private optionPairs;
     StructureData.OptionPairExecutionAccountingResult[] public executionAccountingResult; 
-
-
-    bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
-    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
+ 
 
     constructor(address _settler) {
        // Contract deployer will be able to grant and revoke option role
        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
-       _setupRole(SETTLER_ROLE, _settler); 
+       _setupRole(StructureData.SETTLER_ROLE, _settler); 
     }
     
     function addOption(address _optionContract) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        _setupRole(OPTION_ROLE, _optionContract);  
+        _setupRole(StructureData.OPTION_ROLE, _optionContract);  
     }
 
     function removeOption(address _optionContract) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        revokeRole(OPTION_ROLE, _optionContract);  
+        revokeRole(StructureData.OPTION_ROLE, _optionContract);  
     }
     function getAddress() public view override returns(address){
         return address(this);
     }
 
      
-    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external override onlyRole(OPTION_ROLE){
+    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external override onlyRole(StructureData.OPTION_ROLE){
          if (!_redeem) {
              require(balanceEnough(_contractAddress), "Released amount not available yet");
          }
@@ -124,7 +121,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
 
-    function initiateSettlement() external override onlyRole(SETTLER_ROLE) {
+    function initiateSettlement() external override onlyRole(StructureData.SETTLER_ROLE) {
         currentRound = currentRound + 1;
         if (currentRound > 1) { 
             delete executionAccountingResult;
@@ -175,7 +172,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
         } 
     }
 
-    function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(SETTLER_ROLE) {  
+    function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(StructureData.SETTLER_ROLE) {  
 
         uint256 count = _execution.length; 
         if (currentRound <= 2) {
@@ -285,7 +282,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     } 
 
 
-    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(SETTLER_ROLE) {
+    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(StructureData.SETTLER_ROLE) {
 
           uint256 count = _parameters.length;        
           if (currentRound == 1) {
@@ -298,7 +295,7 @@ contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
     }
 
     //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external override onlyRole(SETTLER_ROLE) {
+    function withdrawAsset(address _trader, address _asset) external override onlyRole(StructureData.SETTLER_ROLE) {
         int256 balance  = leftOverAmount[_asset]; 
         require(balance > 0, "nothing to withdraw");
         assetTraderWithdrawn[_asset] = uint256(balance);
