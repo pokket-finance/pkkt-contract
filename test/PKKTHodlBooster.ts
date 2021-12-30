@@ -10,7 +10,7 @@ import { PKKTHodlBoosterOption, ERC20Mock, OptionVault } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS } from "../constants/constants";
 import { AssertionError } from "assert/strict";
- 
+import { Table  } from 'console-table-printer';
   
 const CAP = BigNumber.from(1000).mul(WEI);
 
@@ -260,13 +260,15 @@ describe.only("PKKT Hodl Booster", async function () {
           assert.equal(optionState.strikePrice.toString(), "0");   
           var ethBalance = await ethers.provider.getBalance(alice.address); 
           //redeem all eth
-          await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(8).mul(ETHMultiplier));
-          await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier));
-
-          await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
-          var ethBalance2 = await ethers.provider.getBalance(alice.address); 
-          var diff = ethBalance2.div(ETHMultiplier).sub(ethBalance.div(ETHMultiplier));
-          assert.equal(diff.toString(), BigNumber.from(9).toString());
+          var tx = await (await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(8).mul(ETHMultiplier))).wait();
+          var gasPrice = (await ethers.provider.getTransaction(tx.transactionHash)).gasPrice;
+          var tx2 = await (await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).wait();
+          var gasPrice2 = (await ethers.provider.getTransaction(tx.transactionHash)).gasPrice;
+        
+          //await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
+          var ethBalance2 = await ethers.provider.getBalance(alice.address);  
+          var diff = (ethBalance2.add(tx.gasUsed.mul(gasPrice??0)).add(tx2.gasUsed.mul(gasPrice2??0)).sub(ethBalance)); 
+          assert.isTrue(diff.sub(BigNumber.from(9).mul(ETHMultiplier)).abs().lte(GWEI));
           ethOptionBalance = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance(); 
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), "0");
           var optionState = await ethHodlBoosterCall.optionStates(round); 
@@ -456,8 +458,7 @@ describe.only("PKKT Hodl Booster", async function () {
    
    
               //alice got the 2*4000*1.02 executed usdc
-              available = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance();
-              var s = await ethHodlBoosterCall.connect(alice as Signer).getOptionSnapShot();
+              available = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance(); 
               assert.equal(available.releasedCounterPartyAssetAmount.toString(), "8160000000");
               assert.equal(available.releasedDepositAssetAmount.toString(), "0");  
               //bob got 0.5*1.02 none executed btc
@@ -486,17 +487,16 @@ describe.only("PKKT Hodl Booster", async function () {
 
           /* open round 1*/
           await vault.connect(settler as Signer).initiateSettlement();  
-          console.log(`Open Round ${await vault.currentRound()}` );
+          console.log(`Open Round ${await vault.currentRound()}` ); 
 
-          //call option: 
-          //alice: 5 eth
-          //alice: 2 btc
           await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
+
           await wbtcHodlBoosterCall.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTCMultiplier));
-          //call option: 
-          //bob: 4000 usd-eth
-          //bob: 50000 usd-btc
+          await wbtcHodlBoosterCall.connect(carol as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
+          
           await ethHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(4000).mul(USDTMultiplier));
+          await ethHodlBoosterPut.connect(carol as Signer).deposit(BigNumber.from(2000).mul(USDTMultiplier));
+          
           await wbtcHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
 
           await renderTVL();
@@ -504,14 +504,11 @@ describe.only("PKKT Hodl Booster", async function () {
           
           /* open round 2*/
           await vault.connect(settler as Signer).initiateSettlement();
-          console.log(`Open Round ${await vault.currentRound()}` );
-          //more user deposit
-          //call option:
-          //bob: 1 eth
+          console.log(`Open Round ${await vault.currentRound()}` ); 
+
           await ethHodlBoosterCall.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETHMultiplier)});
-          //put option:
-          //alice: 100000 usd-btc
           await wbtcHodlBoosterPut.connect(alice as Signer).deposit(BigNumber.from(100000).mul(USDTMultiplier));
+          await wbtcHodlBoosterPut.connect(carol as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
 
           
           await renderTVL();
@@ -676,6 +673,9 @@ describe.only("PKKT Hodl Booster", async function () {
       //can be useful for user perspective code
       async function renderTVL() {
         
+        console.log("================ TVL ================");
+        
+        var p = new Table();
         var options = [ethHodlBoosterCall, ethHodlBoosterPut, wbtcHodlBoosterCall, wbtcHodlBoosterPut];
         
         for(var i = 0; i < options.length; i++)
@@ -690,60 +690,73 @@ describe.only("PKKT Hodl Booster", async function () {
           var counterPartyEnough = await vault.balanceEnough(await option.counterPartyAsset());
 
           var accountBalances = [{account: "alice", ...await option.connect(alice as Signer).getAccountBalance()},
-          {account: "bob", ...await option.connect(bob as Signer).getAccountBalance()}];
+          {account: "bob", ...await option.connect(bob as Signer).getAccountBalance()},
+          {account: "carol", ...await option.connect(carol as Signer).getAccountBalance()}];
           var assetSuffix = optionTVL.totalReleasedDeposit.gt(0) ? (assetEnough ? "（available)" :"(missing)") : "";
           var counterPartySuffix = optionTVL.totalReleasedCounterParty.gt(0) ? (counterPartyEnough ? "（available)" :"(missing)") : "";
-          console.log(`${name}: Active: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, Locked: ${ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals)}, ` + 
-          `Pending: ${ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals)}, Released: ${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}, ` + 
-          `Released CounterParty:${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}`);
+          p.addRow({Name:name, Locked:ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals), 
+            Pending: ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals), 
+            Released: `${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}`, 
+            'Released-CounterParty': `${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}` });
+          
           for(var j = 0 ; j < accountBalances.length; j++) {
             var accountBalance = accountBalances[j];
-            console.log(`\t${accountBalance.account}: `+ 
-            `Locked: ${ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals)}, ` + 
-            `Pending: ${ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals)}, `+ 
-            `Released: ${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}, `+ 
-            `Released CounterParty: ${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}`);
+            p.addRow({Name:accountBalance.account, Locked:ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals), 
+              Pending: ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals), 
+              Released: `${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}`, 
+              'Released-CounterParty': `${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}` });
+ 
           }
         }
+        
+        p.printTable();
       }
      
 
       //can be useful for trader perspective code
       async function renderExecutionPlans() { 
         console.log("================ Decision for exercise ================");
-        
-        await renderExecutionPlan(0, true);
-        await renderExecutionPlan(1, false);
-        await renderExecutionPlan(2, false);
-        console.log("");
-        await renderExecutionPlan(3, true);
-        await renderExecutionPlan(4, false);
-        await renderExecutionPlan(5, false); 
+        var p = new Table();
+        await renderExecutionPlan(0, p);
+        await renderExecutionPlan(1, p);
+        await renderExecutionPlan(2, p); 
+        p.printTable();
+        p = new Table();
+        await renderExecutionPlan(3, p);
+        await renderExecutionPlan(4, p);
+        await renderExecutionPlan(5, p); 
+        p.printTable();
       }
   
       
       async function renderCashFlow(): Promise<{assetAddress: string; assetBalance: BigNumber}[]>{
         console.log("================ Actual movement of money ================");
-        console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)"); 
+        const p = new Table();
+        //print
+        //console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)"); 
         
-        return [await renderCashFlowForAsset("ETH", NULL_ADDRESS, ETH_DECIMALS),
-        await renderCashFlowForAsset("WBTC", wbtc.address, WBTC_DECIMALS),
-        await renderCashFlowForAsset("USDT", usdt.address, USDT_DECIMALS)];
+        var result = [await renderCashFlowForAsset("ETH", NULL_ADDRESS, ETH_DECIMALS, p),
+        await renderCashFlowForAsset("WBTC", wbtc.address, WBTC_DECIMALS, p),
+        await renderCashFlowForAsset("USDT", usdt.address, USDT_DECIMALS, p)];
+        
+        p.printTable();
+        return result;
       }
 
-      async function renderCashFlowForAsset(assetName: string, assetAddress: string, decimals:BigNumberish):Promise<{
+      async function renderCashFlowForAsset(assetName: string, assetAddress: string, decimals:BigNumberish, p: Table):Promise<{
         assetAddress: string;
         assetBalance: BigNumber}>{
         var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);  
         var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
         sub(assetCashFlow.newReleasedAmount));
-  
-        console.log(`${assetName}\t|${ethers.utils.formatUnits(assetCashFlow.newDepositAmount, decimals)}\t|`+ 
-        `${ethers.utils.formatUnits(assetCashFlow.newReleasedAmount, decimals)}\t|${ethers.utils.formatUnits(assetCashFlow.leftOverAmount, decimals)}\t|` + 
-        `${ethers.utils.formatUnits(assetBalance, decimals)}`);
+        p.addRow({ Token: assetName, 'Epoch deposit': ethers.utils.formatUnits(assetCashFlow.newDepositAmount, decimals),
+         'Actual withdraw request': ethers.utils.formatUnits(assetCashFlow.newReleasedAmount, decimals),
+         'residue(+)/deficit(-)': ethers.utils.formatUnits(assetCashFlow.leftOverAmount, decimals), 
+        'movable(+)/required(-)': ethers.utils.formatUnits(assetBalance, decimals)}); 
         return  {assetAddress, assetBalance} ;
       }
-      async function renderExecutionPlan(index: BigNumberish, renderCategory: boolean){
+
+      async function renderExecutionPlan(index: BigNumberish, p: Table){
 
         var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
         var key = accounting.callOptionResult.option.concat(accounting.putOptionResult.option);
@@ -757,22 +770,8 @@ describe.only("PKKT Hodl Booster", async function () {
         var maturedPutOptionState = await pair.putOption.optionStates(accounting.putOptionResult.round.sub(BigNumber.from(1)));
         var callStrikePrice = ethers.utils.formatUnits(maturedCallOptionState.strikePrice, pair.strikePriceDecimals);
         var putStrikePrice = ethers.utils.formatUnits(maturedPutOptionState.strikePrice, pair.strikePriceDecimals);
-        if (renderCategory){
-          console.log(`${pair.callOptionAssetName}<>${pair.putOptionAssetName}`);
-          console.log(`${pair.callOptionAssetName} Deposit|${pair.putOptionAssetName} Deposit|curr price/call str/put str`);
-          console.log(`${newDepositAssetAmount}\t|${newCounterPartyAssetAmount}\t|na/${callStrikePrice}/${putStrikePrice}`);
-          console.log(`Decision|${pair.callOptionAssetName}-debt|${pair.putOptionAssetName}-debt|${pair.callOptionAssetName} user withdrawal|${pair.putOptionAssetName} user withdrawal`);
-        }
-        /*console.log(accounting.callOptionResult.autoRollAmount.toString() + " ," + accounting.callOptionResult.autoRollPremium.toString() + ", " + 
-        accounting.putOptionResult.autoRollCounterPartyAmount.toString() + " , " + accounting.putOptionResult.autoRollCounterPartyPremium.toString() + "," +
-        accounting.callOptionResult.releasedAmount.toString() + "," + accounting.callOptionResult.releasedPremium.toString() + ", " + 
-        accounting.putOptionResult.releasedCounterPartyAmount.toString() + ", " + accounting.putOptionResult.releasedCounterPartyPremium.toString());
-
-        console.log(accounting.callOptionResult.autoRollCounterPartyAmount.toString() + " ," + accounting.callOptionResult.autoRollCounterPartyPremium.toString() + ", " + 
-        accounting.putOptionResult.autoRollAmount.toString() + " , " + accounting.putOptionResult.autoRollPremium.toString() + "," +
-        accounting.callOptionResult.releasedCounterPartyAmount.toString() + "," + accounting.callOptionResult.releasedCounterPartyPremium.toString() + "," + 
-        accounting.putOptionResult.releasedAmount.toString() + ", " + accounting.putOptionResult.releasedPremium.toString());*/
-
+ 
+  
        var callAssetAutoRoll =accounting.callOptionResult.autoRollAmount.add(accounting.callOptionResult.autoRollPremium)
         .add(accounting.putOptionResult.autoRollCounterPartyAmount).add(accounting.putOptionResult.autoRollCounterPartyPremium);
         var putAssetAutoRull = accounting.callOptionResult.autoRollCounterPartyAmount.add(accounting.callOptionResult.autoRollCounterPartyPremium)
@@ -795,17 +794,28 @@ describe.only("PKKT Hodl Booster", async function () {
 
         var decision = "";
         if (accounting.execute == OptionExecution.NoExecution){
-          decision = "No Exercise";
+          decision = "No Exe";
         }
         else if (accounting.execute == OptionExecution.ExecuteCall){
-          decision = "Exercise Call";
+          decision = "Exe Call";
         }
         else{
   
-          decision = "Exercise Put";
+          decision = "Exe Put";
         }
-        console.log(`${decision}\t|${depositDebt}\t|${counterPartyDebt}\t|${callAssetReleasedStr}\t|${putAssetReleasedStr}`);
-         
+
+        var option = {};
+        option['Option'] = `${pair.callOptionAssetName}<>${pair.putOptionAssetName}`;
+        option['Decision'] = decision;
+        option[`${pair.callOptionAssetName}-debt`] = depositDebt;
+        option[`${pair.putOptionAssetName}-debt`] = counterPartyDebt;
+        option[`${pair.callOptionAssetName} withdrawal`] = callAssetReleasedStr;
+        option[`${pair.putOptionAssetName} withdrawal`] = putAssetReleasedStr;
+        option[`${pair.callOptionAssetName} Deposit`] = newDepositAssetAmount;
+        option[`${pair.putOptionAssetName} Deposit`] = newCounterPartyAssetAmount;
+        option['call str/put str'] = `${callStrikePrice}/${putStrikePrice}`;
+        p.addRow(option);
+           
       }
       
   });
