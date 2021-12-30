@@ -1,4 +1,3 @@
-import axios from "axios";
 import express from "express";
 import path from "path";
 import { ethers } from "hardhat";
@@ -238,24 +237,6 @@ app.post("/setPredictedOptionParameters", async (req, res) => {
 });
 
 app.get("/", async (req, res) => {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-    const options = [
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ]
-    const optionTVLData = await getTVLOptionData(options, optionVault);
-    res.render("optionTVLData", { optionTVLData });
-});
-
-app.get("/exerciseDecision", async (req, res) => {
     res.render("exerciseDecision");
 });
 

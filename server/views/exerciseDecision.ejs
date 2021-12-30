@@ -1,44 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <style>
+            * {
+            box-sizing: border-box;
+            }
+
+            .row {
+            margin-left:-5px;
+            margin-right:-5px;
+            }
+            
+            .column {
+            float: left;
+            width: 50%;
+            padding: 5px;
+            }
+
+            /* Clearfix (clear floats) */
+            .row::after {
+            content: "";
+            clear: both;
+            display: table;
+            }
+
+            table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            }
+
+            th, td {
+            text-align: left;
+            padding: 16px;
+            }
+
+            tr:nth-child(even) {
+            background-color: #f2f2f2;
+            }
+        </style>
+    </head>
     <body>
         <h3>Exercise Decision</h3>
-        <h5>ETH/USDC</h5>
-        <table>
-            <tr>
-                <th>Decision</th>
-                <th>ETH - Debt</th>
-                <th>USDC - Debt</th>
-                <th>ETH User Withdrawal</th>
-                <th>USDC User Withdrawal</th>
-            </tr>
-            <tr>
-                <td>No Exercise</td>
-            </tr>
-            <tr>
-                <td>Exercise Call</td>
-            </tr>
-            <tr>
-                <td>Exercise Put</td>
-            </tr>
-        </table>
-        <h5>WBTC/USDC</h5>
-        <table>
-            <tr>
-                <th>Decision</th>
-                <th>WBTC - Debt</th>
-                <th>USDC - Debt</th>
-                <th>WBTC User Withdrawal</th>
-                <th>USDC User Withdrawal</th>
-            </tr>
-            <tr>
-                <td>No Exercise</td>
-            </tr>
-            <tr>
-                <td>Exercise Call</td>
-            </tr>
-            <tr>
-                <td>Exercise Put</td>
-            </tr>
-        </table>
+        <div class="row">
+            <table>
+                <tr>
+                    <th>ETH/USDC</th>
+                </tr>
+                <tr>
+                    <th>Decision</th>
+                    <th>ETH - Debt</th>
+                    <th>USDC - Debt</th>
+                    <th>ETH User Withdrawal</th>
+                    <th>USDC User Withdrawal</th>
+                </tr>
+                <tr>
+                    <td>No Exercise</td>
+                    <td><%= notExerciseEthData.ethDebt %></td>
+                    <td><%= notExerciseEthData.usdcDebt %></td>
+                    <td><%= notExerciseEthData.ethUserWithdrawal %></td>
+                    <td><%= notExerciseEthData.usdcUserWithdrawal %></td>
+                </tr>
+                <tr>
+                    <td>Exercise Call</td>
+                    <td><%= exerciseCallEthData.ethDebt %></td>
+                    <td><%= exerciseCallEthData.usdcDebt %></td>
+                    <td><%= exerciseCallEthData.ethUserWithdrawal %></td>
+                    <td><%= exerciseCallEthData.usdcUserWithdrawal %></td>
+                </tr>
+                <tr>
+                    <td>Exercise Put</td>
+                    <td><%= exercisePutEthData.ethDebt %></td>
+                    <td><%= exercisePutEthData.usdcDebt %></td>
+                    <td><%= exercisePutEthData.ethUserWithdrawal %></td>
+                    <td><%= exercisePutEthData.usdcUserWithdrawal %></td>
+                </tr>
+            </table>
+        </div>
+        <div class="row">
+            <table>
+                <tr>
+                    <th>WBTC/USDC</th>
+                </tr>
+                <tr>
+                    <th>Decision</th>
+                    <th>WBTC - Debt</th>
+                    <th>USDC - Debt</th>
+                    <th>WBTC User Withdrawal</th>
+                    <th>USDC User Withdrawal</th>
+                </tr>
+                <tr>
+                    <td>No Exercise</td>
+                    <td><%= notExerciseWbtcData.wbtcDebt %></td>
+                    <td><%= notExerciseWbtcData.usdcDebt %></td>
+                    <td><%= notExerciseWbtcData.wbtcUserWithdrawal %></td>
+                    <td><%= notExerciseWbtcData.usdcUserWithdrawal %></td>
+                </tr>
+                <tr>
+                    <td>Exercise Call</td>
+                    <td><%= exerciseCallWbtcData.wbtcDebt %></td>
+                    <td><%= exerciseCallWbtcData.usdcDebt %></td>
+                    <td><%= exerciseCallWbtcData.wbtcUserWithdrawal %></td>
+                    <td><%= exerciseCallWbtcData.usdcUserWithdrawal %></td>
+                </tr>
+                <tr>
+                    <td>Exercise Put</td>
+                    <td><%= exercisePutWbtcData.wbtcDebt %></td>
+                    <td><%= exercisePutWbtcData.usdcDebt %></td>
+                    <td><%= exercisePutWbtcData.wbtcUserWithdrawal %></td>
+                    <td><%= exercisePutWbtcData.usdcUserWithdrawal %></td>
+                </tr>
+            </table>
+        </div>
     </body>
 </html>
