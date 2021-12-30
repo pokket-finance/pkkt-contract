@@ -18,7 +18,10 @@ import {
     ETH_PRICE_PRECISION,
     WBTC_PRICE_PRECISION,
     RATIO_MULTIPLIER,
-    OptionExecution
+    OptionExecution,
+    ETH_DECIMALS,
+    USDC_DECIMALS,
+    WBTC_DECIMALS
 } from "../constants/constants";
 
 const app = express();
@@ -200,9 +203,6 @@ app.post("/setOptionParameters", async (req, res) => {
         putPremium: predictedWbtcPutPremium
     }
 
-    // console.log(predictedEthOption);
-    // console.log(predictedWbtcOption);
-
     app.set("predictedEthOption", predictedEthOption);
     app.set("predictedWbtcOption", predictedWbtcOption);
     res.redirect("/show/epoch");
@@ -237,40 +237,183 @@ app.post("/setPredictedOptionParameters", async (req, res) => {
 });
 
 app.get("/", async (req, res) => {
-    res.render("exerciseDecision");
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+
+    const [, settler] = await ethers.getSigners();
+
+    const strikePriceDecimals = 4;
+
+    const notExerciseEthData = await getExerciseDecisionData(
+        0,
+        optionVault,
+        settler,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        ETH_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+    const exerciseCallEthData = await getExerciseDecisionData(
+        1,
+        optionVault,
+        settler,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        ETH_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+    const exercisePutEthData = await getExerciseDecisionData(
+        2,
+        optionVault,
+        settler,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        ETH_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+    const notExerciseWbtcData = await getExerciseDecisionData(
+        3,
+        optionVault,
+        settler,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption,
+        WBTC_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+    const exerciseCallWbtcData = await getExerciseDecisionData(
+        4,
+        optionVault,
+        settler,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption,
+        WBTC_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+    const exercisePutWbtcData = await getExerciseDecisionData(
+        5,
+        optionVault,
+        settler,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption,
+        WBTC_DECIMALS,
+        USDC_DECIMALS,
+        strikePriceDecimals
+    );
+
+    res.render(
+        "exerciseDecision",
+        {
+            notExerciseEthData,
+            exerciseCallEthData,
+            exercisePutEthData,
+            notExerciseWbtcData,
+            exerciseCallWbtcData,
+            exercisePutWbtcData
+        }
+    );
 });
 
-async function getExerciseDecisionData(vault, settler, callOptionAssetDecimals) {
-    let exerciseDecisionData: any = [];
-    for(let index = 0; index < 6; ++index) {
-        let accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
-        let decision;
-        if (accounting.execute == OptionExecution.NoExecution) {
-            decision = "No Exercise";
-        }
-        else if (accounting.execute == OptionExecution.ExecuteCall) {
-            decision = "Exercise call";
-        }
-        else {
-            decision = "Exercise Put";
-        }
+type SettlementAccountingResult = {
+    round: BigNumber
+    depositAmount: BigNumber 
+    autoRollAmount: BigNumber
+    autoRollPremium: BigNumber 
+    releasedAmount: BigNumber 
+    releasedPremium: BigNumber
+    autoRollCounterPartyAmount: BigNumber
+    autoRollCounterPartyPremium: BigNumber
+    releasedCounterPartyAmount: BigNumber
+    releasedCounterPartyPremium: BigNumber
+    option: String
+    executed: Boolean
+}
 
-        let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
-                                    .add(accounting.callOptionResult.autoRollPremium)
-                                    .add(accounting.putOptionResult.autoRollCounterPartyAmount)
-                                    .add(accounting.putOptionResult.autoRollCounterPartyPremium);
-        let callAssetReleased = accounting.callOptionResult.releasedAmount
-                                    .add(accounting.callOptionResult.releasedPremium)
-                                    .add(accounting.putOptionResult.releasedCounterPartyAmount)
-                                    .add(accounting.putOptionResult.releasedCounterPartyPremium);
+type OptionPairExecutionAccountingResult = {  
+    callOptionResult: SettlementAccountingResult
+    putOptionResult: SettlementAccountingResult
+    execute: OptionExecution
+}
+
+async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
+        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
         
-        let depositDebt = ethers.utils.formatUnits(
+        let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
+            .add(accounting.callOptionResult.autoRollPremium)
+            .add(accounting.putOptionResult.autoRollCounterPartyAmount)
+            .add(accounting.putOptionResult.autoRollCounterPartyPremium);
+        let callAssetReleased = accounting.callOptionResult.releasedAmount
+            .add(accounting.callOptionResult.releasedPremium)
+            .add(accounting.putOptionResult.releasedCounterPartyAmount)
+            .add(accounting.putOptionResult.releasedCounterPartyPremium);
+        let depositDebt =  ethers.utils.formatUnits(
             accounting.callOptionResult.depositAmount
                 .add(callAssetAutoRoll)
                 .sub(callAssetReleased),
             callOptionAssetDecimals
         );
-    }
+
+        let putAssetAutoRoll =  accounting.callOptionResult.autoRollCounterPartyAmount
+            .add(accounting.callOptionResult.autoRollCounterPartyPremium)
+            .add(accounting.putOptionResult.autoRollAmount)
+            .add(accounting.putOptionResult.autoRollPremium);
+        let putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount
+            .add(accounting.callOptionResult.releasedCounterPartyPremium)
+            .add(accounting.putOptionResult.releasedAmount)
+            .add(accounting.putOptionResult.releasedPremium);
+        let counterPartyDebt = ethers.utils.formatUnits(
+            accounting.putOptionResult.depositAmount
+                .add(putAssetAutoRoll)
+                .sub(putAssetReleased),
+            putOptionAssetDecimals
+        );
+
+        let callAssetReleasedStr = ethers.utils.formatUnits(callAssetReleased, callOptionAssetDecimals);
+        
+        let putAssetReleasedStr = ethers.utils.formatUnits(putAssetReleased, putOptionAssetDecimals);
+
+        let newDepositAssetAmount = ethers.utils.formatUnits(
+            accounting.callOptionResult.depositAmount,
+            callOptionAssetDecimals
+        );
+
+        let newCounterPartyAssetAmount = ethers.utils.formatUnits(
+            accounting.putOptionResult.depositAmount,
+            putOptionAssetDecimals
+        )
+
+        let maturedCallOptionState = await callOption.optionStates(accounting.callOptionResult.round.sub(1));
+        let callStrikePrice = ethers.utils.formatUnits(
+            maturedCallOptionState.strikePrice,
+            strikePriceDecimals
+        )
+
+        let maturedPutOptionState = await putOption.optionStates(accounting.putOptionResult.round.sub(1));
+        let putStrikePrice = ethers.utils.formatUnits(
+            maturedPutOptionState.strikePrice,
+            strikePriceDecimals
+        );
+
+        const ret = {
+            depositDebt,
+            counterPartyDebt,
+            depositAssetWithdrawal: callAssetReleasedStr,
+            counterPartyAssetWithdrawal: putAssetReleasedStr,
+            newDepositAssetAmount,
+            newCounterPartyAssetAmount,
+            callStrikePrice,
+            putStrikePrice
+        }
+        return ret;
 }
 
 async function getOptionContracts(): Promise<[

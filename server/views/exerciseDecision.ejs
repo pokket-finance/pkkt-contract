@@ -43,75 +43,119 @@
     </head>
     <body>
         <h3>Exercise Decision</h3>
-        <div class="row">
-            <table>
-                <tr>
-                    <th>ETH/USDC</th>
-                </tr>
-                <tr>
-                    <th>Decision</th>
-                    <th>ETH - Debt</th>
-                    <th>USDC - Debt</th>
-                    <th>ETH User Withdrawal</th>
-                    <th>USDC User Withdrawal</th>
-                </tr>
-                <tr>
-                    <td>No Exercise</td>
-                    <td><%= notExerciseEthData.ethDebt %></td>
-                    <td><%= notExerciseEthData.usdcDebt %></td>
-                    <td><%= notExerciseEthData.ethUserWithdrawal %></td>
-                    <td><%= notExerciseEthData.usdcUserWithdrawal %></td>
-                </tr>
-                <tr>
-                    <td>Exercise Call</td>
-                    <td><%= exerciseCallEthData.ethDebt %></td>
-                    <td><%= exerciseCallEthData.usdcDebt %></td>
-                    <td><%= exerciseCallEthData.ethUserWithdrawal %></td>
-                    <td><%= exerciseCallEthData.usdcUserWithdrawal %></td>
-                </tr>
-                <tr>
-                    <td>Exercise Put</td>
-                    <td><%= exercisePutEthData.ethDebt %></td>
-                    <td><%= exercisePutEthData.usdcDebt %></td>
-                    <td><%= exercisePutEthData.ethUserWithdrawal %></td>
-                    <td><%= exercisePutEthData.usdcUserWithdrawal %></td>
-                </tr>
-            </table>
-        </div>
-        <div class="row">
-            <table>
-                <tr>
-                    <th>WBTC/USDC</th>
-                </tr>
-                <tr>
-                    <th>Decision</th>
-                    <th>WBTC - Debt</th>
-                    <th>USDC - Debt</th>
-                    <th>WBTC User Withdrawal</th>
-                    <th>USDC User Withdrawal</th>
-                </tr>
-                <tr>
-                    <td>No Exercise</td>
-                    <td><%= notExerciseWbtcData.wbtcDebt %></td>
-                    <td><%= notExerciseWbtcData.usdcDebt %></td>
-                    <td><%= notExerciseWbtcData.wbtcUserWithdrawal %></td>
-                    <td><%= notExerciseWbtcData.usdcUserWithdrawal %></td>
-                </tr>
-                <tr>
-                    <td>Exercise Call</td>
-                    <td><%= exerciseCallWbtcData.wbtcDebt %></td>
-                    <td><%= exerciseCallWbtcData.usdcDebt %></td>
-                    <td><%= exerciseCallWbtcData.wbtcUserWithdrawal %></td>
-                    <td><%= exerciseCallWbtcData.usdcUserWithdrawal %></td>
-                </tr>
-                <tr>
-                    <td>Exercise Put</td>
-                    <td><%= exercisePutWbtcData.wbtcDebt %></td>
-                    <td><%= exercisePutWbtcData.usdcDebt %></td>
-                    <td><%= exercisePutWbtcData.wbtcUserWithdrawal %></td>
-                    <td><%= exercisePutWbtcData.usdcUserWithdrawal %></td>
-                </tr>
-            </table>
-        </div>
+        <form action="/exerciseDecision" method="post" enctype="application/x-www-form-urlencoded">
+            <div class="row">
+                <table>
+                    <tr>
+                        <th>ETH/USDC</th>
+                    </tr>
+                    <tr>
+                        <th>Decision</th>
+                        <th>ETH - Debt</th>
+                        <th>USDC - Debt</th>
+                        <th>ETH User Withdrawal</th>
+                        <th>USDC User Withdrawal</th>
+                        <th>Eth Deposit</th>
+                        <th>USDC Deposit</th>
+                        <th>Call Strike Price</th>
+                        <th>Put Strike Price</th>
+                        <th>Selection</th>
+                    </tr>
+                    <tr>
+                        <td>No Exercise</td>
+                        <td><%= notExerciseEthData.depositDebt %></td>
+                        <td><%= notExerciseEthData.counterPartyDebt %></td>
+                        <td><%= notExerciseEthData.depositAssetWithdrawal %></td>
+                        <td><%= notExerciseEthData.counterPartyAssetWithdrawal %></td>
+                        <td><%= notExerciseEthData.newDepositAssetAmount %></td>
+                        <td><%= notExerciseEthData.newCounterPartyAssetAmount %></td>
+                        <td><%= notExerciseEthData.callStrikePrice %></td>
+                        <td><%= notExerciseEthData.putStrikePrice %></td>
+                        <td><input type="radio" name="ethOption" /></td>
+                    </tr>
+                    <tr>
+                        <td>Exercise Call</td>
+                        <td><%= exerciseCallEthData.depositDebt %></td>
+                        <td><%= exerciseCallEthData.counterPartyDebt %></td>
+                        <td><%= exerciseCallEthData.depositAssetWithdrawal %></td>
+                        <td><%= exerciseCallEthData.counterPartyAssetWithdrawal %></td>
+                        <td><%= exerciseCallEthData.newDepositAssetAmount %></td>
+                        <td><%= exerciseCallEthData.newCounterPartyAssetAmount %></td>
+                        <td><%= exerciseCallEthData.callStrikePrice %></td>
+                        <td><%= exerciseCallEthData.putStrikePrice %></td>
+                        <td><input type="radio" name="ethOption" /></td>
+                    </tr>
+                    <tr>
+                        <td>Exercise Put</td>
+                        <td><%= exercisePutEthData.depositDebt %></td>
+                        <td><%= exercisePutEthData.counterPartyDebt %></td>
+                        <td><%= exercisePutEthData.depositAssetWithdrawal %></td>
+                        <td><%= exercisePutEthData.counterPartyAssetWithdrawal %></td>
+                        <td><%= exercisePutEthData.newDepositAssetAmount %></td>
+                        <td><%= exercisePutEthData.newCounterPartyAssetAmount %></td>
+                        <td><%= exercisePutEthData.callStrikePrice %></td>
+                        <td><%= exercisePutEthData.putStrikePrice %></td>
+                        <td><input type="radio" name="ethOption" /></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="row">
+                <table>
+                    <tr>
+                        <th>WBTC/USDC</th>
+                    </tr>
+                    <tr>
+                        <th>Decision</th>
+                        <th>WBTC - Debt</th>
+                        <th>USDC - Debt</th>
+                        <th>WBTC User Withdrawal</th>
+                        <th>USDC User Withdrawal</th>
+                        <th>WBTC Deposit</th>
+                        <th>USDC Deposit</th>
+                        <th>Call Strike Price</th>
+                        <th>Put Strike Price</th>
+                        <th>Selection</th>
+                    </tr>
+                    <tr>
+                        <td>No Exercise</td>
+                        <td><%= notExerciseWbtcData.depositDebt %></td>
+                        <td><%= notExerciseWbtcData.counterPartyDebt %></td>
+                        <td><%= notExerciseWbtcData.depositAssetWithdrawal %></td>
+                        <td><%= notExerciseWbtcData.counterPartyAssetWithdrawal %></td>
+                        <td><%= notExerciseWbtcData.newDepositAssetAmount %></td>
+                        <td><%= notExerciseWbtcData.newCounterPartyAssetAmount %></td>
+                        <td><%= notExerciseWbtcData.callStrikePrice %></td>
+                        <td><%= notExerciseWbtcData.putStrikePrice %></td>
+                        <td><input type="radio" name="wbtcOption" /></td>
+                    </tr>
+                    <tr>
+                        <td>Exercise Call</td>
+                        <td><%= exerciseCallWbtcData.depositDebt %></td>
+                        <td><%= exerciseCallWbtcData.counterPartyDebt %></td>
+                        <td><%= exerciseCallWbtcData.depositAssetWithdrawal %></td>
+                        <td><%= exerciseCallWbtcData.counterPartyAssetWithdrawal %></td>
+                        <td><%= exerciseCallWbtcData.newDepositAssetAmount %></td>
+                        <td><%= exerciseCallWbtcData.newCounterPartyAssetAmount %></td>
+                        <td><%= exerciseCallWbtcData.callStrikePrice %></td>
+                        <td><%= exerciseCallWbtcData.putStrikePrice %></td>
+                        <td><input type="radio" name="wbtcOption" /></td>
+                    </tr>
+                    <tr>
+                        <td>Exercise Put</td>
+                        <td><%= exercisePutWbtcData.depositDebt %></td>
+                        <td><%= exercisePutWbtcData.counterPartyDebt %></td>
+                        <td><%= exercisePutWbtcData.depositAssetWithdrawal %></td>
+                        <td><%= exercisePutWbtcData.counterPartyAssetWithdrawal %></td>
+                        <td><%= exercisePutWbtcData.newDepositAssetAmount %></td>
+                        <td><%= exercisePutWbtcData.newCounterPartyAssetAmount %></td>
+                        <td><%= exercisePutWbtcData.callStrikePrice %></td>
+                        <td><%= exercisePutWbtcData.putStrikePrice %></td>
+                        <td><input type="radio" name="wbtcOption" /></td>
+                    </tr>
+                </table>
+            </div>
+            <br>
+            <input type="submit" name="exerciseDescision" value="Execute Decision" />
+        </form>
     </body>
 </html>

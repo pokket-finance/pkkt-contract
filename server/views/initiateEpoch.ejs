@@ -147,23 +147,6 @@
                 </div>
                 <input type="submit" name="launchEpoch" value="Set Epoch Option Data" />
             </form>
-
-        <!-- <div class="column">
-            <form action="/setOptionParameters" method="post" enctype="application/x-www-form-urlencoded">
-                <legend>Epoch <%= round-1 %> (ETH)</legend>
-                <p>Call Strike <input type="number" name="ethCallStrike" /></p>
-                <p>Put Strike <input type="number" name="ethPutStrike" /></p>
-                <p>Call Premium % <input type="text" name="ethCallPremium" /></p>
-                <p>Put Premium % <input type="text" name="ethPutPremium" /></p>
-                <br>
-                <legend>Epoch <%= round-1 %> (WBTC)</legend>
-                <p>Call Strike <input type="number" name="wbtcCallStrike" /></p>
-                <p>Put Strike <input type="number" name="wbtcPutStrike" /></p>
-                <p>Call Premium % <input type="text" name="wbtcCallPremium" /></p>
-                <p>Put Premium % <input type="text" name="wbtcPutPremium" /></p>
-                <input type="submit" name="launchEpoch" value="Launch Epoch" />
-            </form>
-        </div> -->
         <% } else { %>
             <form action="/setPredictedOptionParameters" method="post", enctype="application/x-www-form-urlencoded">
                 <div class="row">
@@ -218,22 +201,6 @@
                 </div>
                 <input type="submit" name="launchEpoch" value="Set Predicted Epoch Option Data" />
             </form>
-        <!-- <div class="column">
-            <form action="/setPredictedOptionParameters" method="post" enctype="application/x-www-form-urlencoded">
-                <legend>Predictions For Epoch <%= round %> (ETH)</legend>
-                <p>Call Strike <input type="number" name="predictedEthCallStrike" /></p>
-                <p>Put Strike <input type="number" name="predictedEthPutStrike" /></p>
-                <p>Call Premium % <input type="text" name="predictedEthCallPremium" /></p>
-                <p>Put Premium % <input type="text" name="predictedEthPutPremium" /></p>
-                <br>
-                <legend>Epoch <%= round %> (WBTC)</legend>
-                <p>Call Strike <input type="number" name="predictedWbtcCallStrike" /></p>
-                <p>Put Strike <input type="number" name="predictedWbtcPutStrike" /></p>
-                <p>Call Premium % <input type="text" name="predictedWbtcCallPremium" /></p>
-                <p>Put Premium % <input type="text" name="predictedWbtcPutPremium" /></p>
-                <input type="submit" name="launchEpoch" value="Set Predicted Epoch" />
-            </form>
-        </div> -->
         <% } %>
         <br>
         <a href="/show/epoch"><button>View Epoch Option Data</button></a>
