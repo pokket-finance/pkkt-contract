@@ -263,7 +263,7 @@ describe.only("PKKT Hodl Booster", async function () {
           await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(8).mul(ETHMultiplier));
           await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier));
 
-          await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.revertedWith("Exceeds available");  
+          await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
           var ethBalance2 = await ethers.provider.getBalance(alice.address); 
           var diff = ethBalance2.div(ETHMultiplier).sub(ethBalance.div(ETHMultiplier));
           assert.equal(diff.toString(), BigNumber.from(9).toString());
