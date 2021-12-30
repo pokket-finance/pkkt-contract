@@ -10,6 +10,7 @@ import {
 import {
     USDC_MULTIPLIER,
     WBTC_MULTIPLIER,
+    ETH_MULTIPLIER,
     WBTC_PRICE_PRECISION,
     ETH_PRICE_PRECISION,
     RATIO_MULTIPLIER,
@@ -48,56 +49,77 @@ async function main({ command }, { ethers, deployments }) {
 
     let commitParams = [
         {
+            strikePrice: ethPrice*1.05,
             pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethPrice,
             premiumRate: 0.025 * RATIO_MULTIPLIER,
             option: ethHodlBoosterCallOption.address
-        },
-        {
+          },  
+          {
+            strikePrice: ethPrice*0.95,
             pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethPrice,
             premiumRate: 0.025 * RATIO_MULTIPLIER,
             option: ethHodlBoosterPutOption.address
-        },
-        {
+          },
+          {
+            strikePrice: btcPrice*1.05,
             pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: btcPrice,
             premiumRate: 0.025 * RATIO_MULTIPLIER,
             option: wbtcHodlBoosterCallOption.address
-        },
-        {
+          }, 
+          {
+            strikePrice: btcPrice * 0.95,
             pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: btcPrice,
             premiumRate: 0.025 * RATIO_MULTIPLIER,
             option: wbtcHodlBoosterPutOption.address
-        }
+          },
     ];
 
     if (command == 1) {
         // round 1
         await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
+            { value: BigNumber.from(5).mul(ETH_MULTIPLIER) }
+        );
+        await ethHodlBoosterPutOption.connect(alice as Signer).deposit(
+            BigNumber.from(6000).mul(USDC_MULTIPLIER)
+        );
         await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-            BigNumber.from(1).mul(WBTC_MULTIPLIER)
+            BigNumber.from(3).mul(WBTC_MULTIPLIER)
+        );
+        await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(
+            BigNumber.from(50000).mul(USDC_MULTIPLIER)
         );
 
         // round 2
         await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
+            { value: BigNumber.from(1).mul(ETH_MULTIPLIER) }
+        );
+        await ethHodlBoosterPutOption.connect(alice as Signer).deposit(
+            BigNumber.from(4000).mul(USDC_MULTIPLIER)
+        );
         await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
             BigNumber.from(1).mul(WBTC_MULTIPLIER)
         );
+        await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(
+            BigNumber.from(150000).mul(USDC_MULTIPLIER)
+        );
+
         await optionVault.connect(settler as Signer).settle([]);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+        await optionVault.connect(settler as Signer).initiateSettlement();
     }
-    // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
 
     // round 3
     else if (command == 2) {
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-            BigNumber.from(1).mul(WBTC_MULTIPLIER)
-        );
+
+        //await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+        //await optionVault.connect(settler as Signer).settle(settleParams);
     }
     else if (command == 3) {
-        await optionVault.connect(settler as Signer).settle(settleParams);
+
     }
     // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
 

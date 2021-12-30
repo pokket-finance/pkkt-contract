@@ -39,17 +39,17 @@ const main = async (taskArgs, { ethers, deployments,
         await usdc.transfer(user.address, BigNumber.from(1000000).mul(USDC_MULTIPLIER));
         await usdc.connect(user as Signer).approve(
             ethHodlBoosterPutOption.address,
-            BigNumber.from(100000).mul(USDC_MULTIPLIER)
+            BigNumber.from(1000000).mul(USDC_MULTIPLIER)
         );
         await usdc.connect(user as Signer).approve(
             wbtcHodlBoosterPutOption.address,
-            BigNumber.from(100000).mul(USDC_MULTIPLIER)
+            BigNumber.from(1000000).mul(USDC_MULTIPLIER)
         );
         
-        await wbtc.transfer(user.address, BigNumber.from(10).mul(WBTC_MULTIPLIER));
+        await wbtc.transfer(user.address, BigNumber.from(100).mul(WBTC_MULTIPLIER));
         await wbtc.connect(user as Signer).approve(
             wbtcHodlBoosterCallOption.address,
-            BigNumber.from(10).mul(WBTC_MULTIPLIER)
+            BigNumber.from(100).mul(WBTC_MULTIPLIER)
         );
         
         // var b = await user.getBalance();

@@ -63,7 +63,7 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         args: [
             "Wrapped BTC",
             "WBTC",
-            BigNumber.from(100).mul(WBTC_MULTIPLIER),
+            BigNumber.from(100000).mul(WBTC_MULTIPLIER),
             WBTC_DECIMALS
         ],
     });
@@ -82,53 +82,6 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
 
     const structureData = await deploy("StructureData", {
         from: deployer,
-    });
-
-    const wbtcHodlBoosterCallOption = await deployOptionContract(
-        "WBTCHodlBoosterCallOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "WBTC-USDC-HodlBooster-Call",
-        "WBTCUSDCHodlBoosterCall",
-        WBTC.address,
-        USDC.address,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        optionVault,
-        structureData.address,
-        true,
-        deploy,
-        ethers
-    );
-
-    const wbtcHodlBoosterPutOption = await deployOptionContract(
-        "WBTCHodlBoosterPutOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "WBTC-USDC-HodlBooster-Put",
-        "WBTCUSDCHodlBoosterPut",
-        WBTC.address,
-        USDC.address,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        optionVault,
-        structureData.address,
-        false,
-        deploy,
-        ethers
-    );
-    
-    // wbtc ping-pong setup
-    wbtcHodlBoosterCallOption.setCounterPartyOption(wbtcHodlBoosterPutOption.address);
-    wbtcHodlBoosterPutOption.setCounterPartyOption(wbtcHodlBoosterCallOption.address);
-
-    await optionVault.addOptionPair({
-        callOption: wbtcHodlBoosterCallOption.address,
-        putOption: wbtcHodlBoosterPutOption.address,
-        callOptionDeposit: WBTC.address,
-        putOptionDeposit: USDC.address
     });
 
     const ethHodlBoosterCallOption = await deployOptionContract(
@@ -156,8 +109,8 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         settler,
         "ETH-USDC-HodlBooster-Put",
         "ETHUSDCHodlBoosterPut",
-        NULL_ADDRESS,
         USDC.address,
+        NULL_ADDRESS,
         ETH_DECIMALS,
         USDC_DECIMALS,
         optionVault,
@@ -175,6 +128,53 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         callOption: ethHodlBoosterCallOption.address,
         putOption: ethHodlBoosterPutOption.address,
         callOptionDeposit: NULL_ADDRESS,
+        putOptionDeposit: USDC.address
+    });
+
+    const wbtcHodlBoosterCallOption = await deployOptionContract(
+        "WBTCHodlBoosterCallOption",
+        deployer,
+        "PKKTHodlBoosterOption",
+        settler,
+        "WBTC-USDC-HodlBooster-Call",
+        "WBTCUSDCHodlBoosterCall",
+        WBTC.address,
+        USDC.address,
+        WBTC_DECIMALS,
+        USDC_DECIMALS,
+        optionVault,
+        structureData.address,
+        true,
+        deploy,
+        ethers
+    );
+
+    const wbtcHodlBoosterPutOption = await deployOptionContract(
+        "WBTCHodlBoosterPutOption",
+        deployer,
+        "PKKTHodlBoosterOption",
+        settler,
+        "WBTC-USDC-HodlBooster-Put",
+        "WBTCUSDCHodlBoosterPut",
+        USDC.address,
+        WBTC.address,
+        WBTC_DECIMALS,
+        USDC_DECIMALS,
+        optionVault,
+        structureData.address,
+        false,
+        deploy,
+        ethers
+    );
+    
+    // wbtc ping-pong setup
+    wbtcHodlBoosterCallOption.setCounterPartyOption(wbtcHodlBoosterPutOption.address);
+    wbtcHodlBoosterPutOption.setCounterPartyOption(wbtcHodlBoosterCallOption.address);
+
+    await optionVault.addOptionPair({
+        callOption: wbtcHodlBoosterCallOption.address,
+        putOption: wbtcHodlBoosterPutOption.address,
+        callOptionDeposit: WBTC.address,
         putOptionDeposit: USDC.address
     });
 }
