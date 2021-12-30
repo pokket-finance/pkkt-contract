@@ -96,8 +96,9 @@ async function main({ command }, { ethers, deployments }) {
             BigNumber.from(1).mul(WBTC_MULTIPLIER)
         );
     }
-
-    // await optionVault.connect(settler as Signer).settle(settleParams);
+    else if (command == 3) {
+        await optionVault.connect(settler as Signer).settle(settleParams);
+    }
     // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
 
     // // round 4

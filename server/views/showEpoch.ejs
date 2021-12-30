@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <style>
+            * {
+            box-sizing: border-box;
+            }
+
+            .row {
+            margin-left:-5px;
+            margin-right:-5px;
+            }
+            
+            .column {
+            float: left;
+            width: 50%;
+            padding: 5px;
+            }
+
+            /* Clearfix (clear floats) */
+            .row::after {
+            content: "";
+            clear: both;
+            display: table;
+            }
+
+            table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+            }
+
+            th, td {
+            text-align: left;
+            padding: 16px;
+            }
+
+            tr:nth-child(even) {
+            background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="row">
+            <div class="column">
+                <table>
+                    <tr>
+                        <th>Epoch <%= round - 1 %> (ETH)</th>
+                    </tr>
+                    <tr>
+                        <td>Call Strike</td>
+                        <td><%= ethOption.callStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Strike</td>
+                        <td><%= ethOption.putStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Call Premium</td>
+                        <td><%= ethOption.callPremium %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Premium</td>
+                        <td><%= ethOption.putPremium %></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="column">
+                <table>
+                    <tr>
+                        <th>Predicted For Epoch <%= round %> (ETH)</th>
+                    </tr>
+                    <tr>
+                        <td>Call Strike</td>
+                        <td><%= predictedEthOption.callStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Strike</td>
+                        <td><%= predictedEthOption.putStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Call Premium</td>
+                        <td><%= predictedEthOption.callPremium %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Premium</td>
+                        <td><%= predictedEthOption.putPremium %></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="column">
+                <table>
+                    <tr>
+                        <th>Epoch <%= round - 1 %> (WBTC)</th>
+                    </tr>
+                    <tr>
+                        <td>Call Strike</td>
+                        <td><%= wbtcOption.callStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Strike</td>
+                        <td><%= wbtcOption.putStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Call Premium</td>
+                        <td><%= wbtcOption.callPremium %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Premium</td>
+                        <td><%= wbtcOption.putPremium %></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="column">
+                <table>
+                    <tr>
+                        <th>Predicted For Epoch <%= round %> (WBTC)</th>
+                    </tr>
+                    <tr>
+                        <td>Call Strike</td>
+                        <td><%= predictedWbtcOption.callStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Strike</td>
+                        <td><%= predictedWbtcOption.putStrike %></td>
+                    </tr>
+                    <tr>
+                        <td>Call Premium</td>
+                        <td><%= predictedWbtcOption.callPremium %></td>
+                    </tr>
+                    <tr>
+                        <td>Put Premium</td>
+                        <td><%= predictedWbtcOption.putPremium %></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <a href="/initiateEpoch"><button>Set Epoch Option Data</button></a>
+    </body>
+</html>
