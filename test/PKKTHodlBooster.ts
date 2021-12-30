@@ -2,7 +2,6 @@ import { ethers } from "hardhat";
 import { assert, Assertion, expect } from "chai";
 import { Contract } from "@ethersproject/contracts"; 
 import { BigNumber, BigNumberish, Signer } from "ethers";
-
 import { deployContract } from "./utilities/deploy";
 import { deployUpgradeableContract } from "./utilities/deployUpgradable"; 
 import {advanceBlockTo} from "./utilities/timer"; 
@@ -264,7 +263,7 @@ describe.only("PKKT Hodl Booster", async function () {
           await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(8).mul(ETHMultiplier));
           await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier));
 
-          await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.revertedWith("Exceeds available");  
+          await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
           var ethBalance2 = await ethers.provider.getBalance(alice.address); 
           var diff = ethBalance2.div(ETHMultiplier).sub(ethBalance.div(ETHMultiplier));
           assert.equal(diff.toString(), BigNumber.from(9).toString());
@@ -293,7 +292,7 @@ describe.only("PKKT Hodl Booster", async function () {
           await ethHodlBoosterCall.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETHMultiplier)});
           //bob deposit 1 btc
           await wbtcHodlBoosterCall.connect(bob as Signer).deposit(BigNumber.from(1).mul(WBTCMultiplier));
-          //bob stop previous auto rolling
+          //bob stop auto rolling of round 1, will be able to complete withdraw after the settlement next round
           await wbtcHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw();
 
 

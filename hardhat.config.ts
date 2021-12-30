@@ -8,6 +8,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@openzeppelin/hardhat-upgrades";
 import "solidity-coverage";
 import "@typechain/hardhat";
+import "hardhat-gas-reporter";
 import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
@@ -91,7 +92,7 @@ dotenv.config();
   },
   gasReporter: {
     currency: "USD",
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    //coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     enabled: process.env.REPORT_GAS === "true",
   },
   mocha: {

@@ -6,11 +6,14 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library StructureData {
      
     using SafeMath for uint256;
+    
+    bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
+    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
      uint8 public constant MATUREROUND= 1; //7 for daily settlement, 1 for daily settlement
      using Utils for uint256;
      struct OptionParameters {
-         address option;
          uint256 strikePrice;  // strike price if executed
+         address option;
          uint8 pricePrecision;
          uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
      }
@@ -45,15 +48,25 @@ library StructureData {
         VolAlpha
     }
 
-    struct UserState {
+    /*struct UserState {
         uint256 pendingAsset; //for current round
         uint256 tempLocked;//asset not sent to trader yet, but closed for deposit
         uint256[MATUREROUND] ongoingAsset; //for previous 7 rounds
+        uint256 assetToTerminate;  
+        uint256 assetToTerminateForNextRound;  
         uint8 nextCursor; //nextCursor
         uint232 totalRound; 
         bool hasState;
+    }*/
+
+    struct UserState {
+        uint256 pendingAsset; //for current round
+        uint256 tempLocked;//asset not sent to trader yet, but closed for deposit
+        uint256 ongoingAsset; 
         uint256 assetToTerminate;  
-        uint256 assetToTerminateForNextRound;  
+        uint256 assetToTerminateForNextRound;   
+        uint232 totalRound; 
+        bool hasState;
     }
 
     struct OptionSnapshot {
@@ -70,29 +83,13 @@ library StructureData {
         uint256 releasedCounterPartyAssetAmount;
     }
 
-    function SetOngoingAsset(UserState storage userState, uint256 newValue) internal { 
-        uint cursor = userState.nextCursor;
-        userState.ongoingAsset[cursor] = newValue;
-        uint8 nextCursor = cursor == (MATUREROUND - 1) ? uint8(0) : uint8(cursor + 1);
-        userState.nextCursor = nextCursor;
-        userState.totalRound = userState.totalRound + 1; //won't overflow
-    }
-    
-    function GetOngoingAsset(UserState storage userState, uint8 backwardRound) internal view returns(uint256) {
-        if (userState.totalRound <= backwardRound) return 0;
-        require(backwardRound < MATUREROUND);
-        int8 previousCursor = int8(userState.nextCursor) - int8(backwardRound) - 1;
-        if (previousCursor < 0) {
-            previousCursor = previousCursor + int8(MATUREROUND);
-        }
-        return userState.ongoingAsset[uint8(previousCursor)];
-    }
+ 
 
-    function deriveWithdrawRequest(UserState storage userState, uint256 premiumRate) internal view returns (uint256 _onGoingRoundAmount, uint256 _lockedRoundAmount) {
+    function deriveWithdrawRequest(UserState memory userState, uint256 premiumRate) internal pure returns (uint256 _onGoingRoundAmount, uint256 _lockedRoundAmount) {
        if (userState.tempLocked == 0) {
            return (userState.assetToTerminateForNextRound, 0);
        }
-       uint256 onGoing = GetOngoingAsset(userState, 0);
+       uint256 onGoing = userState.ongoingAsset;
        if (onGoing == 0) {
            return (0, userState.assetToTerminateForNextRound);
        }
@@ -105,8 +102,8 @@ library StructureData {
            return (virtualOnGoing, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
        }
     }
-    function deriveVirtualLocked(UserState storage userState, uint256 premiumRate) internal view returns (uint256) {
-        uint256 onGoing = GetOngoingAsset(userState, 0);
+    function deriveVirtualLocked(UserState memory userState, uint256 premiumRate) internal pure returns (uint256) {
+        uint256 onGoing = userState.ongoingAsset;
         if (onGoing == 0) {
             return userState.tempLocked;
         }
@@ -117,6 +114,54 @@ library StructureData {
         return userState.tempLocked.add(onGoing.withPremium(premiumRate));
         
     }
+
+       
+     function calculateMaturity(bool _execute, StructureData.OptionState memory _optionState, bool _callOrPut, 
+     uint8 _depositAssetAmountDecimals, uint8 _counterPartyAssetAmountDecimals) internal pure
+     returns(StructureData.MaturedState memory) {
+       StructureData.MaturedState memory state = StructureData.MaturedState({
+          releasedDepositAssetAmount: 0,
+          releasedDepositAssetPremiumAmount: 0,
+          autoRollDepositAssetAmount: 0,
+          autoRollDepositAssetPremiumAmount: 0,
+          releasedCounterPartyAssetAmount: 0, 
+          releasedCounterPartyAssetPremiumAmount: 0,
+          autoRollCounterPartyAssetAmount: 0,
+          autoRollCounterPartyAssetPremiumAmount: 0,
+          round: _optionState.round
+       });  
+        if (_execute) {  
+
+           uint256 maturedCounterPartyAssetAmount = _callOrPut ? 
+            _optionState.totalAmount.mul(_optionState.strikePrice).mul(10**_counterPartyAssetAmountDecimals).
+           div(10**(_optionState.pricePrecision + _depositAssetAmountDecimals))  :  
+
+           _optionState.totalAmount.mul(10**(_optionState.pricePrecision + _counterPartyAssetAmountDecimals)).
+           div(_optionState.strikePrice).div(10** _depositAssetAmountDecimals); 
+ 
+           uint256 maturedCounterPartyAssetPremiumAmount = maturedCounterPartyAssetAmount.premium(_optionState.premiumRate); 
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedCounterPartyAssetAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedCounterPartyAssetPremiumAmount = Utils.getAmountToTerminate(maturedCounterPartyAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollCounterPartyAssetAmount = maturedCounterPartyAssetAmount.sub(state.releasedCounterPartyAssetAmount);
+           state.autoRollCounterPartyAssetPremiumAmount = maturedCounterPartyAssetPremiumAmount.sub(state.releasedCounterPartyAssetPremiumAmount);
+        }
+        else { 
+           uint256 maturedDepositAssetAmount = _optionState.totalAmount;
+           uint256 maturedDepositAssetPremiumAmount = maturedDepositAssetAmount.premium(_optionState.premiumRate);
+           if (_optionState.totalTerminate > 0) { 
+               state.releasedDepositAssetAmount = Utils.getAmountToTerminate(maturedDepositAssetAmount, _optionState.totalTerminate, _optionState.totalAmount);
+               state.releasedDepositAssetPremiumAmount = Utils.getAmountToTerminate(maturedDepositAssetPremiumAmount, _optionState.totalTerminate, _optionState.totalAmount);
+           }
+           state.autoRollDepositAssetAmount = maturedDepositAssetAmount.sub(state.releasedDepositAssetAmount);
+           state.autoRollDepositAssetPremiumAmount = maturedDepositAssetPremiumAmount.sub(state.releasedDepositAssetPremiumAmount);
+
+        }
+         return state;
+     }
+
+
     struct OptionPairDefinition{
         address callOption;
         address putOption;
@@ -124,13 +169,8 @@ library StructureData {
         address putOptionDeposit;
     }
     struct SettlementAccountingResult {
-        //won't change regardless execute or not
-        address option;
         uint256 round;
         uint256 depositAmount;  
-
-        //following will change if execute or not
-        bool executed;
         uint256 autoRollAmount; //T-1 Carried (filled only when not executed)
         uint256 autoRollPremium; //Premium (filled only when not executed)
         //maturedAmount+maturedPremium = requested withdrawal for deposit asset(filled only when not executed and with withdraw request)
@@ -143,6 +183,9 @@ library StructureData {
         //maturedCounterPartyAmount+maturedCounterPartyPremium= requested withdrawal for couter party asset(filled only when executed and with withdraw request)
         uint256 releasedCounterPartyAmount;
         uint256 releasedCounterPartyPremium; 
+ 
+        address option; 
+        bool executed;
 
     }
 
@@ -167,10 +210,10 @@ library StructureData {
     
 
     struct SettlementCashflowResult{ 
-        address contractAddress; //0 for eth 
         uint256 newDepositAmount;
         uint256 newReleasedAmount;
         int256 leftOverAmount; //positive, if trader didn't withdraw last time; negative, if trader failed to send back last time; 
+        address contractAddress; //0 for eth 
     }
  
 }
