@@ -70,17 +70,25 @@ library StructureData {
     }
 
     struct OptionSnapshot {
-        uint256 totalPending;
-        uint256 totalLocked;
+        uint256 totalPending; 
+        //total tvl = totalLocked + totalTerminating
+        uint256 totalLocked; 
+        //only set during settlement
         uint256 totalTerminating;
+        //amount to terminate in next round,  totalToTerminate <= totalLocked
+        uint256 totalToTerminate;
         uint256 totalReleasedDeposit;
         uint256 totalReleasedCounterParty; 
     }
 
     struct UserBalance {
         uint256 pendingDepositAssetAmount; 
+        //tvl = lockedDepositAssetAmount + terminatingDepositAssetAmount
         uint256 lockedDepositAssetAmount;  
+        //only set during settlement
         uint256 terminatingDepositAssetAmount;
+        //amount to terminate in next round, toTerminateDepositAssetAmount <= lockedDepositAssetAmount
+        uint256 toTerminateDepositAssetAmount;
         uint256 releasedDepositAssetAmount;
         uint256 releasedCounterPartyAssetAmount;
     }
@@ -104,18 +112,16 @@ library StructureData {
            return (virtualOnGoing, userState.assetToTerminateForNextRound.sub(virtualOnGoing));
        }
     }
-    function deriveVirtualLocked(UserState memory userState, uint256 premiumRate, bool includeTerminate) internal pure returns (uint256) {
+    function deriveVirtualLocked(UserState memory userState, uint256 premiumRate) internal pure returns (uint256) {
         uint256 onGoing = userState.ongoingAsset;
         if (onGoing == 0) {
             return userState.tempLocked;
         }
-        if (!includeTerminate){ 
-          onGoing = onGoing.sub(userState.assetToTerminate);
-        }
+        onGoing = onGoing.sub(userState.assetToTerminate).withPremium(premiumRate);
         if (userState.tempLocked == 0) {
-            return onGoing.withPremium(premiumRate);
+            return onGoing;
         }
-        return userState.tempLocked.add(onGoing.withPremium(premiumRate));
+        return userState.tempLocked.add(onGoing);
         
     }
 

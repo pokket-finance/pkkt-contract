@@ -263,11 +263,11 @@ describe.only("PKKT Hodl Booster", async function () {
           var tx = await (await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(8).mul(ETHMultiplier))).wait();
           var gasPrice = (await ethers.provider.getTransaction(tx.transactionHash)).gasPrice;
           var tx2 = await (await ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).wait();
-          var gasPrice2 = (await ethers.provider.getTransaction(tx.transactionHash)).gasPrice;
+          var gasPrice2 = (await ethers.provider.getTransaction(tx2.transactionHash)).gasPrice;
         
           //await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
           var ethBalance2 = await ethers.provider.getBalance(alice.address);  
-          var diff = (ethBalance2.add(tx.gasUsed.mul(gasPrice??0)).add(tx2.gasUsed.mul(gasPrice2??0)).sub(ethBalance)); 
+          var diff = (ethBalance2.add(tx.gasUsed.mul(gasPrice??0)).add(tx2.gasUsed.mul(gasPrice2??0)).sub(ethBalance));  
           assert.isTrue(diff.sub(BigNumber.from(9).mul(ETHMultiplier)).abs().lte(GWEI));
           ethOptionBalance = await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance(); 
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), "0");
@@ -676,16 +676,16 @@ describe.only("PKKT Hodl Booster", async function () {
       //can be useful for user perspective code
       async function renderTVL() {
         
-        console.log("================ TVL ================");
+        console.log("================================ TVL ================================");
         
-        var p = new Table();
+        var p = new Table(); 
         var options = [ethHodlBoosterCall, ethHodlBoosterPut, wbtcHodlBoosterCall, wbtcHodlBoosterPut];
         
         for(var i = 0; i < options.length; i++)
         {
           var option = options[i]; 
           var name = await option.name();
-          var assetDecimals = await  option.depositAssetAmountDecimals(); 
+          var assetDecimals = await option.depositAssetAmountDecimals(); 
           var counterPartyDecimals = await option.counterPartyAssetAmountDecimals();
           var optionTVL = await option.getOptionSnapShot();
           
@@ -700,6 +700,7 @@ describe.only("PKKT Hodl Booster", async function () {
           p.addRow({Name:name, Locked:ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals), 
             Pending: ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals), 
             Terminating: ethers.utils.formatUnits(optionTVL.totalTerminating, assetDecimals), 
+            'To Terminate': ethers.utils.formatUnits(optionTVL.totalToTerminate, assetDecimals), 
             Released: `${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}`, 
             'Released-CounterParty': `${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}` });
           var totalLocked = BigNumber.from(0);
@@ -707,35 +708,39 @@ describe.only("PKKT Hodl Booster", async function () {
           var totalReleasedCounterParty = BigNumber.from(0);
           var totalPending = BigNumber.from(0);
           var totalTerminating = BigNumber.from(0);
+          var totalToTerminate = BigNumber.from(0);
           for(var j = 0 ; j < accountBalances.length; j++) {
             var accountBalance = accountBalances[j];
             p.addRow({Name:accountBalance.account, Locked:ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals), 
               Pending: ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals),  
               Terminating: ethers.utils.formatUnits(accountBalance.terminatingDepositAssetAmount, assetDecimals), 
+              'To Terminate' : ethers.utils.formatUnits(accountBalance.toTerminateDepositAssetAmount, assetDecimals), 
               Released: `${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}`, 
               'Released-CounterParty': `${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}` });
               totalLocked = totalLocked.add(accountBalance.lockedDepositAssetAmount);
               totalReleased = totalReleased.add(accountBalance.releasedDepositAssetAmount);
-              totalReleasedCounterParty = totalReleasedCounterParty.add(accountBalance.releasedDepositAssetAmount);
+              totalReleasedCounterParty = totalReleasedCounterParty.add(accountBalance.releasedCounterPartyAssetAmount);
               totalPending = totalPending.add(accountBalance.pendingDepositAssetAmount);
               totalTerminating = totalTerminating.add(accountBalance.terminatingDepositAssetAmount);
-
-          }
-
-          assert.equal(optionTVL.totalLocked.toString(), totalLocked.toString());
+              totalToTerminate = totalToTerminate.add(accountBalance.toTerminateDepositAssetAmount);
+              assert.isTrue(accountBalance.toTerminateDepositAssetAmount.lte(accountBalance.lockedDepositAssetAmount));
+          } 
+          assert.equal(optionTVL.totalLocked.toString(), totalLocked.toString()); 
           assert.equal(optionTVL.totalPending.toString(), totalPending.toString());
           assert.equal(optionTVL.totalReleasedDeposit.toString(), totalReleased.toString());
           assert.equal(optionTVL.totalReleasedCounterParty.toString(), totalReleasedCounterParty.toString());
           assert.equal(optionTVL.totalTerminating.toString(), totalTerminating.toString());
+          assert.equal(optionTVL.totalToTerminate.toString(), totalToTerminate.toString());
+          assert.isTrue(optionTVL.totalToTerminate.lte(optionTVL.totalLocked));
         }
-        
+         
         p.printTable();
       }
      
 
       //can be useful for trader perspective code
       async function renderExecutionPlans() { 
-        console.log("================ Decision for exercise ================");
+        console.log("================================ Decision for exercise ================================");
         var p = new Table();
         await renderExecutionPlan(0, p);
         await renderExecutionPlan(1, p);
@@ -750,7 +755,7 @@ describe.only("PKKT Hodl Booster", async function () {
   
       
       async function renderCashFlow(): Promise<{assetAddress: string; assetBalance: BigNumber}[]>{
-        console.log("================ Actual movement of money ================");
+        console.log("================================ Actual movement of money ================================");
         const p = new Table();
         //print
         //console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)"); 

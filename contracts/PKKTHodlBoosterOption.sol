@@ -112,23 +112,25 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
            releasedDepositAssetAmount: releasedDepositAssetAmount[msg.sender],
            releasedCounterPartyAssetAmount: releasedCounterPartyAssetAmount[msg.sender],
            lockedDepositAssetAmount:0,
-           terminatingDepositAssetAmount: 0
+           terminatingDepositAssetAmount: 0,
+           toTerminateDepositAssetAmount: 0
        });
        if (underSettlement) {  
            if (currentRound > 2) {
-               result.lockedDepositAssetAmount = userState.deriveVirtualLocked(optionStates[currentRound - 2].premiumRate, true);
+              //when there are maturing round waiting for settlement, it becomes complex 
                 uint256 premium = optionStates[currentRound - 2].premiumRate;
-                result.lockedDepositAssetAmount = userState.deriveVirtualLocked(premium, true);
-                result.terminatingDepositAssetAmount = userState.assetToTerminateForNextRound.withPremium(premium).add(userState.assetToTerminate);
+                result.lockedDepositAssetAmount = userState.deriveVirtualLocked(premium);
+                result.terminatingDepositAssetAmount = userState.assetToTerminate.withPremium(premium);
+                result.toTerminateDepositAssetAmount = userState.assetToTerminateForNextRound;
           }
            else { 
                 result.lockedDepositAssetAmount = userState.tempLocked;               
-                result.terminatingDepositAssetAmount = userState.assetToTerminateForNextRound;
+                result.toTerminateDepositAssetAmount = userState.assetToTerminateForNextRound;
            }
        }
        else {
            result.lockedDepositAssetAmount = userState.ongoingAsset;
-           result.terminatingDepositAssetAmount = userState.assetToTerminate;
+           result.toTerminateDepositAssetAmount = userState.assetToTerminate;
        }
        return result;
     }
@@ -147,33 +149,35 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
        StructureData.OptionState storage currentOption = optionStates[currentRound];
        StructureData.OptionState memory lockedOption;
        StructureData.OptionState memory onGoingOption;
-       
-       //StructureData.OptionState storage currentOption = optionStates[currentRound];
+        
        StructureData.OptionSnapshot memory result = StructureData.OptionSnapshot({
             totalPending: currentOption.totalAmount,
             totalReleasedDeposit :  totalReleasedDepositAssetAmount,
             totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount,
             totalLocked : 0,
-            totalTerminating : 0
+            totalTerminating : 0,
+            totalToTerminate: 0
        }); 
        if (underSettlement) { 
            lockedOption = optionStates[currentRound - 1];
            if (currentRound > 2) {
+              //when there are maturing round waiting for settlement, it becomes complex
               onGoingOption = optionStates[currentRound - 2];
+              result.totalToTerminate = assetToTerminateForNextRound;
+              result.totalTerminating = onGoingOption.totalTerminate.withPremium(onGoingOption.premiumRate); 
               result.totalLocked = lockedOption.totalAmount.add(
                 onGoingOption.totalAmount.withPremium(onGoingOption.premiumRate)
-              );
-              result.totalTerminating = assetToTerminateForNextRound.add(onGoingOption.totalTerminate.withPremium(onGoingOption.premiumRate));
+              ).sub(result.totalTerminating);
            }
-           else{
+           else {
                result.totalLocked = lockedOption.totalAmount; 
-               result.totalTerminating = assetToTerminateForNextRound;
+               result.totalToTerminate = assetToTerminateForNextRound;
            }
        }
        else if (currentRound > 1) {
            onGoingOption = optionStates[currentRound - 1];
            result.totalLocked = onGoingOption.totalAmount;
-           result.totalTerminating = onGoingOption.totalTerminate;
+           result.totalToTerminate = onGoingOption.totalTerminate;
        }
        return result;
     }
@@ -209,7 +213,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             }
             else {
                 StructureData.OptionState storage onGoingOption = optionStates[currentRound - 2];
-                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate, false); 
+                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
                 require(newAssetToTerminate <=  totalLocked, "Exceeds available");   
                 //store temporarily
                 assetToTerminateForNextRound = assetToTerminateForNextRound.add(_assetToTerminate); 
@@ -266,7 +270,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             }
             else {
                 StructureData.OptionState storage onGoingOption = optionStates[currentRound - 2];
-                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate, false); 
+                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
                 uint256 diff = totalLocked.sub(userState.assetToTerminateForNextRound);
                 if (diff > 0) { 
                     userState.assetToTerminateForNextRound = totalLocked;
@@ -577,15 +581,17 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             else if (userState.assetToTerminate != 0){
                 userState.assetToTerminate = 0;
             }            
-            if(userState.tempLocked != 0) {  
-                //transfer each user a share of the option to trigger transfer event
-                //can be used to calculate the user option selling operations
-                //utilizing some web3 indexed services, take etherscan api/graphql etc.
-                _transfer(address(this), userAddress, userState.tempLocked);
-                emit OptionTransfer(address(this), userAddress, optionState.premiumRate, optionState.round);
-                userState.ongoingAsset = userState.tempLocked; 
-                userState.tempLocked = 0; 
+            if(userState.tempLocked == 0) {  
+                userState.ongoingAsset = 0;
+                continue;
             } 
+            //transfer each user a share of the option to trigger transfer event
+            //can be used to calculate the user option selling operations
+            //utilizing some web3 indexed services, take etherscan api/graphql etc.
+            _transfer(address(this), userAddress, userState.tempLocked);
+            emit OptionTransfer(address(this), userAddress, optionState.premiumRate, optionState.round);
+            userState.ongoingAsset = userState.tempLocked; 
+            userState.tempLocked = 0; 
          }
          
         optionState.totalTerminate = optionState.totalTerminate.add(assetToTerminateForNextRound); 
