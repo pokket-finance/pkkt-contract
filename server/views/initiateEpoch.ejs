@@ -4,6 +4,13 @@
         <title>TraderPerspective</title>
         <link rel="stylesheet" href="/navbar.css">
         <link rel="stylesheet" href="/table.css">
+        <link rel="stylesheet" href="./button.css">
+        <style>
+            .temp {
+                margin: auto;
+                width:50%;
+            }
+        </style>
         <script type="text/javascript" src="/navBar.js"></script>
     </head>
     <body>
@@ -107,13 +114,12 @@
                             </tr>
                         </table>
                     </div>
+                    <input type="submit" class="button" name="launchEpoch" value="Set Epoch Option Data" />
                 </div>
-                <input type="submit" name="launchEpoch" value="Set Epoch Option Data" />
             </form>
         <% } else { %>
-            <form action="/setPredictedOptionParameters" method="post", enctype="application/x-www-form-urlencoded">
-                <div class="row">
-                    <div class="column">
+            <div class="temp">
+                <form action="/setPredictedOptionParameters" method="post", enctype="application/x-www-form-urlencoded">
                         <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (ETH)</th>
@@ -135,10 +141,6 @@
                                 <td><input type="text" name="predictedEthPutPremium" value=<%= predictedEthOption.putPremium %> /></td>
                             </tr>
                         </table>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="column">
                         <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (WBTC)</th>
@@ -160,11 +162,9 @@
                                 <td><input type="text" name="predictedWbtcPutPremium" value=<%= predictedWbtcOption.putPremium %> /></td>
                             </tr>
                         </table>
-                    </div>
-                </div>
-                <input type="submit" name="launchEpoch" value="Set Predicted Epoch Option Data" />
-            </form>
+                    <input type="submit" class="button" name="launchEpoch" value="Set Predicted Epoch Option Data" />
+                </form>
+            </div>
         <% } %>
-        <br>
     </body>
 </html>

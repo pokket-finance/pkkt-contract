@@ -1,0 +1,12 @@
+.button {
+    background-color: #0241b4;
+    border: none;
+    color: white;
+    padding: 7px 16px;
+    margin-left: 100px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 0.9em;
+    font-family: sans-serif;
+  }
