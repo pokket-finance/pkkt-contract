@@ -114,9 +114,9 @@ async function main({ command }, { ethers, deployments }) {
         //await optionVault.connect(settler as Signer).initiateSettlement();
     }
 
-    // round 3
+    // initiate settlement
     else if (command == 2) {
-
+        await optionVault.connect(settler as Signer).initiateSettlement();
         //await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
         //await optionVault.connect(settler as Signer).settle(settleParams);
     }
