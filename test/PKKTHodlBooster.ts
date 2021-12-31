@@ -552,8 +552,9 @@ describe.only("PKKT Hodl Booster", async function () {
           /* open round 3*/
           await vault.connect(settler as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
-          await ethHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw();
-          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();
+          await ethHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
+          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();  //4100 usdt with premium
+          await wbtcHodlBoosterCall.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
 
           await renderTVL();
           await renderExecutionPlans();
@@ -662,6 +663,8 @@ describe.only("PKKT Hodl Booster", async function () {
           await renderTVL();
           await renderExecutionPlans();
 
+
+
         });
 
         it("physical balance perspective", async function () {
@@ -696,13 +699,15 @@ describe.only("PKKT Hodl Booster", async function () {
           var counterPartySuffix = optionTVL.totalReleasedCounterParty.gt(0) ? (counterPartyEnough ? "（available)" :"(missing)") : "";
           p.addRow({Name:name, Locked:ethers.utils.formatUnits(optionTVL.totalLocked, assetDecimals), 
             Pending: ethers.utils.formatUnits(optionTVL.totalPending, assetDecimals), 
+            Terminating: ethers.utils.formatUnits(optionTVL.totalTerminating, assetDecimals), 
             Released: `${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}`, 
             'Released-CounterParty': `${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}` });
           
           for(var j = 0 ; j < accountBalances.length; j++) {
             var accountBalance = accountBalances[j];
             p.addRow({Name:accountBalance.account, Locked:ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals), 
-              Pending: ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals), 
+              Pending: ethers.utils.formatUnits(accountBalance.pendingDepositAssetAmount, assetDecimals),  
+              Terminating: ethers.utils.formatUnits(accountBalance.terminatingDepositAssetAmount, assetDecimals), 
               Released: `${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}`, 
               'Released-CounterParty': `${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}` });
  
