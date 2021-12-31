@@ -344,6 +344,45 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
+app.post("/exerciseDecision", async (req, res) => {
+    const ethDecision = getExecutionStatus(req.body.ethOption);
+    const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+
+    const [, settler] = await ethers.getSigners();
+
+    const settleParameters = [
+        {
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: ethDecision
+        },
+        {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: wbtcDecision
+        }
+    ];
+    await optionVault.connect(settler as Signer).settle(settleParameters);
+    res.redirect("/show/epoch");
+});
+
+function getExecutionStatus(executionDecision: String): OptionExecution {
+    if (executionDecision == "noExercise"){
+        return OptionExecution.NoExecution
+    }
+    else if (executionDecision == "exerciseCall") {
+        return OptionExecution.ExecuteCall;
+    }
+    return OptionExecution.ExecutePut;
+}
+
 async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
         let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
         
