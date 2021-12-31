@@ -499,7 +499,7 @@ describe.only("PKKT Hodl Booster", async function () {
           
           await wbtcHodlBoosterPut.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
 
-          await renderTVL();
+          await renderTVL(false);
 
           
           /* open round 2*/
@@ -511,14 +511,14 @@ describe.only("PKKT Hodl Booster", async function () {
           await wbtcHodlBoosterPut.connect(carol as Signer).deposit(BigNumber.from(50000).mul(USDTMultiplier));
 
           
-          await renderTVL();
+          await renderTVL(true);
 
           //no matured round yet
           await vault.connect(settler as Signer).settle([]);  
           await renderCashFlow();
 
           
-          await renderTVL();
+          await renderTVL(false);
 
          const ethPrice = 4000 * (10**ETHPricePrecision);
          const btcPrice = 50000 * (10**WBTCPicePrecision);
@@ -556,7 +556,7 @@ describe.only("PKKT Hodl Booster", async function () {
           await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();  //4100 usdt with premium
           await wbtcHodlBoosterCall.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
 
-          await renderTVL();
+          await renderTVL(true);
           await renderExecutionPlans();
 
           await vault.connect(settler as Signer).settle([{
@@ -614,13 +614,13 @@ describe.only("PKKT Hodl Booster", async function () {
             },
             ]);
 
-            await renderTVL();
+            await renderTVL(false);
 
             
           /* open round 4*/
           await vault.connect(settler as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
-          await renderTVL();
+          await renderTVL(true);
           await renderExecutionPlans();
 
           await vault.connect(settler as Signer).settle([{
@@ -660,7 +660,7 @@ describe.only("PKKT Hodl Booster", async function () {
             },
             ]);
 
-          await renderTVL();
+          await renderTVL(false);
           await renderExecutionPlans();
 
 
@@ -674,9 +674,9 @@ describe.only("PKKT Hodl Booster", async function () {
 
        
       //can be useful for user perspective code
-      async function renderTVL() {
+      async function renderTVL(underSettlement: boolean) {
         
-        console.log("================================ TVL ================================");
+        console.log(`================================ TVL(${underSettlement? "Settling" : "Settled"}) ================================`);
         
         var p = new Table(); 
         var options = [ethHodlBoosterCall, ethHodlBoosterPut, wbtcHodlBoosterCall, wbtcHodlBoosterPut];
