@@ -702,7 +702,11 @@ describe.only("PKKT Hodl Booster", async function () {
             Terminating: ethers.utils.formatUnits(optionTVL.totalTerminating, assetDecimals), 
             Released: `${ethers.utils.formatUnits(optionTVL.totalReleasedDeposit, assetDecimals)}${assetSuffix}`, 
             'Released-CounterParty': `${ethers.utils.formatUnits(optionTVL.totalReleasedCounterParty, counterPartyDecimals)}${counterPartySuffix}` });
-          
+          var totalLocked = BigNumber.from(0);
+          var totalReleased = BigNumber.from(0);
+          var totalReleasedCounterParty = BigNumber.from(0);
+          var totalPending = BigNumber.from(0);
+          var totalTerminating = BigNumber.from(0);
           for(var j = 0 ; j < accountBalances.length; j++) {
             var accountBalance = accountBalances[j];
             p.addRow({Name:accountBalance.account, Locked:ethers.utils.formatUnits(accountBalance.lockedDepositAssetAmount, assetDecimals), 
@@ -710,8 +714,19 @@ describe.only("PKKT Hodl Booster", async function () {
               Terminating: ethers.utils.formatUnits(accountBalance.terminatingDepositAssetAmount, assetDecimals), 
               Released: `${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, assetDecimals)}${assetSuffix}`, 
               'Released-CounterParty': `${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, counterPartyDecimals)}${counterPartySuffix}` });
- 
+              totalLocked = totalLocked.add(accountBalance.lockedDepositAssetAmount);
+              totalReleased = totalReleased.add(accountBalance.releasedDepositAssetAmount);
+              totalReleasedCounterParty = totalReleasedCounterParty.add(accountBalance.releasedDepositAssetAmount);
+              totalPending = totalPending.add(accountBalance.pendingDepositAssetAmount);
+              totalTerminating = totalTerminating.add(accountBalance.terminatingDepositAssetAmount);
+
           }
+
+          assert.equal(optionTVL.totalLocked.toString(), totalLocked.toString());
+          assert.equal(optionTVL.totalPending.toString(), totalPending.toString());
+          assert.equal(optionTVL.totalReleasedDeposit.toString(), totalReleased.toString());
+          assert.equal(optionTVL.totalReleasedCounterParty.toString(), totalReleasedCounterParty.toString());
+          assert.equal(optionTVL.totalTerminating.toString(), totalTerminating.toString());
         }
         
         p.printTable();
