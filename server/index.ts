@@ -21,7 +21,8 @@ import {
     OptionExecution,
     ETH_DECIMALS,
     USDC_DECIMALS,
-    WBTC_DECIMALS
+    WBTC_DECIMALS,
+    NULL_ADDRESS
 } from "../constants/constants";
 
 const app = express();
@@ -47,7 +48,7 @@ app.get("/initiateEpoch", async (req, res) => {
     );
 });
 
-async function areOptionParamsSet(round: BigNumber): Promise<Boolean> {
+async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
     if (round.isZero()) {
         return false;
     }
@@ -252,7 +253,7 @@ app.get("/", async (req, res) => {
     const [, settler] = await ethers.getSigners();
 
     const round = await optionVault.currentRound();
-    const areOptionParametersSet = await areOptionParamsSet(round);
+    //const areOptionParametersSet = await areOptionParamsSet(round);
 
     let tempParams = {
         depositDebt: "0",
@@ -271,7 +272,9 @@ app.get("/", async (req, res) => {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    if (!areOptionParametersSet) {
+    const canSettleVault = await canSettle(optionVault, settler);
+
+    if (canSettleVault) {
         const strikePriceDecimals = 4;
 
         notExerciseEthData = await getExerciseDecisionData(
@@ -336,8 +339,6 @@ app.get("/", async (req, res) => {
         );
     }
 
-    
-
     res.render(
         "exerciseDecision",
         {
@@ -346,10 +347,21 @@ app.get("/", async (req, res) => {
             exercisePutEthData,
             notExerciseWbtcData,
             exerciseCallWbtcData,
-            exercisePutWbtcData
+            exercisePutWbtcData,
+            canSettleVault
         }
     );
 });
+
+async function canSettle(vault, settler): Promise<boolean> {
+    for(let index = 0; index < 6; ++index) {
+        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+        if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
+            return false;
+        }
+    }
+    return true;
+}
 
 type SettlementAccountingResult = {
     round: BigNumber
@@ -413,6 +425,7 @@ function getExecutionStatus(executionDecision: String): OptionExecution {
 
 async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
         let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+        //console.log(JSON.stringify(accounting, null, 4));
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
