@@ -515,7 +515,7 @@ describe.only("PKKT Hodl Booster", async function () {
 
           //no matured round yet
           await vault.connect(settler as Signer).settle([]);  
-          await renderCashFlow();
+          await renderCashFlow(OptionExecution.NoExecution, OptionExecution.NoExecution);
 
           
           await renderTVL(false);
@@ -552,9 +552,16 @@ describe.only("PKKT Hodl Booster", async function () {
           /* open round 3*/
           await vault.connect(settler as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
+          //var ethHodlBoosterCallToTerminate = (await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           await ethHodlBoosterCall.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
-          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();  //4100 usdt with premium
+          //var ethHodlBoosterCallToTerminate2 = (await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
+          
+          //var wbtcHodlBoosterPutToTerminate = (await wbtcHodlBoosterPut.connect(bob as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
+          await wbtcHodlBoosterPut.connect(bob as Signer).maxInitiateWithdraw();  //51250.0 usdt with premium 
+          //var wbtcHodlBoosterPutToTerminate2 = (await wbtcHodlBoosterPut.connect(bob as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
+          //var wbtcHodlBoosterCallTerminate = (await wbtcHodlBoosterCall.connect(carol as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           await wbtcHodlBoosterCall.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
+          //var wbtcHodlBoosterCallTerminate2 = (await wbtcHodlBoosterCall.connect(carol as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
 
           await renderTVL(true);
           await renderExecutionPlans();
@@ -571,7 +578,7 @@ describe.only("PKKT Hodl Booster", async function () {
           }])
 
           
-         var result = await renderCashFlow();
+         var result = await renderCashFlow(OptionExecution.NoExecution,OptionExecution.NoExecution);
 
           var ethBalance = await ethers.provider.getBalance(trader.address); 
           await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS); 
@@ -633,6 +640,8 @@ describe.only("PKKT Hodl Booster", async function () {
             putOption: wbtcHodlBoosterPut.address,
             execute: OptionExecution.NoExecution
           }]);
+          var result2 = await renderCashFlow(OptionExecution.ExecuteCall, OptionExecution.NoExecution);
+          
           await vault.connect(settler as Signer).setOptionParameters([
             {
               strikePrice:ethPrice*1.03,
@@ -659,9 +668,72 @@ describe.only("PKKT Hodl Booster", async function () {
               option: wbtcHodlBoosterPut.address
             },
             ]);
+           var vaultAddress = await vault.getAddress();
+           var ethEnough = await vault.balanceEnough(NULL_ADDRESS);
+           assert.equal(ethEnough, result2[0].assetBalance.gte(0));
+           var btcEnough = await vault.balanceEnough(wbtc.address); 
+           assert.equal(btcEnough, result2[1].assetBalance.gte(0));
+           var usdtEnough = await vault.balanceEnough(usdt.address);
+           assert.equal(usdtEnough, result2[2].assetBalance.gte(0));
+           if (!ethEnough) {
+              await trader.sendTransaction({
+                to: vaultAddress,
+                value: -result2[0].assetBalance, 
+              });
+              console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
+           }
+           if (!btcEnough){
+              await wbtc.connect(trader as Signer).transfer(vaultAddress, -result2[1].assetBalance);
+              console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
+           }
+
+           if (!usdtEnough){
+            await usdt.connect(trader as Signer).transfer(vaultAddress, -result2[2].assetBalance);
+            console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, USDT_DECIMALS)} usdt`);
+          }
+          ethEnough = await vault.balanceEnough(NULL_ADDRESS);
+          btcEnough = await vault.balanceEnough(wbtc.address); 
+          usdtEnough = await vault.balanceEnough(usdt.address);
+          assert.isTrue(ethEnough);
+          assert.isTrue(btcEnough);
+          assert.isTrue(usdtEnough);
 
           await renderTVL(false);
-          await renderExecutionPlans();
+          //withdraw
+          var accounts = [{name: "alice", account: alice}, 
+           {name: "bob", account: bob}, 
+           {name:"carol", account: carol}]
+           var names = { };
+           names[usdt.address] = "usdt";
+           names[NULL_ADDRESS] = "eth";
+           names[wbtc.address] = "wbtc";
+          var options = [ethHodlBoosterCall, ethHodlBoosterPut, wbtcHodlBoosterCall, wbtcHodlBoosterPut];
+          for(var i = 0; i < options.length; i++) {
+            var option = options[i];
+            for(var j = 0; j < accounts.length; j++) {
+              var account = accounts[j];
+
+              var accountBalance = await option.connect(account.account as Signer).getAccountBalance();
+              var depositAsset = await option.depositAsset();
+              var counterPartyAsset = await option.counterPartyAsset();
+              if (accountBalance.releasedDepositAssetAmount.gt(0)) { 
+                await option.connect(account.account as Signer).withdraw(accountBalance.releasedDepositAssetAmount, depositAsset);
+                console.log(`${account.name} withdrawn ${ethers.utils.formatUnits(accountBalance.releasedDepositAssetAmount, await option.depositAssetAmountDecimals())} ${names[depositAsset]}`);
+              }
+              if (accountBalance.releasedCounterPartyAssetAmount.gt(0)) { 
+                await option.connect(account.account as Signer).withdraw(accountBalance.releasedCounterPartyAssetAmount, counterPartyAsset);
+                console.log(`${account.name} withdrawn ${ethers.utils.formatUnits(accountBalance.releasedCounterPartyAssetAmount, await option.counterPartyAssetAmountDecimals())} ${names[counterPartyAsset]}`);
+              }
+            }
+          }
+
+
+          /* open round 5*/
+          await vault.connect(settler as Signer).initiateSettlement();   
+          console.log(`Open Round ${await vault.currentRound()}` );
+          
+          //await renderTVL(false);
+          //await renderExecutionPlans();
 
 
 
@@ -754,8 +826,8 @@ describe.only("PKKT Hodl Booster", async function () {
       }
   
       
-      async function renderCashFlow(): Promise<{assetAddress: string; assetBalance: BigNumber}[]>{
-        console.log("================================ Actual movement of money ================================");
+      async function renderCashFlow(decision1: OptionExecution, decision2: OptionExecution): Promise<{assetAddress: string; assetBalance: BigNumber}[]>{
+        console.log(`================================ Actual movement of money(${decision1},${decision2}) ================================`);
         const p = new Table();
         //print
         //console.log("Token|Epoch deposit|actual withdraw request|residue(+)/deficit(-)|movable(+)/required(-)"); 
