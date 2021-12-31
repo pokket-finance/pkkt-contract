@@ -2,56 +2,19 @@
 <html lang="en">
     <head>
         <title>TraderPerspective</title>
-        <style>
-            * {
-            box-sizing: border-box;
-            }
-
-            .row {
-            margin-left:-5px;
-            margin-right:-5px;
-            }
-            
-            .column {
-            float: left;
-            width: 50%;
-            padding: 5px;
-            }
-
-            /* Clearfix (clear floats) */
-            .row::after {
-            content: "";
-            clear: both;
-            display: table;
-            }
-
-            table {
-            border-collapse: collapse;
-            border-spacing: 0;
-            width: 100%;
-            border: 1px solid #ddd;
-            }
-
-            th, td {
-            text-align: left;
-            padding: 16px;
-            }
-
-            tr:nth-child(even) {
-            background-color: #f2f2f2;
-            }
-        </style>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <script type="text/javascript" src="/navBar.js"></script>
     </head>
     <body>
-        <h3>
-            Initiate Epoch
-        </h3>
+        <%- include("partials/navbar") %>
+
         <% if (!areOptionParametersSet) { %>
 
             <form action="/setOptionParameters" method="post", enctype="application/x-www-form-urlencoded">
                 <div class="row">
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Epoch <%= round - 1 %> (ETH)</th>
                             </tr>
@@ -74,7 +37,7 @@
                         </table>
                     </div>
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (ETH)</th>
                             </tr>
@@ -99,7 +62,7 @@
                 </div>
                 <div class="row">
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Epoch <%= round - 1 %> (WBTC)</th>
                             </tr>
@@ -122,7 +85,7 @@
                         </table>
                     </div>
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (WBTC)</th>
                             </tr>
@@ -151,50 +114,50 @@
             <form action="/setPredictedOptionParameters" method="post", enctype="application/x-www-form-urlencoded">
                 <div class="row">
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (ETH)</th>
                             </tr>
                             <tr>
                                 <td>Call Strike (USD)</td>
-                                <td><input type="number" name="predictedEthCallStrike" placeholder=<%= predictedEthOption.callStrike %> /></td>
+                                <td><input type="number" name="predictedEthCallStrike" value=<%= predictedEthOption.callStrike %> /></td>
                             </tr>
                             <tr>
                                 <td>Put Strike (USD)</td>
-                                <td><input type="number" name="predictedEthPutStrike" placeholder=<%= predictedEthOption.putStrike %> /></td>
+                                <td><input type="number" name="predictedEthPutStrike" value=<%= predictedEthOption.putStrike %> /></td>
                             </tr>
                             <tr>
                                 <td>Call Premium %</td>
-                                <td><input type="text" name="predictedEthCallPremium" placeholder=<%= predictedEthOption.callPremium %> /></td>
+                                <td><input type="text" name="predictedEthCallPremium" value=<%= predictedEthOption.callPremium %> /></td>
                             </tr>
                             <tr>
                                 <td>Put Premium %</td>
-                                <td><input type="text" name="predictedEthPutPremium" placeholder=<%= predictedEthOption.putPremium %> /></td>
+                                <td><input type="text" name="predictedEthPutPremium" value=<%= predictedEthOption.putPremium %> /></td>
                             </tr>
                         </table>
                     </div>
                 </div>
                 <div class="row">
                     <div class="column">
-                        <table>
+                        <table class="styled-table">
                             <tr>
                                 <th>Predicted For Epoch <%= round %> (WBTC)</th>
                             </tr>
                             <tr>
                                 <td>Call Strike (USD)</td>
-                                <td><input type="number" name="predictedWbtcCallStrike" placeholder=<%= predictedWbtcOption.callStrike %> /></td>
+                                <td><input type="number" name="predictedWbtcCallStrike" value=<%= predictedWbtcOption.callStrike %> /></td>
                             </tr>
                             <tr>
                                 <td>Put Strike (USD)</td>
-                                <td><input type="number" name="predictedWbtcPutStrike" placeholder=<%= predictedWbtcOption.putStrike %> /></td>
+                                <td><input type="number" name="predictedWbtcPutStrike" value=<%= predictedWbtcOption.putStrike %> /></td>
                             </tr>
                             <tr>
                                 <td>Call Premium %</td>
-                                <td><input type="text" name="predictedWbtcCallPremium" placeholder=<%= predictedWbtcOption.callPremium %> /></td>
+                                <td><input type="text" name="predictedWbtcCallPremium" value=<%= predictedWbtcOption.callPremium %> /></td>
                             </tr>
                             <tr>
                                 <td>Put Premium %</td>
-                                <td><input type="text" name="predictedWbtcPutPremium" placeholder=<%= predictedWbtcOption.putPremium %> /></td>
+                                <td><input type="text" name="predictedWbtcPutPremium" value=<%= predictedWbtcOption.putPremium %> /></td>
                             </tr>
                         </table>
                     </div>
@@ -203,6 +166,5 @@
             </form>
         <% } %>
         <br>
-        <a href="/show/epoch"><button>View Epoch Option Data</button></a>
     </body>
 </html>

@@ -30,6 +30,8 @@ const port = 3000;
 // config
 // Decode Form URL encoded data
 app.use(express.urlencoded());
+app.use(express.static(path.join(__dirname, "frontendScripts")));
+app.use(express.static(path.join(__dirname, "css")));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
@@ -249,68 +251,92 @@ app.get("/", async (req, res) => {
 
     const [, settler] = await ethers.getSigners();
 
-    const strikePriceDecimals = 4;
+    const round = await optionVault.currentRound();
+    const areOptionParametersSet = await areOptionParamsSet(round);
 
-    const notExerciseEthData = await getExerciseDecisionData(
-        0,
-        optionVault,
-        settler,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        ETH_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
-    const exerciseCallEthData = await getExerciseDecisionData(
-        1,
-        optionVault,
-        settler,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        ETH_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
-    const exercisePutEthData = await getExerciseDecisionData(
-        2,
-        optionVault,
-        settler,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        ETH_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
-    const notExerciseWbtcData = await getExerciseDecisionData(
-        3,
-        optionVault,
-        settler,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
-    const exerciseCallWbtcData = await getExerciseDecisionData(
-        4,
-        optionVault,
-        settler,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
-    const exercisePutWbtcData = await getExerciseDecisionData(
-        5,
-        optionVault,
-        settler,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        strikePriceDecimals
-    );
+    let tempParams = {
+        depositDebt: "0",
+        counterPartyDebt: "0",
+        depositAssetWithdrawal: "0",
+        counterPartyAssetWithdrawal: "0",
+        newDepositAssetAmount: "0",
+        newCounterPartyAssetAmount: "0",
+        callStrikePrice: "0",
+        putStrikePrice: "0"
+    };
+    let notExerciseEthData = tempParams;
+    let exerciseCallEthData = tempParams;
+    let exercisePutEthData = tempParams;
+    let notExerciseWbtcData = tempParams;
+    let exerciseCallWbtcData = tempParams;
+    let exercisePutWbtcData = tempParams;
+
+    if (!areOptionParametersSet) {
+        const strikePriceDecimals = 4;
+
+        notExerciseEthData = await getExerciseDecisionData(
+            0,
+            optionVault,
+            settler,
+            ethHodlBoosterCallOption,
+            ethHodlBoosterPutOption,
+            ETH_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+        exerciseCallEthData = await getExerciseDecisionData(
+            1,
+            optionVault,
+            settler,
+            ethHodlBoosterCallOption,
+            ethHodlBoosterPutOption,
+            ETH_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+        exercisePutEthData = await getExerciseDecisionData(
+            2,
+            optionVault,
+            settler,
+            ethHodlBoosterCallOption,
+            ethHodlBoosterPutOption,
+            ETH_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+        notExerciseWbtcData = await getExerciseDecisionData(
+            3,
+            optionVault,
+            settler,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption,
+            WBTC_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+        exerciseCallWbtcData = await getExerciseDecisionData(
+            4,
+            optionVault,
+            settler,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption,
+            WBTC_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+        exercisePutWbtcData = await getExerciseDecisionData(
+            5,
+            optionVault,
+            settler,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption,
+            WBTC_DECIMALS,
+            USDC_DECIMALS,
+            strikePriceDecimals
+        );
+    }
+
+    
 
     res.render(
         "exerciseDecision",
@@ -444,7 +470,7 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
             strikePriceDecimals
         );
 
-        const ret = {
+        return {
             depositDebt,
             counterPartyDebt,
             depositAssetWithdrawal: callAssetReleasedStr,
@@ -453,8 +479,7 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
             newCounterPartyAssetAmount,
             callStrikePrice,
             putStrikePrice
-        }
-        return ret;
+        };
 }
 
 async function getOptionContracts(): Promise<[

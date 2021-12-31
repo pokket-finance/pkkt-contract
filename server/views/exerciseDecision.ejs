@@ -1,51 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <style>
-            * {
-            box-sizing: border-box;
-            }
-
-            .row {
-            margin-left:-5px;
-            margin-right:-5px;
-            }
-            
-            .column {
-            float: left;
-            width: 50%;
-            padding: 5px;
-            }
-
-            /* Clearfix (clear floats) */
-            .row::after {
-            content: "";
-            clear: both;
-            display: table;
-            }
-
-            table {
-            border-collapse: collapse;
-            border-spacing: 0;
-            width: 100%;
-            border: 1px solid #ddd;
-            }
-
-            th, td {
-            text-align: left;
-            padding: 16px;
-            }
-
-            tr:nth-child(even) {
-            background-color: #f2f2f2;
-            }
-        </style>
+        <title>TraderPerspective</title>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <script type="text/javascript" src="/navBar.js"></script>
     </head>
     <body>
-        <h3>Exercise Decision</h3>
+        <%- include("partials/navbar") %>
         <form action="/exerciseDecision" method="post" enctype="application/x-www-form-urlencoded">
             <div class="row">
-                <table>
+                <table class="styled-table">
                     <tr>
                         <th>ETH/USDC</th>
                     </tr>
@@ -100,7 +65,7 @@
                 </table>
             </div>
             <div class="row">
-                <table>
+                <table class="styled-table">
                     <tr>
                         <th>WBTC/USDC</th>
                     </tr>
