@@ -56,19 +56,19 @@
                                 <th>Epoch <%= round - 1 %> (ETH)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
+                                <td>Call Strike (USD)</td>
                                 <td><input type="number" name="ethCallStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
+                                <td>Put Strike (USD)</td>
                                 <td><input type="number" name="ethPutStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
+                                <td>Call Premium %</td>
                                 <td><input type="text" name="ethCallPremium" /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
+                                <td>Put Premium %</td>
                                 <td><input type="text" name="ethPutPremium" /></td>
                             </tr>
                         </table>
@@ -79,19 +79,19 @@
                                 <th>Predicted For Epoch <%= round %> (ETH)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
+                                <td>Call Strike (USD)</td>
                                 <td><input type="number" name="predictedEthCallStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
+                                <td>Put Strike (USD)</td>
                                 <td><input type="number" name="predictedEthPutStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
+                                <td>Call Premium %</td>
                                 <td><input type="text" name="predictedEthCallPremium" /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
+                                <td>Put Premium %</td>
                                 <td><input type="text" name="predictedEthPutPremium" /></td>
                             </tr>
                         </table>
@@ -104,19 +104,19 @@
                                 <th>Epoch <%= round - 1 %> (WBTC)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
+                                <td>Call Strike (USD)</td>
                                 <td><input type="number" name="wbtcCallStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
+                                <td>Put Strike (USD)</td>
                                 <td><input type="number" name="wbtcPutStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
+                                <td>Call Premium %</td>
                                 <td><input type="text" name="wbtcCallPremium" /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
+                                <td>Put Premium %</td>
                                 <td><input type="text" name="wbtcPutPremium" /></td>
                             </tr>
                         </table>
@@ -127,19 +127,19 @@
                                 <th>Predicted For Epoch <%= round %> (WBTC)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
+                                <td>Call Strike (USD)</td>
                                 <td><input type="number" name="predictedWbtcCallStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
+                                <td>Put Strike (USD)</td>
                                 <td><input type="number" name="predictedWbtcPutStrike" /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
+                                <td>Call Premium %</td>
                                 <td><input type="text" name="predictedWbtcCallPremium" /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
+                                <td>Put Premium %</td>
                                 <td><input type="text" name="predictedWbtcPutPremium" /></td>
                             </tr>
                         </table>
@@ -156,20 +156,20 @@
                                 <th>Predicted For Epoch <%= round %> (ETH)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
-                                <td><input type="number" name="predictedEthCallStrike" /></td>
+                                <td>Call Strike (USD)</td>
+                                <td><input type="number" name="predictedEthCallStrike" placeholder=<%= predictedEthOption.callStrike %> /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
-                                <td><input type="number" name="predictedEthPutStrike" /></td>
+                                <td>Put Strike (USD)</td>
+                                <td><input type="number" name="predictedEthPutStrike" placeholder=<%= predictedEthOption.putStrike %> /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
-                                <td><input type="text" name="predictedEthCallPremium" /></td>
+                                <td>Call Premium %</td>
+                                <td><input type="text" name="predictedEthCallPremium" placeholder=<%= predictedEthOption.callPremium %> /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
-                                <td><input type="text" name="predictedEthPutPremium" /></td>
+                                <td>Put Premium %</td>
+                                <td><input type="text" name="predictedEthPutPremium" placeholder=<%= predictedEthOption.putPremium %> /></td>
                             </tr>
                         </table>
                     </div>
@@ -181,20 +181,20 @@
                                 <th>Predicted For Epoch <%= round %> (WBTC)</th>
                             </tr>
                             <tr>
-                                <td>Call Strike</td>
-                                <td><input type="number" name="predictedWbtcCallStrike" /></td>
+                                <td>Call Strike (USD)</td>
+                                <td><input type="number" name="predictedWbtcCallStrike" placeholder=<%= predictedWbtcOption.callStrike %> /></td>
                             </tr>
                             <tr>
-                                <td>Put Strike</td>
-                                <td><input type="number" name="predictedWbtcPutStrike" /></td>
+                                <td>Put Strike (USD)</td>
+                                <td><input type="number" name="predictedWbtcPutStrike" placeholder=<%= predictedWbtcOption.putStrike %> /></td>
                             </tr>
                             <tr>
-                                <td>Call Premium</td>
-                                <td><input type="text" name="predictedWbtcCallPremium" /></td>
+                                <td>Call Premium %</td>
+                                <td><input type="text" name="predictedWbtcCallPremium" placeholder=<%= predictedWbtcOption.callPremium %> /></td>
                             </tr>
                             <tr>
-                                <td>Put Premium</td>
-                                <td><input type="text" name="predictedWbtcPutPremium" /></td>
+                                <td>Put Premium %</td>
+                                <td><input type="text" name="predictedWbtcPutPremium" placeholder=<%= predictedWbtcOption.putPremium %> /></td>
                             </tr>
                         </table>
                     </div>

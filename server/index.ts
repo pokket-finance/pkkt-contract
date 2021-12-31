@@ -37,7 +37,12 @@ app.get("/initiateEpoch", async (req, res) => {
     const optionVault = await getDeployedContractHelper("OptionVault");
     const round = await optionVault.currentRound();
     const areOptionParametersSet = await areOptionParamsSet(round);
-    res.render("initiateEpoch", { round, areOptionParametersSet });
+    let predictedEthOption = getPredictedOptionData("predictedEthOption");
+    let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
+    res.render(
+        "initiateEpoch",
+        { round, areOptionParametersSet, predictedEthOption, predictedWbtcOption }
+    );
 });
 
 async function areOptionParamsSet(round: BigNumber): Promise<Boolean> {
@@ -81,28 +86,12 @@ app.get("/show/epoch", async (req, res) => {
     ] = await getOptionContracts();
     let round = await optionVault.currentRound();
 
-    let predictedEthOption;
-    let predictedWbtcOption;
     if (round.isZero()) {
         round = BigNumber.from(1);
 
     }
-    predictedEthOption = app.get("predictedEthOption");
-    predictedWbtcOption = app.get("predictedWbtcOption");
-    if(predictedWbtcOption === undefined || predictedEthOption === undefined) {
-        predictedEthOption = {
-            callStrike: 0,
-            putStrike: 0,
-            callPremium: 0,
-            putPremium: 0
-        }
-        predictedWbtcOption = {
-            callStrike: 0,
-            putStrike: 0,
-            callPremium: 0,
-            putPremium: 0
-        }
-    }
+    let predictedEthOption = getPredictedOptionData("predictedEthOption");
+    let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
 
     // Get contract option data to display
     const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
@@ -132,6 +121,19 @@ app.get("/show/epoch", async (req, res) => {
         }
     );
 });
+
+function getPredictedOptionData(dataName: string) {
+    let predictedOptionData = app.get(dataName);
+    if (predictedOptionData === undefined) {
+        predictedOptionData = {
+            callStrike: 0,
+            putStrike: 0,
+            callPremium: 0,
+            putPremium: 0
+        }
+    }
+    return predictedOptionData;
+}
 
 app.post("/setOptionParameters", async (req, res) => {
     const [
