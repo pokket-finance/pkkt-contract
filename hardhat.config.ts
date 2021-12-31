@@ -129,7 +129,8 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
 
 task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
   .addFlag("fresh", "If set, deletes the existing network deployments folder")
-  .addFlag("init", "If set, init the first round");
+  .addFlag("init", "If set, init the first round")
+  .addOptionalParam("initbackend", "If set, initializes the backend");
 
 task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
 task("send-coins", "Send test coins to specific address", sendUserCoins)

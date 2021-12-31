@@ -11,8 +11,10 @@ import {
 } from "../../../constants/constants";
 import { PKKTHodlBoosterOption,OptionVault } from "../../../typechain";
 import { getDeployedContractHelper } from "./utilities";
+import initializeUsers from "./initializeUsers";
+import generateOptionData from "./generateOptionData";
 
-const main = async ({ fresh, init }, { network, ethers, deployments, getNamedAccounts }) => {
+const main = async ({ fresh, init, initbackend }, { network, ethers, deployments, getNamedAccounts }) => {
     const { deploy } = await deployments;
     const [deployerSigner, settlerSigner] = await ethers.getSigners();
     const { deployer, settler } = await getNamedAccounts();
@@ -30,6 +32,11 @@ const main = async ({ fresh, init }, { network, ethers, deployments, getNamedAcc
         ) as OptionVault;
         await optionVault.connect(settlerSigner as Signer).initiateSettlement();
         console.log("Initialized the current round to :" + (await (await optionVault.currentRound()).toString()));
+    }
+
+    if (initbackend) {
+        await initializeUsers([], { ethers, deployments, getNamedAccounts });
+        await generateOptionData({ command: initbackend }, { ethers, deployments });
     }
 }
 

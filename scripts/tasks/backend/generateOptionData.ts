@@ -19,6 +19,7 @@ import {
 import { getDeployedContractHelper } from "./utilities";
 
 async function main({ command }, { ethers, deployments }) {
+    console.log("Generating option data...");
     const [deployer, settler, alice, bob, trader] = await ethers.getSigners();
     const [
         usdc,
@@ -74,6 +75,7 @@ async function main({ command }, { ethers, deployments }) {
           },
     ];
 
+    // Set Option Parameters
     if (command == 1) {
         // round 1
         await optionVault.connect(settler as Signer).initiateSettlement();
@@ -108,8 +110,8 @@ async function main({ command }, { ethers, deployments }) {
         );
 
         await optionVault.connect(settler as Signer).settle([]);
-        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-        await optionVault.connect(settler as Signer).initiateSettlement();
+        //await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+        //await optionVault.connect(settler as Signer).initiateSettlement();
     }
 
     // round 3

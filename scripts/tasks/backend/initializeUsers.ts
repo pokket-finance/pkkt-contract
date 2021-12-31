@@ -13,6 +13,7 @@ import { getDeployedContractHelper } from "./utilities";
 
 const main = async (taskArgs, { ethers, deployments, 
     getNamedAccounts}) => {
+    console.log("Initializing users...");
     // The first two signers are the deployer and settler so we ignore them
     const [, , alice, bob] = await ethers.getSigners();
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
