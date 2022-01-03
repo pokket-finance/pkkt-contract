@@ -6,8 +6,9 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import {
-    getTVLOptionData,
-    getDeployedContractHelper
+    getOptionContracts,
+    getDeployedContractHelper,
+    setSettlementParameters
 } from "./utilities/utilities";
 
 import {
@@ -272,7 +273,7 @@ app.get("/", async (req, res) => {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(optionVault, settler);
+    const canSettleVault = await canSettle(optionVault, settler, round);
 
     if (canSettleVault) {
         const strikePriceDecimals = 4;
@@ -353,14 +354,21 @@ app.get("/", async (req, res) => {
     );
 });
 
-async function canSettle(vault, settler): Promise<boolean> {
+/**
+ * Determines whether or not we can settle the vault
+ * @param vault 
+ * @param settler 
+ * @returns 
+ */
+async function canSettle(vault, settler, round): Promise<boolean> {
     for(let index = 0; index < 6; ++index) {
         let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
         if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
             return false;
         }
     }
-    return true;
+    const areOptionParametersSet = await areOptionParamsSet(round);
+    return areOptionParametersSet;
 }
 
 type SettlementAccountingResult = {
@@ -387,32 +395,15 @@ type OptionPairExecutionAccountingResult = {
 app.post("/exerciseDecision", async (req, res) => {
     const ethDecision = getExecutionStatus(req.body.ethOption);
     const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-
-    const [, settler] = await ethers.getSigners();
-
-    const settleParameters = [
-        {
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: ethDecision
-        },
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: wbtcDecision
-        }
-    ];
-    await optionVault.connect(settler as Signer).settle(settleParameters);
+    await setSettlementParameters(ethDecision, wbtcDecision);
     res.redirect("/show/epoch");
 });
 
+/**
+ * Turns information from form into the option execution
+ * @param executionDecision string retrieved from form
+ * @returns option execution decision
+ */
 function getExecutionStatus(executionDecision: String): OptionExecution {
     if (executionDecision == "noExercise"){
         return OptionExecution.NoExecution
@@ -495,34 +486,7 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
         };
 }
 
-async function getOptionContracts(): Promise<[
-    OptionVault,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption
-]> {
-    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    return [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ];
-}
+
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
