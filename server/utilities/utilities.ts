@@ -1,7 +1,8 @@
-import { BigNumber, Contract } from "ethers";
+import { BigNumber, Contract, Signer } from "ethers";
 import { ethers, deployments } from "hardhat";
+import { OptionExecution } from "../../constants/constants";
 
-import { PKKTHodlBoosterOption } from "../../typechain";
+import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
 
 type OptionState = {
         round: BigNumber;
@@ -71,4 +72,74 @@ export async function getTVLOptionData(options, vault) {
         );
     }
     return optionData;
+}
+
+/**
+ * Sets the settlement parameters and settles the option vault
+ * @param ethDecision exercise decision for the eth options
+ * can only exercise one or none of the options they are European
+ * @param wbtcDecision exercise decision for the wbtc options
+ * can only exercise one or none of the options as they are European
+ */
+export async function setSettlementParameters(ethDecision: OptionExecution, wbtcDecision: OptionExecution) {
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+
+    const [, settler] = await ethers.getSigners();
+
+    const settleParameters = [
+        {
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: ethDecision
+        },
+        {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: wbtcDecision
+        }
+    ];
+    try {
+        await optionVault.connect(settler as Signer).settle(settleParameters);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+/**
+ * Gets the deployed option contracts
+ * @returns the option vault contract along with the 4 option types
+ */
+export async function getOptionContracts(): Promise<[
+    OptionVault,
+    PKKTHodlBoosterOption,
+    PKKTHodlBoosterOption,
+    PKKTHodlBoosterOption,
+    PKKTHodlBoosterOption
+]> {
+    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const ethHodlBoosterCallOption = await getDeployedContractHelper(
+        "ETHHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const ethHodlBoosterPutOption = await getDeployedContractHelper(
+        "ETHHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+    return [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ];
 }
