@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>TraderPerspective</title>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <link rel="stylesheet" href="/button.css">
+        <script type="text/javascript" src="/navbar.js"></script>
+    </head>
+
+    <body>
+        <%- include("partials/navbar") %>
+        <form action="/sendMoney" method="post" enctype="application/x-www-form-urlencoded">
+            <div class="row">
+                <table class="styled-table">
+                    <tr>
+                        <th>Actual Movement of Money</th>
+                    </tr>
+                    <tr>
+                        <th>Token</th>
+                        <th>Queued Liquidity</th>
+                        <th>Actual Withdrawal Request</th>
+                        <th>Residule(+)/Deficit(-)</th>
+                        <th>Movable(+)/Required(-)</th>
+                        <th>Selection</th>
+                    </tr>
+                    <tr>
+                        <td>ETH</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><input type="checkbox" name="" value="eth" /></td>
+                    </tr>
+                    <tr>
+                        <td>WBTC</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><input type="checkbox" name="" value="wbtc" /></td>
+                    </tr>
+                    <tr>
+                        <td>USDC</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><input type="checkbox" name="" value="usdc" /></td>
+                    </tr>
+                </table>
+            </div>
+            <input type="submit" class="button" value="Send Money" />
+        </form>
+    </body>
+</html>
