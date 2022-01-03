@@ -114,7 +114,9 @@
                             </tr>
                         </table>
                     </div>
-                    <input type="submit" class="button" name="launchEpoch" value="Set Epoch Option Data" />
+                    <% if (round - 1 >= 0) { %>
+                        <input type="submit" class="button" name="launchEpoch" value="Set Epoch Option Data" />
+                    <% } %>
                 </div>
             </form>
         <% } else { %>
