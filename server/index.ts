@@ -6,6 +6,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import {
+    canSettle,
+    areOptionParamsSet,
     getOptionContracts,
     getDeployedContractHelper,
     setSettlementParameters
@@ -38,9 +40,21 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
 app.get("/initiateEpoch", async (req, res) => {
-    const optionVault = await getDeployedContractHelper("OptionVault");
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+
+    const [, settler] = await ethers.getSigners();
     const round = await optionVault.currentRound();
-    const areOptionParametersSet = await areOptionParamsSet(round);
+    let areOptionParametersSet = await areOptionParamsSet(round);
+    const underSettlement = await canSettle(optionVault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
+    if (underSettlement) {
+        areOptionParametersSet = true;
+    }
     let predictedEthOption = getPredictedOptionData("predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
     res.render(
@@ -48,37 +62,6 @@ app.get("/initiateEpoch", async (req, res) => {
         { round, areOptionParametersSet, predictedEthOption, predictedWbtcOption }
     );
 });
-
-async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
-    if (round.isZero()) {
-        return false;
-    }
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
-
-    const optionStates = [ethCallOptionState, ethPutOptionState, wbtcCallOptionState, wbtcPutOptionState];
-    for (let optionState of optionStates) {
-        if (!optionState.strikePrice.isZero() || optionState.premiumRate !== 0) {
-            return true;
-        }
-    }
-    return false;
-}
 
 app.get("/show/epoch", async (req, res) => {
     const [
@@ -90,18 +73,18 @@ app.get("/show/epoch", async (req, res) => {
     ] = await getOptionContracts();
     let round = await optionVault.currentRound();
 
+    let optionRound = round.sub(1);
     if (round.isZero()) {
-        round = BigNumber.from(1);
-
+        optionRound = BigNumber.from(0);
     }
     let predictedEthOption = getPredictedOptionData("predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
 
     // Get contract option data to display
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
+    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
+    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
+    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
+    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
     const ethOption = {
         callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
         putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
@@ -273,9 +256,9 @@ app.get("/", async (req, res) => {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(optionVault, settler, round);
+    const canSettleVault = await canSettle(optionVault, settler, round, [ethHodlBoosterPutOption, ethHodlBoosterCallOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
 
-    if (canSettleVault) {
+    if (canSettleVault && round.gt(2)) {
         const strikePriceDecimals = 4;
 
         notExerciseEthData = await getExerciseDecisionData(
@@ -349,48 +332,11 @@ app.get("/", async (req, res) => {
             notExerciseWbtcData,
             exerciseCallWbtcData,
             exercisePutWbtcData,
-            canSettleVault
+            canSettleVault,
+            round
         }
     );
 });
-
-/**
- * Determines whether or not we can settle the vault
- * @param vault 
- * @param settler 
- * @returns 
- */
-async function canSettle(vault, settler, round): Promise<boolean> {
-    for(let index = 0; index < 6; ++index) {
-        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-        if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
-            return false;
-        }
-    }
-    const areOptionParametersSet = await areOptionParamsSet(round);
-    return areOptionParametersSet;
-}
-
-type SettlementAccountingResult = {
-    round: BigNumber
-    depositAmount: BigNumber 
-    autoRollAmount: BigNumber
-    autoRollPremium: BigNumber 
-    releasedAmount: BigNumber 
-    releasedPremium: BigNumber
-    autoRollCounterPartyAmount: BigNumber
-    autoRollCounterPartyPremium: BigNumber
-    releasedCounterPartyAmount: BigNumber
-    releasedCounterPartyPremium: BigNumber
-    option: String
-    executed: Boolean
-}
-
-type OptionPairExecutionAccountingResult = {  
-    callOptionResult: SettlementAccountingResult
-    putOptionResult: SettlementAccountingResult
-    execute: OptionExecution
-}
 
 app.post("/exerciseDecision", async (req, res) => {
     const ethDecision = getExecutionStatus(req.body.ethOption);
@@ -412,6 +358,28 @@ function getExecutionStatus(executionDecision: String): OptionExecution {
         return OptionExecution.ExecuteCall;
     }
     return OptionExecution.ExecutePut;
+}
+
+// TODO Move this type declaration somewhere else
+type SettlementAccountingResult = {
+    round: BigNumber
+    depositAmount: BigNumber 
+    autoRollAmount: BigNumber
+    autoRollPremium: BigNumber 
+    releasedAmount: BigNumber 
+    releasedPremium: BigNumber
+    autoRollCounterPartyAmount: BigNumber
+    autoRollCounterPartyPremium: BigNumber
+    releasedCounterPartyAmount: BigNumber
+    releasedCounterPartyPremium: BigNumber
+    option: String
+    executed: Boolean
+}
+
+type OptionPairExecutionAccountingResult = {  
+    callOptionResult: SettlementAccountingResult
+    putOptionResult: SettlementAccountingResult
+    execute: OptionExecution
 }
 
 async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
@@ -486,7 +454,17 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
         };
 }
 
+app.get("/moneyMovement", async (req, res) => {
+    res.render("moneyMovement");
+});
 
+async function getQueuedLiquidity(vault, settler, index, callOptionAssetDecimals) {
+    let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+    let newDepositAssetAmount = ethers.utils.formatUnits(
+        accounting.callOptionResult.depositAmount,
+        callOptionAssetDecimals
+    );
+}
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

@@ -1,6 +1,6 @@
 import { BigNumber, Contract, Signer } from "ethers";
 import { ethers, deployments } from "hardhat";
-import { OptionExecution } from "../../constants/constants";
+import { OptionExecution, NULL_ADDRESS } from "../../constants/constants";
 
 import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
 
@@ -142,4 +142,86 @@ export async function getOptionContracts(): Promise<[
         wbtcHodlBoosterCallOption,
         wbtcHodlBoosterPutOption
     ];
+}
+
+type SettlementAccountingResult = {
+    round: BigNumber
+    depositAmount: BigNumber 
+    autoRollAmount: BigNumber
+    autoRollPremium: BigNumber 
+    releasedAmount: BigNumber 
+    releasedPremium: BigNumber
+    autoRollCounterPartyAmount: BigNumber
+    autoRollCounterPartyPremium: BigNumber
+    releasedCounterPartyAmount: BigNumber
+    releasedCounterPartyPremium: BigNumber
+    option: String
+    executed: Boolean
+}
+
+type OptionPairExecutionAccountingResult = {  
+    callOptionResult: SettlementAccountingResult
+    putOptionResult: SettlementAccountingResult
+    execute: OptionExecution
+}
+
+/**
+ * Determines whether or not we can settle the vault
+ * @param vault option vault to get execution accounting result
+ * @param settler allows us to connect to vault
+ * @param round checks if the option parameters are set
+ * @returns whether or not we can settle the vault
+ */
+ export async function canSettle(vault, settler, round, options: PKKTHodlBoosterOption[]): Promise<boolean> {
+    // for(let index = 0; index < 6; ++index) {
+    //     let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+    //     if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
+    //         return false;
+    //     }
+    // }
+    // const areOptionParametersSet = await areOptionParamsSet(round);
+    // return !areOptionParametersSet;
+    for(let option of options) {
+        let underSettlement = await option.underSettlement();
+        if (!underSettlement) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Checks if the option parameters are set for the given round.
+ * @param round round to check
+ * @returns whether or not the option parameters are set
+ */
+export async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
+    if (round.isZero()) {
+        return false;
+    }
+    const ethHodlBoosterCallOption = await getDeployedContractHelper(
+        "ETHHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const ethHodlBoosterPutOption = await getDeployedContractHelper(
+        "ETHHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterCallOption"
+    ) as PKKTHodlBoosterOption;
+    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
+        "WBTCHodlBoosterPutOption"
+    ) as PKKTHodlBoosterOption;
+
+    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
+    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
+    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
+    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
+
+    const optionStates = [ethCallOptionState, ethPutOptionState, wbtcCallOptionState, wbtcPutOptionState];
+    for (let optionState of optionStates) {
+        if (!optionState.strikePrice.isZero() || optionState.premiumRate !== 0) {
+            return true;
+        }
+    }
+    return false;
 }
