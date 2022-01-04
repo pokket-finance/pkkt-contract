@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import { ethers } from "hardhat";
+import { ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -29,6 +29,7 @@ import {
     WBTC_ADDRESS
 } from "../constants/constants";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ERC20Mock } from "../typechain";
 
 const app = express();
 const port = 3000;
@@ -41,6 +42,16 @@ app.use(express.static(path.join(__dirname, "css")));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
+async function getSettler(): Promise<SignerWithAddress> {
+    const { settler } = await getNamedAccounts();
+    return await ethers.getSigner(settler);
+}
+
+async function getTrader(): Promise<SignerWithAddress> {
+    const { trader } = await getNamedAccounts();
+    return await ethers.getSigner(trader);
+}
+
 app.get("/initiateEpoch", async (req, res) => {
     const [
         optionVault,
@@ -50,7 +61,7 @@ app.get("/initiateEpoch", async (req, res) => {
         wbtcHodlBoosterPutOption
     ] = await getOptionContracts();
 
-    const [, settler] = await ethers.getSigners();
+    const settler = await getSettler()
     const round = await optionVault.currentRound();
     let areOptionParametersSet = await areOptionParamsSet(round);
     const underSettlement = await canSettle(optionVault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
@@ -166,7 +177,7 @@ app.post("/setOptionParameters", async (req, res) => {
             option: wbtcHodlBoosterPutOption.address
         }
     ];
-    const [, settler] = await ethers.getSigners();
+    const settler = await getSettler()
     try {
         await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
     } catch (err) {
@@ -236,7 +247,7 @@ app.get("/", async (req, res) => {
         wbtcHodlBoosterPutOption
     ] = await getOptionContracts();
 
-    const [, settler] = await ethers.getSigners();
+    const settler = await getSettler()
 
     const round = await optionVault.currentRound();
     //const areOptionParametersSet = await areOptionParamsSet(round);
@@ -344,6 +355,19 @@ app.post("/exerciseDecision", async (req, res) => {
     const ethDecision = getExecutionStatus(req.body.ethOption);
     const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
     await setSettlementParameters(ethDecision, wbtcDecision);
+    // After the settlement parameters are set
+    // send the money to the trader
+    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
+    const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
+    const settler = await getSettler();
+    const trader = await getTrader();
+    await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
+    await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+    await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
+    // console.log((await ethers.provider.getBalance(trader.address)).toString());
+    // console.log((await wbtc.connect(trader as Signer).balanceOf(trader.address)).toString());
+    // console.log((await usdc.connect(trader as Signer).balanceOf(trader.address)).toString());
     res.redirect("/show/epoch");
 });
 
@@ -459,7 +483,7 @@ app.get("/moneyMovement", async (req, res) => {
     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
     let usdc = await getDeployedContractHelper("USDC");
     let wbtc = await getDeployedContractHelper("WBTC");
-    const [, settler] = await ethers.getSigners();
+    const settler = await getSettler()
     let ethData = {
         queuedLiquidity: "0",
         withdrawalRequest: "0",
@@ -487,25 +511,6 @@ app.get("/moneyMovement", async (req, res) => {
 });
 
 async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
-    // let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-
-    // let callAssetReleased = accounting.callOptionResult.releasedAmount
-    //     .add(accounting.callOptionResult.releasedPremium)
-    //     .add(accounting.putOptionResult.releasedCounterPartyAmount)
-    //     .add(accounting.putOptionResult.releasedCounterPartyPremium);
-
-    // let putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount
-    //     .add(accounting.callOptionResult.releasedCounterPartyPremium)
-    //     .add(accounting.putOptionResult.releasedAmount)
-    //     .add(accounting.putOptionResult.releasedPremium);
-
-    // return {
-    //     newDepositAssetAmount: accounting.callOptionResult.depositAmount,
-    //     newCounterPartyAssetAmount: accounting.putOptionResult.depositAmount,
-    //     newCallAssetWithdrawal: BigNumber.from(-callAssetReleased),
-    //     newPutAssetWithdrawal: BigNumber.from(-putAssetReleased)
-    // };
-
     let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
     return {
         queuedLiquidity: ethers.utils.formatUnits(
@@ -528,6 +533,45 @@ async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddre
         )
     };
 }
+
+app.post("/sendMoney", async (req, res) => {
+    console.log(JSON.stringify(req.body, null, 4));
+    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
+    const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
+
+    const trader = await getTrader();
+    const settler = await getSettler();
+    
+    if (req.body.ethSend === "on") {
+        let ethEnough: boolean = await vault.balanceEnough(NULL_ADDRESS);
+        if (!ethEnough) {
+            let { required } = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
+            await trader.sendTransaction({
+                to: vault.address,
+                value: -required
+            });
+            console.log(`Trader Sent ${ethers.utils.formatUnits(-required, ETH_DECIMALS)}`);
+        }
+    }
+    if (req.body.wbtcSend === "on") {
+        let wbtcEnough: boolean = await vault.balanceEnough(wbtc.address);
+        if (!wbtcEnough) {
+            let { required } = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
+            await wbtc.connect(trader as Signer).transfer(vault.address, -required);
+            console.log(`Trader Sent ${ethers.utils.formatUnits(-required, WBTC_DECIMALS)}`);
+        }
+    }
+    if (req.body.usdcSend === "on") {
+        let usdcEnough: boolean = await vault.balanceEnough(usdc.address);
+        if (!usdcEnough) {
+            let { required } = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
+            await usdc.connect(trader as Signer).transfer(vault.address, -required);
+            console.log(`Trader Sent ${ethers.utils.formatUnits(-required, USDC_DECIMALS)}`);
+        }
+    }
+    res.redirect("/show/epoch");
+});
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

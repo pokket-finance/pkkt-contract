@@ -120,6 +120,31 @@ async function main({ command }, { ethers, deployments }) {
     else if (command == 5 ) {
         await optionVault.connect(settler as Signer).settle([]);
     }
+    // Right before trader sends money back
+    else if (command == 6) {
+        // round 1
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        // round 2
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        await optionVault.connect(settler as Signer).settle([]);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+
+        // round 3
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle(settleParams);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+
+        // round 4
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle(settleParams);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+    }
 
     async function deposits() {
         await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
