@@ -28,6 +28,7 @@ import {
     NULL_ADDRESS,
     WBTC_ADDRESS
 } from "../constants/constants";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const app = express();
 const port = 3000;
@@ -465,17 +466,7 @@ app.get("/moneyMovement", async (req, res) => {
         leftover: "0",
         required: "0"
     };
-    const ethOptionData = await getMoneyMovementData(vault, settler, 0);
-    ethData.queuedLiquidity = ethers.utils.formatUnits(ethOptionData.newDepositAssetAmount, ETH_DECIMALS);
-    ethData.withdrawalRequest = ethers.utils.formatUnits(ethOptionData.newCallAssetWithdrawal, ETH_DECIMALS);
-    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
-    ethData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, ETH_DECIMALS);
-    ethData.required = ethers.utils.formatUnits(
-        ethOptionData.newDepositAssetAmount
-            .add(ethOptionData.newCallAssetWithdrawal)
-            .add(assetCashFlow.leftOverAmount),
-        ETH_DECIMALS
-    );
+    ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
 
     let wbtcData = {
         queuedLiquidity: "0",
@@ -483,17 +474,7 @@ app.get("/moneyMovement", async (req, res) => {
         leftover: "0",
         required: "0"
     };
-    const wbtcOptionData = await getMoneyMovementData(vault, settler, 3);
-    wbtcData.queuedLiquidity = ethers.utils.formatUnits(wbtcOptionData.newDepositAssetAmount, WBTC_DECIMALS);
-    wbtcData.withdrawalRequest = ethers.utils.formatUnits(wbtcOptionData.newCallAssetWithdrawal, WBTC_DECIMALS);
-    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
-    wbtcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, WBTC_DECIMALS);
-    wbtcData.required = ethers.utils.formatUnits(
-        wbtcOptionData.newDepositAssetAmount
-            .add(wbtcOptionData.newCallAssetWithdrawal)
-            .add(assetCashFlow.leftOverAmount),
-        WBTC_DECIMALS
-    );
+    wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
 
     let usdcData = { 
         queuedLiquidity: "0",
@@ -501,43 +482,50 @@ app.get("/moneyMovement", async (req, res) => {
         leftover: "0",
         required: "0"
     };
-    const usdcQueuedLiquidity = ethOptionData.newCounterPartyAssetAmount.add(wbtcOptionData.newCounterPartyAssetAmount)
-    usdcData.queuedLiquidity = ethers.utils.formatUnits(
-        usdcQueuedLiquidity,
-        USDC_DECIMALS
-    );
-    const usdcWithdrawal = ethOptionData.newPutAssetWithdrawal.add(wbtcOptionData.newPutAssetWithdrawal);
-    usdcData.withdrawalRequest = ethers.utils.formatUnits(
-       usdcWithdrawal,
-        USDC_DECIMALS
-    );
-    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(usdc.address);
-    usdcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, USDC_DECIMALS);
-    usdcData.required = ethers.utils.formatUnits(
-        usdcQueuedLiquidity.add(usdcWithdrawal).add(assetCashFlow.leftOverAmount),
-        USDC_DECIMALS
-    );
+    usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
     res.render("moneyMovement", { ethData, wbtcData, usdcData });
 });
 
-async function getMoneyMovementData(vault, settler, index) {
-    let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
+    // let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
 
-    let callAssetReleased = accounting.callOptionResult.releasedAmount
-        .add(accounting.callOptionResult.releasedPremium)
-        .add(accounting.putOptionResult.releasedCounterPartyAmount)
-        .add(accounting.putOptionResult.releasedCounterPartyPremium);
+    // let callAssetReleased = accounting.callOptionResult.releasedAmount
+    //     .add(accounting.callOptionResult.releasedPremium)
+    //     .add(accounting.putOptionResult.releasedCounterPartyAmount)
+    //     .add(accounting.putOptionResult.releasedCounterPartyPremium);
 
-    let putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount
-        .add(accounting.callOptionResult.releasedCounterPartyPremium)
-        .add(accounting.putOptionResult.releasedAmount)
-        .add(accounting.putOptionResult.releasedPremium);
+    // let putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount
+    //     .add(accounting.callOptionResult.releasedCounterPartyPremium)
+    //     .add(accounting.putOptionResult.releasedAmount)
+    //     .add(accounting.putOptionResult.releasedPremium);
 
+    // return {
+    //     newDepositAssetAmount: accounting.callOptionResult.depositAmount,
+    //     newCounterPartyAssetAmount: accounting.putOptionResult.depositAmount,
+    //     newCallAssetWithdrawal: BigNumber.from(-callAssetReleased),
+    //     newPutAssetWithdrawal: BigNumber.from(-putAssetReleased)
+    // };
+
+    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
     return {
-        newDepositAssetAmount: accounting.callOptionResult.depositAmount,
-        newCounterPartyAssetAmount: accounting.putOptionResult.depositAmount,
-        newCallAssetWithdrawal: BigNumber.from(-callAssetReleased),
-        newPutAssetWithdrawal: BigNumber.from(-putAssetReleased)
+        queuedLiquidity: ethers.utils.formatUnits(
+            assetCashFlow.newDepositAmount,
+            assetDecimals
+        ),
+        withdrawalRequest: ethers.utils.formatUnits(
+            assetCashFlow.newReleasedAmount,
+            assetDecimals
+        ),
+        leftover: ethers.utils.formatUnits(
+            assetCashFlow.leftOverAmount,
+            assetDecimals
+        ),
+        required: ethers.utils.formatUnits(
+            assetCashFlow.leftOverAmount
+                .add(assetCashFlow.newDepositAmount)
+                .sub(assetCashFlow.newReleasedAmount),
+            assetDecimals
+        )
     };
 }
 
