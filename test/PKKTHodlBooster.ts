@@ -74,12 +74,11 @@ describe.only("PKKT Hodl Booster", async function () {
             ]
           ) as ERC20Mock;
            
-          ethHodlBoosterCall = await deployUpgradeableContract(
+          ethHodlBoosterCall = await deployContract(
             "PKKTHodlBoosterOption",
             deployer as Signer,
             [
-              "ETH-USDT-HodlBooster-Call",
-              "ETHUSDTHodlBoosterCall",
+              "ETH-USDT-HodlBooster-Call", 
               NULL_ADDRESS,
               usdt.address,
               ETH_DECIMALS,
@@ -90,12 +89,11 @@ describe.only("PKKT Hodl Booster", async function () {
             ]
           ) as PKKTHodlBoosterOption;  
                      
-          wbtcHodlBoosterCall = await deployUpgradeableContract(
+          wbtcHodlBoosterCall = await deployContract(
             "PKKTHodlBoosterOption",
             deployer as Signer,
             [
-              "WBTC-USDT-HodlBooster-Call",
-              "WBTCUSDTHodlBoosterCall",
+              "WBTC-USDT-HodlBooster-Call", 
               wbtc.address,
               usdt.address,
               WBTC_DECIMALS,
@@ -105,12 +103,11 @@ describe.only("PKKT Hodl Booster", async function () {
               settler.address
             ]
           ) as PKKTHodlBoosterOption;  
-          ethHodlBoosterPut = await deployUpgradeableContract(
+          ethHodlBoosterPut = await deployContract(
             "PKKTHodlBoosterOption",
             deployer as Signer,
             [
-              "ETH-USDT-HodlBooster-Put",
-              "ETHUSDTHodlBoosterPut",
+              "ETH-USDT-HodlBooster-Put", 
               usdt.address,
               NULL_ADDRESS,
               USDT_DECIMALS,
@@ -120,12 +117,11 @@ describe.only("PKKT Hodl Booster", async function () {
               settler.address
             ]
           ) as PKKTHodlBoosterOption;  
-          wbtcHodlBoosterPut = await deployUpgradeableContract(
+          wbtcHodlBoosterPut = await deployContract(
             "PKKTHodlBoosterOption",
             deployer as Signer,
             [
-              "WBTC-USDT-HodlBooster-Put",
-              "WBTCUSDTHodlBoosterPut",
+              "WBTC-USDT-HodlBooster-Put", 
               usdt.address,
               wbtc.address,
               USDT_DECIMALS,
@@ -135,7 +131,7 @@ describe.only("PKKT Hodl Booster", async function () {
               settler.address
             ]
           ) as PKKTHodlBoosterOption;  
-
+          console.log("abc");
           //ping-pong setup
           ethHodlBoosterCall.setCounterPartyOption(ethHodlBoosterPut.address);
           ethHodlBoosterPut.setCounterPartyOption(ethHodlBoosterCall.address);

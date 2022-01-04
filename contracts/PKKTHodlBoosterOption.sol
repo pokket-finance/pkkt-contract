@@ -2,13 +2,11 @@
 pragma solidity =0.8.4;
  
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {
-    ReentrancyGuardUpgradeable
-} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
  
 import {Utils} from "./libraries/Utils.sol";  
@@ -17,7 +15,7 @@ import "./interfaces/IPKKTStructureOption.sol";
 import "./interfaces/IExecuteSettlement.sol"; 
 import "./interfaces/IOptionVault.sol"; 
 
-contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, ReentrancyGuardUpgradeable, IPKKTStructureOption, IExecuteSettlement {
+contract PKKTHodlBoosterOption is AccessControl, ReentrancyGuard, IPKKTStructureOption, IExecuteSettlement {
     
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -56,30 +54,25 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
      mapping(address=>uint256) private releasedCounterPartyAssetAmount;  
      uint256 private assetToTerminateForNextRound; 
      uint256 private quota;
-
-
+     string public override name;
+     
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
-    function initialize(
-        string memory name,
-        string memory symbol,
+    constructor(string memory _name, 
         address _depositAsset,
         address _counterPartyAsset,
         uint8 _depositAssetAmountDecimals,
         uint8 _counterPartyAssetAmountDecimals,
         address _vaultAddress,
         bool _callOrPut,
-        address _settler
-    ) public initializer {
+        address _settler) {
         require(_vaultAddress != address(0), "Empty vault address");
-        __ReentrancyGuard_init();
-        ERC20Upgradeable.__ERC20_init(name, symbol);
-        AccessControlUpgradeable.__AccessControl_init();
+        _name = name;
         // Contract deployer will be able to grant and revoke trading role
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         // Address capable of initiating and finizalizing settlement
         _setupRole(StructureData.SETTLER_ROLE, _settler);
-        _setupRole(StructureData.SETTLER_ROLE, _vaultAddress);
+        _setupRole(StructureData.SETTLER_ROLE, _vaultAddress);     
         depositAsset = _depositAsset;
         counterPartyAsset = _counterPartyAsset;
         isEth = _depositAsset == address(0);
@@ -87,17 +80,15 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
         counterPartyAssetAmountDecimals = _counterPartyAssetAmountDecimals;
         optionVault = IOptionVault(_vaultAddress);
         callOrPut = _callOrPut;
-        emit OptionCreated(address(this), symbol);
-    } 
+        emit OptionCreated(address(this), _name);
+    }
+
+ 
     function setCounterPartyOption(address _counterParty) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_counterParty != address(this), "Cannot set self as counter party");
         counterPartyOption = IPKKTStructureOption(_counterParty);
         counterParty = _counterParty;
-    }
-          
-    function decimals() public view override returns (uint8) {
-        return depositAssetAmountDecimals;
-    }
+    } 
 
     function vaultAddress() public view override returns(address) {
         return optionVault.getAddress();
@@ -569,7 +560,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
         uint256 lockedRound = currentRound - 1;
         StructureData.OptionState storage optionState = optionStates[lockedRound];  
         //mint for the current option
-        _mint(address(this), optionState.totalAmount);
+        //_mint(address(this), optionState.totalAmount);
         uint256 userCount = usersInvolved.length;
         for (uint i=0; i < userCount; i++) {
             address userAddress = usersInvolved[i];
@@ -588,7 +579,7 @@ contract PKKTHodlBoosterOption is ERC20Upgradeable, AccessControlUpgradeable, Re
             //transfer each user a share of the option to trigger transfer event
             //can be used to calculate the user option selling operations
             //utilizing some web3 indexed services, take etherscan api/graphql etc.
-            _transfer(address(this), userAddress, userState.tempLocked);
+            //_transfer(address(this), userAddress, userState.tempLocked);
             emit OptionTransfer(address(this), userAddress, optionState.premiumRate, optionState.round);
             userState.ongoingAsset = userState.tempLocked; 
             userState.tempLocked = 0; 

@@ -4,6 +4,8 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
 
+    function name() external view returns(string memory);
+
     function setCounterPartyOption(address _counterParty) external;
     
     function getAccountBalance() external view returns (StructureData.UserBalance memory); 

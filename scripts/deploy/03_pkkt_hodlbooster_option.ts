@@ -33,24 +33,16 @@ const main = async ({
   const ethHodlBoosterCall = await deploy("ETHPKKTHodlBoosterCallOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption",
-    proxy: {
-      owner: owner,
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        methodName: "initialize",
-        args: [
-          "ETH-USDT-HodlBooster-Call",
-          "ETHUSDTHodlBoosterCall",
-          NULL_ADDRESS,
-          isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          ETH_DECIMALS,
-          USDT_DECIMALS,
-          optionVault.address,
-          true,
-          trader
-        ],
-      },
-    },
+    args: [
+      "ETH-USDT-HodlBooster-Call", 
+      NULL_ADDRESS,
+      isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+      ETH_DECIMALS,
+      USDT_DECIMALS,
+      optionVault.address,
+      true,
+      trader
+    ],
     libraries: {
       StructureData: structureData.address,
     }
@@ -64,24 +56,16 @@ const main = async ({
   const ethHodlBoosterPut = await deploy("ETHPKKTHodlBoosterPutOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption",
-    proxy: {
-      owner: owner,
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        methodName: "initialize",
-        args: [
-          "ETH-USDT-HodlBooster-Put",
-          "ETHUSDTHodlBoosterPut", 
-          isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          NULL_ADDRESS,
-          USDT_DECIMALS,
-          ETH_DECIMALS,
-          optionVault.address,
-          false,
-          trader
-        ],
-      },
-    },
+    args: [
+      "ETH-USDT-HodlBooster-Put", 
+      isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+      NULL_ADDRESS,
+      USDT_DECIMALS,
+      ETH_DECIMALS,
+      optionVault.address,
+      false,
+      trader
+    ],
     libraries: {
       StructureData: structureData.address,
     },
@@ -111,24 +95,16 @@ const main = async ({
   const wbtcHodlBoosterCall = await deploy("WBTCPKKTHodlBoosterCallOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption" ,
-    proxy: {
-      owner: owner,
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        methodName: "initialize",
-        args: [
-          "WBTC-USDT-HodlBooster-Call",
-          "WBTCUSDTHodlBoosterCall", 
-          isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
-          isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          WBTC_DECIMALS,
-          USDT_DECIMALS,
-          optionVault.address,
-          true,
-          trader
-        ]
-      }
-    },
+    args: [
+      "WBTC-USDT-HodlBooster-Call", 
+      isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
+      isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+      WBTC_DECIMALS,
+      USDT_DECIMALS,
+      optionVault.address,
+      true,
+      trader
+    ],
     libraries: {
       StructureData: structureData.address,
     },
@@ -139,24 +115,16 @@ const main = async ({
   const wbtcHodlBoosterPut = await deploy("WBTCPKKTHodlBoosterPutOption", {
     from: deployer,
     contract: "PKKTHodlBoosterOption" ,
-    proxy: {
-      owner: owner,
-      proxyContract: "OpenZeppelinTransparentProxy",
-      execute: {
-        methodName: "initialize",
-        args: [
-          "WBTC-USDT-HodlBooster-Call",
-          "WBTCUSDTHodlBoosterPut", 
-          isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
-          isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
-          USDT_DECIMALS,
-          WBTC_DECIMALS,
-          optionVault.address,
-          false,
-          trader
-        ],
-      }
-    },
+    args: [
+      "WBTC-USDT-HodlBooster-Call", 
+      isMainnet ? USDT_ADDRESS : ROPSTEN_USDT_ADDRESS,
+      isMainnet ? WBTC_ADDRESS : ROPSTEN_WBTC_ADDRESS, 
+      USDT_DECIMALS,
+      WBTC_DECIMALS,
+      optionVault.address,
+      false,
+      trader
+    ],
     libraries: {
       StructureData: structureData.address,
     },
