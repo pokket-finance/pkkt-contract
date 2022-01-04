@@ -80,6 +80,48 @@ async function main({ command }, { ethers, deployments }) {
         // round 1
         await optionVault.connect(settler as Signer).initiateSettlement();
 
+        await deposits();
+
+        // round 2
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        await optionVault.connect(settler as Signer).settle([]);
+    }
+    // initiate settlement
+    else if (command == 2) {
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await deposits();
+    }
+    // set settlement parameters
+    else if (command == 3) {
+        // round 1
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        // round 2
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        await optionVault.connect(settler as Signer).settle([]);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+
+        // round 3
+        await optionVault.connect(settler as Signer).initiateSettlement();
+    }
+    // Deposits
+    else if (command == 4) {
+        await deposits();
+    }
+    // empty settle
+    else if (command == 5 ) {
+        await optionVault.connect(settler as Signer).settle([]);
+    }
+
+    async function deposits() {
         await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
             { value: BigNumber.from(5).mul(ETH_MULTIPLIER) }
         );
@@ -92,46 +134,7 @@ async function main({ command }, { ethers, deployments }) {
         await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(
             BigNumber.from(50000).mul(USDC_MULTIPLIER)
         );
-
-        // round 2
-        await optionVault.connect(settler as Signer).initiateSettlement();
-
-        await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
-            { value: BigNumber.from(1).mul(ETH_MULTIPLIER) }
-        );
-        await ethHodlBoosterPutOption.connect(alice as Signer).deposit(
-            BigNumber.from(4000).mul(USDC_MULTIPLIER)
-        );
-        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-            BigNumber.from(1).mul(WBTC_MULTIPLIER)
-        );
-        await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(
-            BigNumber.from(150000).mul(USDC_MULTIPLIER)
-        );
-
-        await optionVault.connect(settler as Signer).settle([]);
-        //await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-        //await optionVault.connect(settler as Signer).initiateSettlement();
     }
-
-    // initiate settlement
-    else if (command == 2) {
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        //await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-        //await optionVault.connect(settler as Signer).settle(settleParams);
-    }
-    else if (command == 3) {
-
-    }
-    // await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
-
-    // // round 4
-    // await optionVault.connect(settler as Signer).initiateSettlement();
-    // await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
-    //     BigNumber.from(1).mul(WBTC_MULTIPLIER)
-    // );
-    // await optionVault.connect(settler as Signer).settle(settleParams);
-    // await optionVault.connect(settler as Signer).commitCurrent(commitParams);
 }
 
 const getDeployedContracts = async (ethers, deployments): Promise<[
