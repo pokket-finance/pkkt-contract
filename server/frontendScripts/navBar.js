@@ -17,6 +17,10 @@ window.onload = () => {
         let decisionNav = document.getElementsByClassName("decisionNav")[0];
         decisionNav.classList.add("active");
     }
+    else if (path === "/moneyMovement") {
+        let moneyMovementNav = document.getElementsByClassName("moneyMovementNav")[0];
+        moneyMovementNav.classList.add("active");
+    }
     else {
     
     }
