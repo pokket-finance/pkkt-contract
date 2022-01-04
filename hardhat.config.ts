@@ -102,7 +102,7 @@ dotenv.config();
     version: "0.8.4",
     settings: {
       optimizer: {
-        runs: 20,
+        runs: 200,
         enabled: true,
       },
     },

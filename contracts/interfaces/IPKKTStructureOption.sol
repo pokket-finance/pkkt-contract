@@ -20,27 +20,27 @@ interface IPKKTStructureOption {
     function deposit(uint256 _amount, uint8 _optionId) external;
 
     //redeem unsettled amount
-    function redeem(uint256 _amount, uint8 _optionId) external;  
+    //function redeem(uint256 _amount, uint8 _optionId) external;  
 
     //complete withdraw happens on the option vault
     function initiateWithraw(uint256 _assetToTerminate, uint8 _optionId) external; 
 
     function cancelWithdraw(uint256 _assetToTerminate, uint8 _optionId) external;
 
-    function maxInitiateWithdraw(uint8 _optionId) external;
+    //function maxInitiateWithdraw(uint8 _optionId) external;
 
-    function maxCancelWithdraw(uint8 _optionId) external;
+    //function maxCancelWithdraw(uint8 _optionId) external;
     
     function withdraw(uint256 _amount, address _asset, uint8 _optionId) external; 
 
-    function completeWithdraw(uint256 _amount, address _asset, uint8 _optionId) external; 
+    //function completeWithdraw(uint256 _amount, address _asset, uint8 _optionId) external; 
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
-    function redeposit(uint256 _amount, uint8 _optionId) external;
+    //function redeposit(uint256 _amount, uint8 _optionId) external;
 
 
     //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
-    function redepositToCounterParty(uint256 _amount,uint8 _optionId) external;
+    //function redepositToCounterParty(uint256 _amount,uint8 _optionId) external;
  
 
     //used to render the history at client side, reading the minting transactions of a specific address,

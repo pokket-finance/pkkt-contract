@@ -125,7 +125,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
     function initiateSettlement() external override onlyRole(StructureData.SETTLER_ROLE) {
         currentRound = currentRound + 1;  
         for(uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition memory pair = optionPairs[i];  
+            StructureData.OptionPairDefinition storage pair = optionPairs[i];  
             uint256 pending1 = rollToNextByOption(MAX_INT, pair.callOptionId);
             uint256 pending2 = rollToNextByOption(MAX_INT, pair.putOptionId);
             if (pending1 > 0) { 
@@ -171,7 +171,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
         }
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory execution = _execution[i];  
-            StructureData.OptionPairDefinition memory pair = optionPairs[execution.pairId];
+            StructureData.OptionPairDefinition storage pair = optionPairs[execution.pairId];
             StructureData.MaturedState memory maturedState;
             StructureData.MaturedState memory maturedState2; 
 
@@ -308,7 +308,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
          
          uint256 total = 0;
          for(uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition memory pair = optionPairs[i]; 
+            StructureData.OptionPairDefinition storage pair = optionPairs[i]; 
             if (pair.depositAsset == _asset ||
                 pair.counterPartyAsset == _asset) {
                total = total.add(getWithdrawable(_asset, pair.callOptionId))
