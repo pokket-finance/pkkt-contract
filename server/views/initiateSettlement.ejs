@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TraderPerspective</title>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <link rel="stylesheet" href="/button.css">
+        <script type="text/javascript" scr="/navBar.js"></script>
+    </head>
+    <body>
+        <%- include("partials/navbar") %>
+        <% if (initiateSettlementResubmit) { %>
+            <form>
+                <div class="row">
+                    <table class="styled-table">
+                        <tr>
+                            <th>Manual Initiate Settlement</th>
+                        </tr>
+                        <tr>
+                            <td>Current Average Gas Price (Gwei)</td>
+                            <td><%= currentGasPrice %></td>
+                        </tr>
+                        <tr>
+                            <td>Set Gas Price (Gwei)</td>
+                            <td><input type="text" name="manualInitiateSettlementGasPrice" /></td>
+                        </tr>
+                    </table>
+                </div>
+                <input type="submit" class="button" name="manualInitiateSettlement" value="Initiate Settlemnet" />
+            </form>
+        <% } %>
+    </body>
+</html>

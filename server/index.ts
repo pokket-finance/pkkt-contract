@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { ethers, getNamedAccounts } from "hardhat";
 import { BigNumber, BigNumberish, Signer } from "ethers";
+import cron from "node-cron";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -10,9 +11,10 @@ import {
     areOptionParamsSet,
     getOptionContracts,
     getDeployedContractHelper,
-    setSettlementParameters
+    setSettlementParameters,
+    getTrader,
+    getSettler
 } from "./utilities/utilities";
-
 import {
     PKKTHodlBoosterOption,
     OptionVault
@@ -34,7 +36,12 @@ import { ERC20Mock } from "../typechain";
 const app = express();
 const port = 3000;
 
-// config
+import { showEpoch } from "./showEpoch";
+import { getManualInitiateSettlement } from "./initiateSettlement";
+
+module.exports = app;
+
+// Config
 // Decode Form URL encoded data
 app.use(express.urlencoded());
 app.use(express.static(path.join(__dirname, "frontendScripts")));
@@ -66,51 +73,53 @@ app.get("/initiateEpoch", async (req, res) => {
     );
 });
 
-app.get("/show/epoch", async (req, res) => {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-    let round = await optionVault.currentRound();
+app.get("/show/epoch", showEpoch);
 
-    let optionRound = round.sub(1);
-    if (round.isZero()) {
-        optionRound = BigNumber.from(0);
-    }
-    let predictedEthOption = getPredictedOptionData("predictedEthOption");
-    let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
+// app.get("/show/epoch", async (req, res) => {
+//     const [
+//         optionVault,
+//         ethHodlBoosterCallOption,
+//         ethHodlBoosterPutOption,
+//         wbtcHodlBoosterCallOption,
+//         wbtcHodlBoosterPutOption
+//     ] = await getOptionContracts();
+//     let round = await optionVault.currentRound();
 
-    // Get contract option data to display
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
-    const ethOption = {
-        callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-        putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-        callPremium: ethCallOptionState.premiumRate / RATIO_MULTIPLIER,
-        putPremium: ethPutOptionState.premiumRate / RATIO_MULTIPLIER
-    }
-    const wbtcOption = {
-        callStrike: wbtcCallOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-        putStrike: wbtcPutOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-        callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
-        putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
-    }
-    res.render(
-        "showEpoch",
-        {
-            round,
-            ethOption,
-            predictedEthOption: predictedEthOption,
-            wbtcOption,
-            predictedWbtcOption: predictedWbtcOption
-        }
-    );
-});
+//     let optionRound = round.sub(1);
+//     if (round.isZero()) {
+//         optionRound = BigNumber.from(0);
+//     }
+//     let predictedEthOption = getPredictedOptionData("predictedEthOption");
+//     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
+
+//     // Get contract option data to display
+//     const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
+//     const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
+//     const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
+//     const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
+//     const ethOption = {
+//         callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
+//         putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
+//         callPremium: ethCallOptionState.premiumRate / RATIO_MULTIPLIER,
+//         putPremium: ethPutOptionState.premiumRate / RATIO_MULTIPLIER
+//     }
+//     const wbtcOption = {
+//         callStrike: wbtcCallOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
+//         putStrike: wbtcPutOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
+//         callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
+//         putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
+//     }
+//     res.render(
+//         "showEpoch",
+//         {
+//             round,
+//             ethOption,
+//             predictedEthOption: predictedEthOption,
+//             wbtcOption,
+//             predictedWbtcOption: predictedWbtcOption
+//         }
+//     );
+// });
 
 function getPredictedOptionData(dataName: string) {
     let predictedOptionData = app.get(dataName);
@@ -240,7 +249,6 @@ app.get("/", async (req, res) => {
     const settler = await getSettler()
 
     const round = await optionVault.currentRound();
-    //const areOptionParametersSet = await areOptionParamsSet(round);
 
     let tempParams = {
         depositDebt: "0",
@@ -560,6 +568,38 @@ app.post("/sendMoney", async (req, res) => {
         }
     }
     res.redirect("/show/epoch");
+});
+
+app.get("/initiateSettlement", getManualInitiateSettlement);
+
+// CRON JOBS
+
+// The maximum gas price we are willing to use
+// Denominated in GWEI
+const MAX_GAS_PRICE = 150;
+// Schedule initiate settlement
+cron.schedule('* * * * *', async () => {
+    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const settler = await getSettler();
+    try {
+        const gasPrice = await ethers.provider.getGasPrice();
+        const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
+        const gasPriceGwei = parseFloat(gasPriceGweiStr);
+        if (gasPriceGwei > MAX_GAS_PRICE) {
+            // Let the trader know and allow them
+            // to resubmit the transaction with a higher gas price
+            await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE });
+            console.log(`Server initiating settlement with gas price of ${MAX_GAS_PRICE}`);
+            app.set("initiateSettlementResubmit", true);
+        }
+        else {
+            await vault.connect(settler as Signer).initiateSettlement();
+            console.log(`Server initiating settlement with gas price of ${gasPriceGwei}`);
+            app.set("initiateSettlementResubmit", false);
+        }
+    } catch (err) {
+        console.error(err);
+    }
 });
 
 // app.get("/graph", async (req, res) => {
