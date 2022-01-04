@@ -43,5 +43,8 @@ library Utils {
        return _baseAmount.mul(_premimumRate).div(RATIOMULTIPLIER);
    }
    
+   function subOrZero(uint256 _base, uint256 _substractor) internal pure returns (uint256) {
+       return _base >= _substractor ? _base.sub(_substractor) : 0;
+   }
 
 }

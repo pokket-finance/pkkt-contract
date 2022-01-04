@@ -573,27 +573,22 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
    function autoRollToCounterPartyByOption(uint8 _optionId, StructureData.OptionState memory _optionState, StructureData.MaturedState memory _maturedState) private {
         uint256 userCount = usersInvolved[_optionId].length; 
         uint256 totalAutoRollBase = _optionState.totalAmount.sub(_optionState.totalTerminate);
-        uint256 lockedRound = currentRound - 1;  
+        //uint256 lockedRound = currentRound - 1;  
         uint256 totalReleased2 = _maturedState.releasedCounterPartyAssetAmount.add(_maturedState.releasedCounterPartyAssetPremiumAmount);
         uint256 totalAutoRoll2 = _maturedState.autoRollCounterPartyAssetAmount.add(_maturedState.autoRollCounterPartyAssetPremiumAmount);  
         uint8 counterPartyOptionId = getCounterPartyOptionId(_optionId);
-        uint256 assetToTerminateForNextRoundByOption = assetToTerminateForNextRound[_optionId];
+        //uint256 assetToTerminateForNextRoundByOption = assetToTerminateForNextRound[_optionId];
         //debit assetToTerminateForNextRound if executed
-        if (assetToTerminateForNextRoundByOption > 0 && totalAutoRoll2 > 0) {
-             uint256 virtualAutoRoll = totalAutoRollBase.withPremium(_optionState.premiumRate);
-             if (virtualAutoRoll >= assetToTerminateForNextRoundByOption) {
-                 assetToTerminateForNextRound[_optionId] = 0;
-             }
-             else {
-                 assetToTerminateForNextRound[_optionId] = assetToTerminateForNextRoundByOption.sub(virtualAutoRoll);
-             }
+        if (assetToTerminateForNextRound[_optionId] > 0 && totalAutoRoll2 > 0) { 
+             assetToTerminateForNextRound[_optionId] = Utils.subOrZero(assetToTerminateForNextRound[_optionId],  
+             totalAutoRollBase.withPremium(_optionState.premiumRate));
+
         }
         for (uint i=0; i < userCount; i++) {
             address userAddress = usersInvolved[_optionId][i];
             StructureData.UserState storage userState = userStates[_optionId][userAddress];  
-            
-            uint256 onGoing = userState.ongoingAsset;  
-            if (onGoing == 0) {
+             
+            if (userState.ongoingAsset == 0) {
                 userState.assetToTerminate = 0;
                 continue;
             } 
@@ -601,27 +596,26 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             if (amountToTerminate > 0) {
                 releasedCounterPartyAssetAmount[_optionId][userAddress] = 
                 releasedCounterPartyAssetAmount[_optionId][userAddress].add(amountToTerminate);
-            }
-            onGoing = onGoing.sub(userState.assetToTerminate);
-            uint256 remainingAmount = Utils.getAmountToTerminate(totalAutoRoll2, onGoing, totalAutoRollBase);
+            } 
+            uint256 remainingAmount = Utils.getAmountToTerminate(totalAutoRoll2, userState.ongoingAsset.sub(userState.assetToTerminate), totalAutoRollBase);
             if (remainingAmount > 0){    
                 (uint256 onGoingTerminate,) = userState.deriveWithdrawRequest(_optionState.premiumRate);
                 if (onGoingTerminate != 0) {
-                    uint256 virtualOnGoing =  onGoing.withPremium(_optionState.premiumRate);
+                    uint256 virtualOnGoing =  userState.ongoingAsset.withPremium(_optionState.premiumRate);
                     onGoingTerminate = Utils.getAmountToTerminate(remainingAmount, onGoingTerminate, virtualOnGoing);
                 } 
                 
-                _depositFor(counterPartyOptionId, userAddress, remainingAmount, lockedRound, 0);
+                _depositFor(counterPartyOptionId, userAddress, remainingAmount, currentRound - 1, 0);
             } 
             userState.assetToTerminate = 0;
         } 
          
    }
-
+ 
    function autoRollByOption(uint8 _optionId, StructureData.OptionState memory _optionState, StructureData.MaturedState memory _maturedState) private {
         uint256 userCount = usersInvolved[_optionId].length; 
         uint256 totalAutoRollBase = _optionState.totalAmount.sub(_optionState.totalTerminate);
-        uint256 lockedRound = currentRound - 1; 
+        //uint256 lockedRound = currentRound - 1; 
         uint256 totalReleased = _maturedState.releasedDepositAssetAmount.add(_maturedState.releasedDepositAssetPremiumAmount);
         uint256 totalAutoRoll = _maturedState.autoRollDepositAssetAmount.add(_maturedState.autoRollDepositAssetPremiumAmount);
         for (uint i=0; i < userCount; i++) {
@@ -639,7 +633,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             }
             uint256 remainingAmount = Utils.getAmountToTerminate(totalAutoRoll, userState.ongoingAsset.sub(userState.assetToTerminate), totalAutoRollBase);
             if (remainingAmount > 0) { 
-                _depositFor(_optionId, userAddress, remainingAmount, lockedRound, 0);
+                _depositFor(_optionId, userAddress, remainingAmount, currentRound - 1, 0);
             } 
                 
             userState.assetToTerminate = 0;
