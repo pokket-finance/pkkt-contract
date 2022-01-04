@@ -120,7 +120,7 @@
                     </tr>
                 </table>
             </div>
-            <% if (canSettleVault) { %>
+            <% if (canSettleVault && round > 2) { %>
                 <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
             <% } %>
         </form>

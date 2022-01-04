@@ -15,6 +15,7 @@
     "@types/chai": "^4.2.18",
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.3.0",
+    "@types/node-cron": "^3.0.1",
     "@typescript-eslint/eslint-plugin": "^4.25.0",
     "@typescript-eslint/parser": "^4.25.0",
     "chai": "^4.3.4",
@@ -100,6 +101,7 @@
     "got": "^10.7.0",
     "json-stable-stringify": "^1.0.1",
     "moment-timezone": "^0.5.33",
+    "node-cron": "^3.0.0",
     "simple-git": "^2.45.1"
   },
   "mocha": {

@@ -6,8 +6,11 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import {
-    getTVLOptionData,
-    getDeployedContractHelper
+    canSettle,
+    areOptionParamsSet,
+    getOptionContracts,
+    getDeployedContractHelper,
+    setSettlementParameters
 } from "./utilities/utilities";
 
 import {
@@ -22,7 +25,8 @@ import {
     ETH_DECIMALS,
     USDC_DECIMALS,
     WBTC_DECIMALS,
-    NULL_ADDRESS
+    NULL_ADDRESS,
+    WBTC_ADDRESS
 } from "../constants/constants";
 
 const app = express();
@@ -37,9 +41,21 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
 app.get("/initiateEpoch", async (req, res) => {
-    const optionVault = await getDeployedContractHelper("OptionVault");
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+
+    const [, settler] = await ethers.getSigners();
     const round = await optionVault.currentRound();
-    const areOptionParametersSet = await areOptionParamsSet(round);
+    let areOptionParametersSet = await areOptionParamsSet(round);
+    const underSettlement = await canSettle(optionVault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
+    if (underSettlement) {
+        areOptionParametersSet = true;
+    }
     let predictedEthOption = getPredictedOptionData("predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
     res.render(
@@ -47,37 +63,6 @@ app.get("/initiateEpoch", async (req, res) => {
         { round, areOptionParametersSet, predictedEthOption, predictedWbtcOption }
     );
 });
-
-async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
-    if (round.isZero()) {
-        return false;
-    }
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
-
-    const optionStates = [ethCallOptionState, ethPutOptionState, wbtcCallOptionState, wbtcPutOptionState];
-    for (let optionState of optionStates) {
-        if (!optionState.strikePrice.isZero() || optionState.premiumRate !== 0) {
-            return true;
-        }
-    }
-    return false;
-}
 
 app.get("/show/epoch", async (req, res) => {
     const [
@@ -89,18 +74,18 @@ app.get("/show/epoch", async (req, res) => {
     ] = await getOptionContracts();
     let round = await optionVault.currentRound();
 
+    let optionRound = round.sub(1);
     if (round.isZero()) {
-        round = BigNumber.from(1);
-
+        optionRound = BigNumber.from(0);
     }
     let predictedEthOption = getPredictedOptionData("predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
 
     // Get contract option data to display
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
+    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
+    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
+    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
+    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
     const ethOption = {
         callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
         putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
@@ -272,9 +257,9 @@ app.get("/", async (req, res) => {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(optionVault, settler);
+    const canSettleVault = await canSettle(optionVault, settler, round, [ethHodlBoosterPutOption, ethHodlBoosterCallOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
 
-    if (canSettleVault) {
+    if (canSettleVault && round.gt(2)) {
         const strikePriceDecimals = 4;
 
         notExerciseEthData = await getExerciseDecisionData(
@@ -348,21 +333,35 @@ app.get("/", async (req, res) => {
             notExerciseWbtcData,
             exerciseCallWbtcData,
             exercisePutWbtcData,
-            canSettleVault
+            canSettleVault,
+            round
         }
     );
 });
 
-async function canSettle(vault, settler): Promise<boolean> {
-    for(let index = 0; index < 6; ++index) {
-        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-        if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
-            return false;
-        }
+app.post("/exerciseDecision", async (req, res) => {
+    const ethDecision = getExecutionStatus(req.body.ethOption);
+    const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
+    await setSettlementParameters(ethDecision, wbtcDecision);
+    res.redirect("/show/epoch");
+});
+
+/**
+ * Turns information from form into the option execution
+ * @param executionDecision string retrieved from form
+ * @returns option execution decision
+ */
+function getExecutionStatus(executionDecision: String): OptionExecution {
+    if (executionDecision == "noExercise"){
+        return OptionExecution.NoExecution
     }
-    return true;
+    else if (executionDecision == "exerciseCall") {
+        return OptionExecution.ExecuteCall;
+    }
+    return OptionExecution.ExecutePut;
 }
 
+// TODO Move this type declaration somewhere else
 type SettlementAccountingResult = {
     round: BigNumber
     depositAmount: BigNumber 
@@ -384,48 +383,8 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
-app.post("/exerciseDecision", async (req, res) => {
-    const ethDecision = getExecutionStatus(req.body.ethOption);
-    const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-
-    const [, settler] = await ethers.getSigners();
-
-    const settleParameters = [
-        {
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: ethDecision
-        },
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: wbtcDecision
-        }
-    ];
-    await optionVault.connect(settler as Signer).settle(settleParameters);
-    res.redirect("/show/epoch");
-});
-
-function getExecutionStatus(executionDecision: String): OptionExecution {
-    if (executionDecision == "noExercise"){
-        return OptionExecution.NoExecution
-    }
-    else if (executionDecision == "exerciseCall") {
-        return OptionExecution.ExecuteCall;
-    }
-    return OptionExecution.ExecutePut;
-}
-
 async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
         let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-        //console.log(JSON.stringify(accounting, null, 4));
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
@@ -495,33 +454,91 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
         };
 }
 
-async function getOptionContracts(): Promise<[
-    OptionVault,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption
-]> {
-    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    return [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ];
+app.get("/moneyMovement", async (req, res) => {
+    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    let usdc = await getDeployedContractHelper("USDC");
+    let wbtc = await getDeployedContractHelper("WBTC");
+    const [, settler] = await ethers.getSigners();
+    let ethData = {
+        queuedLiquidity: "0",
+        withdrawalRequest: "0",
+        leftover: "0",
+        required: "0"
+    };
+    const ethOptionData = await getMoneyMovementData(vault, settler, 0);
+    ethData.queuedLiquidity = ethers.utils.formatUnits(ethOptionData.newDepositAssetAmount, ETH_DECIMALS);
+    ethData.withdrawalRequest = ethers.utils.formatUnits(ethOptionData.newCallAssetWithdrawal, ETH_DECIMALS);
+    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
+    ethData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, ETH_DECIMALS);
+    ethData.required = ethers.utils.formatUnits(
+        ethOptionData.newDepositAssetAmount
+            .add(ethOptionData.newCallAssetWithdrawal)
+            .add(assetCashFlow.leftOverAmount),
+        ETH_DECIMALS
+    );
+
+    let wbtcData = {
+        queuedLiquidity: "0",
+        withdrawalRequest: "0",
+        leftover: "0",
+        required: "0"
+    };
+    const wbtcOptionData = await getMoneyMovementData(vault, settler, 3);
+    wbtcData.queuedLiquidity = ethers.utils.formatUnits(wbtcOptionData.newDepositAssetAmount, WBTC_DECIMALS);
+    wbtcData.withdrawalRequest = ethers.utils.formatUnits(wbtcOptionData.newCallAssetWithdrawal, WBTC_DECIMALS);
+    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+    wbtcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, WBTC_DECIMALS);
+    wbtcData.required = ethers.utils.formatUnits(
+        wbtcOptionData.newDepositAssetAmount
+            .add(wbtcOptionData.newCallAssetWithdrawal)
+            .add(assetCashFlow.leftOverAmount),
+        WBTC_DECIMALS
+    );
+
+    let usdcData = { 
+        queuedLiquidity: "0",
+        withdrawalRequest: "0",
+        leftover: "0",
+        required: "0"
+    };
+    const usdcQueuedLiquidity = ethOptionData.newCounterPartyAssetAmount.add(wbtcOptionData.newCounterPartyAssetAmount)
+    usdcData.queuedLiquidity = ethers.utils.formatUnits(
+        usdcQueuedLiquidity,
+        USDC_DECIMALS
+    );
+    const usdcWithdrawal = ethOptionData.newPutAssetWithdrawal.add(wbtcOptionData.newPutAssetWithdrawal);
+    usdcData.withdrawalRequest = ethers.utils.formatUnits(
+       usdcWithdrawal,
+        USDC_DECIMALS
+    );
+    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(usdc.address);
+    usdcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, USDC_DECIMALS);
+    usdcData.required = ethers.utils.formatUnits(
+        usdcQueuedLiquidity.add(usdcWithdrawal).add(assetCashFlow.leftOverAmount),
+        USDC_DECIMALS
+    );
+    res.render("moneyMovement", { ethData, wbtcData, usdcData });
+});
+
+async function getMoneyMovementData(vault, settler, index) {
+    let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+
+    let callAssetReleased = accounting.callOptionResult.releasedAmount
+        .add(accounting.callOptionResult.releasedPremium)
+        .add(accounting.putOptionResult.releasedCounterPartyAmount)
+        .add(accounting.putOptionResult.releasedCounterPartyPremium);
+
+    let putAssetReleased = accounting.callOptionResult.releasedCounterPartyAmount
+        .add(accounting.callOptionResult.releasedCounterPartyPremium)
+        .add(accounting.putOptionResult.releasedAmount)
+        .add(accounting.putOptionResult.releasedPremium);
+
+    return {
+        newDepositAssetAmount: accounting.callOptionResult.depositAmount,
+        newCounterPartyAssetAmount: accounting.putOptionResult.depositAmount,
+        newCallAssetWithdrawal: BigNumber.from(-callAssetReleased),
+        newPutAssetWithdrawal: BigNumber.from(-putAssetReleased)
+    };
 }
 
 // app.get("/graph", async (req, res) => {
