@@ -13,7 +13,7 @@ library StructureData {
      using Utils for uint256;
      struct OptionParameters {
          uint256 strikePrice;  // strike price if executed
-         address option;
+         uint8 optionId;
          uint8 pricePrecision;
          uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
      }
@@ -174,10 +174,12 @@ library StructureData {
 
 
     struct OptionPairDefinition{
-        address callOption;
-        address putOption;
-        address callOptionDeposit;
-        address putOptionDeposit;
+       uint8 callOptionId;
+       uint8 putOptionId;
+       uint8 depositAssetAmountDecimals;
+       uint8 counterPartyAssetAmountDecimals;
+       address depositAsset;
+       address counterPartyAsset;  
     }
     struct SettlementAccountingResult {
         uint256 round;
@@ -195,7 +197,7 @@ library StructureData {
         uint256 releasedCounterPartyAmount;
         uint256 releasedCounterPartyPremium; 
  
-        address option; 
+        uint8 optionId; 
         bool executed;
 
     }
@@ -212,9 +214,8 @@ library StructureData {
         OptionExecution execute;
     }
 
-    struct OptionPairExecution {
-        address callOption;
-        address putOption;
+    struct OptionPairExecution { 
+        uint8 pairId;
         OptionExecution execute; 
     }
 
