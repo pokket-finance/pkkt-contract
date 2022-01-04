@@ -21,6 +21,10 @@ window.onload = () => {
         let moneyMovementNav = document.getElementsByClassName("moneyMovementNav")[0];
         moneyMovementNav.classList.add("active");
     }
+    else if (path === "/initiateSettlement") {
+        let intiateSettlementNav = document.getElementsByClassName("initiateSettlementNave")[0];
+        intiateSettlementNav.classList.add("active");
+    }
     else {
     
     }

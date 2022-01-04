@@ -142,7 +142,16 @@ async function main({ command }, { ethers, deployments }) {
 
         // round 4
         await optionVault.connect(settler as Signer).initiateSettlement();
-        await optionVault.connect(settler as Signer).settle(settleParams);
+        await optionVault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: OptionExecution.ExecuteCall
+          }, 
+          {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+          }]);
         await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
     }
 

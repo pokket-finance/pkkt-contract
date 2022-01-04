@@ -9,8 +9,8 @@
     </head>
     <body>
         <%- include("partials/navbar") %>
-        <% if (initiateSettlementResubmit) { %>
-            <form>
+        <% if (initiateSettlementResubmit && !transactionMined) { %>
+            <form action="/initiateSettlement" method="post" enctype="application/x-www-form-urlencoded">
                 <div class="row">
                     <table class="styled-table">
                         <tr>
@@ -22,7 +22,7 @@
                         </tr>
                         <tr>
                             <td>Set Gas Price (Gwei)</td>
-                            <td><input type="text" name="manualInitiateSettlementGasPrice" /></td>
+                            <td><input type="text" name="manualGasPrice" /></td>
                         </tr>
                     </table>
                 </div>
