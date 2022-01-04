@@ -25,7 +25,8 @@ import {
     ETH_DECIMALS,
     USDC_DECIMALS,
     WBTC_DECIMALS,
-    NULL_ADDRESS
+    NULL_ADDRESS,
+    WBTC_ADDRESS
 } from "../constants/constants";
 
 const app = express();
@@ -384,7 +385,6 @@ type OptionPairExecutionAccountingResult = {
 
 async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
         let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-        //console.log(JSON.stringify(accounting, null, 4));
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
@@ -455,7 +455,9 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
 }
 
 app.get("/moneyMovement", async (req, res) => {
-    let vault = await getDeployedContractHelper("OptionVault");
+    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    let usdc = await getDeployedContractHelper("USDC");
+    let wbtc = await getDeployedContractHelper("WBTC");
     const [, settler] = await ethers.getSigners();
     let ethData = {
         queuedLiquidity: "0",
@@ -466,10 +468,12 @@ app.get("/moneyMovement", async (req, res) => {
     const ethOptionData = await getMoneyMovementData(vault, settler, 0);
     ethData.queuedLiquidity = ethers.utils.formatUnits(ethOptionData.newDepositAssetAmount, ETH_DECIMALS);
     ethData.withdrawalRequest = ethers.utils.formatUnits(ethOptionData.newCallAssetWithdrawal, ETH_DECIMALS);
+    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS);
+    ethData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, ETH_DECIMALS);
     ethData.required = ethers.utils.formatUnits(
         ethOptionData.newDepositAssetAmount
             .add(ethOptionData.newCallAssetWithdrawal)
-            .add(0),
+            .add(assetCashFlow.leftOverAmount),
         ETH_DECIMALS
     );
 
@@ -482,10 +486,12 @@ app.get("/moneyMovement", async (req, res) => {
     const wbtcOptionData = await getMoneyMovementData(vault, settler, 3);
     wbtcData.queuedLiquidity = ethers.utils.formatUnits(wbtcOptionData.newDepositAssetAmount, WBTC_DECIMALS);
     wbtcData.withdrawalRequest = ethers.utils.formatUnits(wbtcOptionData.newCallAssetWithdrawal, WBTC_DECIMALS);
+    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+    wbtcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, WBTC_DECIMALS);
     wbtcData.required = ethers.utils.formatUnits(
         wbtcOptionData.newDepositAssetAmount
             .add(wbtcOptionData.newCallAssetWithdrawal)
-            .add(0),
+            .add(assetCashFlow.leftOverAmount),
         WBTC_DECIMALS
     );
 
@@ -505,8 +511,10 @@ app.get("/moneyMovement", async (req, res) => {
        usdcWithdrawal,
         USDC_DECIMALS
     );
+    assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(usdc.address);
+    usdcData.leftover = ethers.utils.formatUnits(assetCashFlow.leftOverAmount, USDC_DECIMALS);
     usdcData.required = ethers.utils.formatUnits(
-        usdcQueuedLiquidity.add(usdcWithdrawal).add(0),
+        usdcQueuedLiquidity.add(usdcWithdrawal).add(assetCashFlow.leftOverAmount),
         USDC_DECIMALS
     );
     res.render("moneyMovement", { ethData, wbtcData, usdcData });
