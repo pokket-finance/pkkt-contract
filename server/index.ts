@@ -42,16 +42,6 @@ app.use(express.static(path.join(__dirname, "css")));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
-async function getSettler(): Promise<SignerWithAddress> {
-    const { settler } = await getNamedAccounts();
-    return await ethers.getSigner(settler);
-}
-
-async function getTrader(): Promise<SignerWithAddress> {
-    const { trader } = await getNamedAccounts();
-    return await ethers.getSigner(trader);
-}
-
 app.get("/initiateEpoch", async (req, res) => {
     const [
         optionVault,
@@ -535,7 +525,6 @@ async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddre
 }
 
 app.post("/sendMoney", async (req, res) => {
-    console.log(JSON.stringify(req.body, null, 4));
     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
     const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
     const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;

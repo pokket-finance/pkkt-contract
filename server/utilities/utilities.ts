@@ -1,5 +1,6 @@
 import { BigNumber, Contract, Signer } from "ethers";
-import { ethers, deployments } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers, getNamedAccounts, deployments } from "hardhat";
 import { OptionExecution, NULL_ADDRESS } from "../../constants/constants";
 
 import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
@@ -224,4 +225,22 @@ export async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
         }
     }
     return false;
+}
+
+/**
+ * Function to get the settler account
+ * @returns the settler account
+ */
+export async function getSettler(): Promise<SignerWithAddress> {
+    const { settler } = await getNamedAccounts();
+    return await ethers.getSigner(settler);
+}
+
+/**
+ * Function to get the trader account
+ * @returns the trader account
+ */
+export async function getTrader(): Promise<SignerWithAddress> {
+    const { trader } = await getNamedAccounts();
+    return await ethers.getSigner(trader);
 }
