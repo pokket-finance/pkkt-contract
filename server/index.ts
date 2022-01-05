@@ -38,7 +38,7 @@ const port = 3000;
 
 import { showEpoch } from "./showEpoch";
 import { getManualInitiateSettlement, setManualInitiateSettlement } from "./initiateSettlement";
-import { getWithdrawAssets } from "./withdrawAssets";
+import { getWithdrawAssets, postWithdrawAssets } from "./withdrawAssets";
 
 module.exports = app;
 
@@ -356,14 +356,14 @@ app.post("/exerciseDecision", async (req, res) => {
     await setSettlementParameters(ethDecision, wbtcDecision);
     // After the settlement parameters are set
     // send the money to the trader
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
-    const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
-    const settler = await getSettler();
-    const trader = await getTrader();
-    await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
-    await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
-    await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
+    // const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    // const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
+    // const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
+    // const settler = await getSettler();
+    // const trader = await getTrader();
+    // await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
+    // await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+    // await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
     // console.log((await ethers.provider.getBalance(trader.address)).toString());
     // console.log((await wbtc.connect(trader as Signer).balanceOf(trader.address)).toString());
     // console.log((await usdc.connect(trader as Signer).balanceOf(trader.address)).toString());
@@ -576,6 +576,8 @@ app.get("/initiateSettlement", getManualInitiateSettlement);
 app.post("/initiateSettlement", setManualInitiateSettlement);
 
 app.get("/withdrawAssets", getWithdrawAssets);
+
+app.post("/withdrawAssets", postWithdrawAssets);
 
 // CRON JOBS
 

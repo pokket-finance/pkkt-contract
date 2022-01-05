@@ -1,11 +1,17 @@
 
 window.addEventListener("load", () => {
     let withdrawEth = document.querySelector("input[name='withdrawEth']");
-    withdrawEth.addEventListener("click", updateGasEstimate);
+    if (withdrawEth !== null) {
+        withdrawEth.addEventListener("click", updateGasEstimate);
+    }
     let withdrawWbtc = document.querySelector("input[name='withdrawWbtc']");
-    withdrawWbtc.addEventListener("click", updateGasEstimate);
+    if (withdrawWbtc !== null) {
+        withdrawWbtc.addEventListener("click", updateGasEstimate);
+    }
     let withdrawUsdc = document.querySelector("input[name='withdrawUsdc']");
-    withdrawUsdc.addEventListener("click", updateGasEstimate);
+    if (withdrawUsdc !== null) {
+        withdrawUsdc.addEventListener("click", updateGasEstimate);
+    }
 
     let manualGasPriceInput = document.querySelector("input[name='manualGasPrice']");
     manualGasPriceInput.addEventListener("input", calculateTransaction);

@@ -11,7 +11,6 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
     let curSettlerNonce = await settler.getTransactionCount();
     let prevSettlerNonce = req.app.get("settlerNonce");
     if (prevSettlerNonce === undefined) {
-        console.log("here");
         prevSettlerNonce = curSettlerNonce;
     }
     console.log(`cur none: ${curSettlerNonce} prev nonee ${prevSettlerNonce}`);
