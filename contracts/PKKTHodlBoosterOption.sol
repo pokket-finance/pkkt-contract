@@ -30,7 +30,6 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     event OptionTransfer(uint8 indexed optionId, address indexed account, uint256 premium, uint256 round);
     
      
-     mapping(uint256=>uint256) public optionHeights;
      mapping(uint8=>mapping(uint256=>StructureData.OptionState)) public optionStates;
      mapping(uint8=>address[]) private usersInvolved;  
      mapping(uint8=>mapping(address=>StructureData.UserState)) private userStates;  
@@ -50,14 +49,15 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         addOptionPairs(_optionPairDefinitions);
     }
 
-    modifier validateOptionById(uint256 _optionId) {
-        require(_optionId != 0 && _optionId <= optionPairCount*2 , "Invalid optionId");
+    modifier validateOptionById(uint256 _optionId) {  
+        require(_optionId != 0 && _optionId <= optionPairCount*2 , "!optionId");
         _;
     }
  
 
     function getAccountBalance(uint8 _optionId) external override view validateOptionById(_optionId) returns (StructureData.UserBalance memory) {
-       StructureData.UserState storage userState = userStates[_optionId][msg.sender]; 
+  
+       StructureData.UserState storage userState = userStates[_optionId][msg.sender];  
 
        StructureData.UserBalance memory result = StructureData.UserBalance({
            pendingDepositAssetAmount:userState.pendingAsset,
@@ -87,9 +87,10 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
        return result;
     }
 
-    function getWithdrawable(address _asset, uint8 _optionId) public override view validateOptionById(_optionId) returns(uint256) {
-        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
-        
+    function getWithdrawable(uint8 _optionId, address _asset) public override view validateOptionById(_optionId) returns(uint256) {
+        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2]; 
+        //console.log("asset: %s %d", _asset, _optionId);
+        //console.log("pair: %s %s", pair.depositAsset, pair.counterPartyAsset);
        require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "Invalid asset");
        if ((_optionId == pair.callOptionId && _asset == pair.depositAsset) || 
             (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)) { 
@@ -100,8 +101,8 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         }  
     }
 
-    function getOptionSnapShot(uint8 _optionId) external override view validateOptionById(_optionId) returns(StructureData.OptionSnapshot memory) {
-       StructureData.OptionState storage currentOption = optionStates[_optionId][currentRound];
+    function getOptionSnapShot(uint8 _optionId) external override view validateOptionById(_optionId) returns(StructureData.OptionSnapshot memory) { 
+       StructureData.OptionState storage currentOption = optionStates[_optionId][currentRound]; 
        StructureData.OptionState memory lockedOption;
        StructureData.OptionState memory onGoingOption;
         
@@ -137,11 +138,11 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
        return result;
     }
 
-    /*function completeWithdraw(uint256 _amount, address _asset, uint8 _optionId) external override validateOptionById(_optionId) nonReentrant { 
+    /*function completeWithdraw(uint8 _optionId, uint256 _amount, address _asset) external override validateOptionById(_optionId) nonReentrant { 
        require(_amount > 0, "!amount");  
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");  
-       StructureData.OptionPairDefinition memory pair = optionPairs[(_optionId + 1)/2];
+       StructureData.OptionPairDefinition memory pair = optionPairs[(_optionId - 1)/2];
        require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "Invalid asset");
        if ((_optionId == pair.callOptionId && _asset == pair.depositAsset) || 
             (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)) { 
@@ -157,10 +158,10 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }*/
 
 
-    function initiateWithraw(uint256 _assetToTerminate, uint8 _optionId) external override validateOptionById(_optionId) {
+    function initiateWithraw(uint8 _optionId, uint256 _assetToTerminate) external override validateOptionById(_optionId) {
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
-        require(currentRound > 1, "No on going");
-        StructureData.UserState storage userState =  userStates[_optionId][msg.sender]; 
+        require(currentRound > 1, "No on going"); 
+        StructureData.UserState storage userState =  userStates[_optionId][msg.sender];  
         if (underSettlement) {  
             uint256 newAssetToTerminate = userState.assetToTerminateForNextRound.add(_assetToTerminate); 
             if (currentRound == 2) {
@@ -187,7 +188,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
 
     }
 
-    function cancelWithdraw(uint256 _assetToTerminate, uint8 _optionId) external override  validateOptionById(_optionId){ 
+    function cancelWithdraw(uint8 _optionId, uint256 _assetToTerminate) external override  validateOptionById(_optionId){ 
         require(_assetToTerminate > 0 , "!_assetToTerminate"); 
         require(currentRound > 1, "No on going");
         StructureData.UserState storage userState =  userStates[_optionId][msg.sender]; 
@@ -270,10 +271,10 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
     */
     
-    function withdraw(uint256 _amount, address _asset, uint8 _optionId) external override validateOptionById(_optionId) nonReentrant { 
+    function withdraw(uint8 _optionId, uint256 _amount, address _asset) external override validateOptionById(_optionId) nonReentrant { 
        require(_amount > 0, "!amount");  
        require(!underSettlement, "Being settled");  
-       StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+       StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
        require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "Invalid asset");
        if ((_optionId == pair.callOptionId && _asset == pair.depositAsset) || 
             (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)) {
@@ -305,7 +306,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
  
 
     //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
-    /*function redeposit(uint256 _amount, uint8 _optionId) external override validateOptionById(_optionId) nonReentrant { 
+    /*function redeposit(uint8 _optionId, uint256 _amount) external override validateOptionById(_optionId) nonReentrant { 
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount");  
        releasedDepositAssetAmount[_optionId][msg.sender] = releasedDepositAssetAmount[_optionId][msg.sender].sub(_amount);
@@ -315,7 +316,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
 
   
     //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
-    /*function redepositToCounterParty(uint256 _amount,uint8 _optionId) external override validateOptionById(_optionId) { 
+    /*function redepositToCounterParty(uint8 _optionId, uint256 _amount) external override validateOptionById(_optionId) { 
        require(!underSettlement, "Being settled");
        require(currentRound > 1, "!No Matured");
        require(_amount > 0, "!amount");  
@@ -334,9 +335,9 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
        require(currentRound > 0, "!Started"); 
        require(msg.value > 0, "!value"); 
        
-       StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+       StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
        address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset;
-       require(depositAsset == address(0), "!Eth");
+       require(depositAsset == address(0), "!ETH");
 
         //todo: convert to weth  
        _depositFor(_optionId, msg.sender, msg.value, currentRound, 0);
@@ -344,12 +345,12 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint256 _amount, uint8 _optionId) external override validateOptionById(_optionId)  nonReentrant{   
+    function deposit(uint8 _optionId, uint256 _amount) external override validateOptionById(_optionId)  nonReentrant{   
         require(currentRound > 0, "!Started"); 
         require(_amount > 0, "!amount"); 
-        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
        address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset;
-       require(depositAsset != address(0), "Eth");
+       require(depositAsset != address(0), "ETH");
         _depositFor(_optionId, msg.sender, _amount,currentRound, 0);  
         IERC20(depositAsset).safeTransferFrom(msg.sender, address(this), _amount);
     }
@@ -378,12 +379,12 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
 
  
-    /*function redeem(uint256 _amount, uint8 _optionId) external override validateOptionById(_optionId) nonReentrant{  
+    /*function redeem(uint8 _optionId, uint256 _amount) external override validateOptionById(_optionId) nonReentrant{  
          require(_amount > 0, "!amount"); 
          StructureData.UserState storage userState =  userStates[_optionId][msg.sender];  
          userState.pendingAsset = userState.pendingAsset.sub(_amount); 
          
-        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
          address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset;
          StructureData.OptionState storage optionState = optionStates[_optionId][currentRound];
          optionState.totalAmount = optionState.totalAmount.sub(_amount);
@@ -395,7 +396,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed  
-    function getRoundData(uint256 _blockHeight, uint8 _optionId) external view override validateOptionById(_optionId) returns(StructureData.OptionState memory) {
+    function getRoundData(uint8 _optionId, uint256 _blockHeight) external view override validateOptionById(_optionId) returns(StructureData.OptionState memory) {
         return optionStates[_optionId][optionHeights[_blockHeight]];
     } 
 
@@ -405,10 +406,10 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     */
 
    //first, open t+1 round
-   function rollToNextByOption(uint256 _quota, uint8 _optionId) internal override returns(uint256 _pendingAmount){    
+   function rollToNextByOption(uint8 _optionId, uint256 _quota) internal override returns(uint256 _pendingAmount){    
       
        if (currentRound > 2) {
-           require(optionStates[_optionId][currentRound-1].strikePrice > 0,  "Strike Price not set");
+           require(optionStates[_optionId][currentRound-1].strikePrice > 0,  "!Strike Price");
         } 
    
         quota[_optionId] = _quota; 
@@ -421,7 +422,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
                             pricePrecision: 0,
                             strikePrice: 0,
                             executed: false,
-                            callOrPut: optionPairs[(_optionId + 1)/2].callOptionId == _optionId
+                            callOrPut: optionPairs[(_optionId - 1)/2].callOptionId == _optionId
                         });
         optionStates[_optionId][currentRound] = currentOption; 
        if (currentRound > 1) {
@@ -444,7 +445,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     
 
    //then dry run settlement and get accounting result
-   function dryRunSettlementByOption(bool _execute, uint8 _optionId) internal override view returns(StructureData.SettlementAccountingResult memory _result) {
+   function dryRunSettlementByOption(uint8 _optionId, bool _execute) internal override view returns(StructureData.SettlementAccountingResult memory _result) {
  
 
         StructureData.OptionState storage lockedOption = optionStates[_optionId][currentRound - 1]; 
@@ -464,7 +465,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         });
        if (currentRound > 2) { 
            
-            StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+            StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
             bool isCall = pair.callOptionId == _optionId;
             StructureData.OptionState storage previousOptionState = optionStates[_optionId][currentRound - 2];
             StructureData.MaturedState memory maturedState = StructureData.calculateMaturity(_execute, previousOptionState, isCall,
@@ -487,11 +488,11 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
    }
 
    //then, make decision based on dry run result and close t-1 round
-   function closePreviousByOption(bool _execute, uint8 _optionId) internal override  
+   function closePreviousByOption(uint8 _optionId, bool _execute) internal override  
    returns(StructureData.MaturedState memory _maturedState) {    
         uint maturedRound = currentRound - 2;
         StructureData.OptionState storage previousOptionState = optionStates[_optionId][maturedRound];   
-        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId + 1)/2];
+        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
         bool isCall = pair.callOptionId == _optionId;
         StructureData.MaturedState memory maturedState = StructureData.calculateMaturity(_execute, previousOptionState, isCall,
             isCall ? pair.depositAssetAmountDecimals : pair.counterPartyAssetAmountDecimals, 

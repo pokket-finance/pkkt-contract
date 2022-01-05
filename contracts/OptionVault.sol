@@ -22,6 +22,9 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
      
      uint256 public override currentRound;  
      bool public underSettlement;    
+     
+     mapping(uint256=>uint256) public optionHeights;
+
     /*
      * cash flow perspective (based on asset address)
      */ 
@@ -84,9 +87,9 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
         uint256 length = _optionPairDefinitions.length;
         for(uint256 i = 0; i < length; i++) {
             StructureData.OptionPairDefinition memory pair = _optionPairDefinitions[i];
-            pair.callOptionId = optionPairCount / 2 + 1;
-            pair.putOptionId = optionPairCount / 2 + 2;
-            optionPairs[optionPairCount] = pair; 
+            pair.callOptionId = optionPairCount * 2 + 1;
+            pair.putOptionId = pair.callOptionId + 1;
+            optionPairs[optionPairCount] = pair;  
             optionPairCount++; 
             if (assetCount == 0) {
                 asset[assetCount] = pair.depositAsset;
@@ -112,7 +115,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
                 }
                 if (!putAdded) { 
                     asset[assetCount] = pair.counterPartyAsset;
-                    assetCount ++ ;
+                    assetCount++ ;
                 }
             }
         }  
@@ -128,8 +131,8 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
         underSettlement = true;  
         for(uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i];  
-            uint256 pending1 = rollToNextByOption(MAX_INT, pair.callOptionId);
-            uint256 pending2 = rollToNextByOption(MAX_INT, pair.putOptionId);
+            uint256 pending1 = rollToNextByOption(pair.callOptionId, MAX_INT);
+            uint256 pending2 = rollToNextByOption(pair.putOptionId, MAX_INT);
             if (pending1 > 0) { 
                 depositAmount[pair.depositAsset] = depositAmount[pair.depositAsset].add(pending1);
             }
@@ -139,15 +142,15 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             if (currentRound <= 2) {
                 continue;
             }
-            StructureData.SettlementAccountingResult memory noneExecuteCallOption = dryRunSettlementByOption(false, pair.callOptionId);
-            StructureData.SettlementAccountingResult memory noneExecutePutOption = dryRunSettlementByOption(false, pair.putOptionId);
+            StructureData.SettlementAccountingResult memory noneExecuteCallOption = dryRunSettlementByOption(pair.callOptionId, false);
+            StructureData.SettlementAccountingResult memory noneExecutePutOption = dryRunSettlementByOption(pair.putOptionId, false);
             StructureData.OptionPairExecutionAccountingResult memory pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.NoExecution,
                 callOptionResult: noneExecuteCallOption,
                 putOptionResult: noneExecutePutOption
             });
             executionAccountingResult[i * 3] = pairResult; 
-            StructureData.SettlementAccountingResult memory executeCallOption = dryRunSettlementByOption(true, pair.callOptionId); 
+            StructureData.SettlementAccountingResult memory executeCallOption = dryRunSettlementByOption(pair.callOptionId, true); 
             StructureData.OptionPairExecutionAccountingResult memory pairResult2 = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecuteCall,
                 callOptionResult: executeCallOption,
@@ -155,7 +158,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             });
             executionAccountingResult[i * 3 + 1] = pairResult2; 
 
-            StructureData.SettlementAccountingResult memory executePutOption = dryRunSettlementByOption(true, pair.putOptionId); 
+            StructureData.SettlementAccountingResult memory executePutOption = dryRunSettlementByOption(pair.putOptionId, true); 
             StructureData.OptionPairExecutionAccountingResult memory pairResult3 = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecutePut,
                 callOptionResult: noneExecuteCallOption,
@@ -185,16 +188,16 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             StructureData.MaturedState memory maturedState2; 
 
             if (execution.execute == StructureData.OptionExecution.NoExecution) {
-                maturedState = closePreviousByOption(false, pair.callOptionId);
-                maturedState2 = closePreviousByOption(false, pair.putOptionId);
+                maturedState = closePreviousByOption(pair.callOptionId, false);
+                maturedState2 = closePreviousByOption(pair.putOptionId, false);
             }
             else if (execution.execute == StructureData.OptionExecution.ExecuteCall) {
-                maturedState = closePreviousByOption(true, pair.callOptionId);
-                maturedState2 = closePreviousByOption(false, pair.putOptionId);
+                maturedState = closePreviousByOption(pair.callOptionId, true);
+                maturedState2 = closePreviousByOption(pair.putOptionId, false);
             }
             if (execution.execute == StructureData.OptionExecution.ExecutePut) {
-                maturedState = closePreviousByOption(false, pair.callOptionId);
-                maturedState2 = closePreviousByOption(true, pair.putOptionId);
+                maturedState = closePreviousByOption(pair.callOptionId, false);
+                maturedState2 = closePreviousByOption(pair.putOptionId, true);
             } 
             if (maturedState.releasedDepositAssetAmount > 0) {
                 uint256 releasedDepositAssetAmount  = releasedAmount[pair.depositAsset];
@@ -223,6 +226,7 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             for(uint8 i = 1; i <= optionCount; i++) { 
                 commitCurrentByOption(i); 
             } 
+            optionHeights[currentRound - 1] = block.number;
         }
 
  
@@ -323,22 +327,20 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             StructureData.OptionPairDefinition storage pair = optionPairs[i]; 
             if (pair.depositAsset == _asset ||
                 pair.counterPartyAsset == _asset) {
-               total = total.add(getWithdrawable(_asset, pair.callOptionId))
-               .add(getWithdrawable(_asset, pair.putOptionId)); 
+               total = total.add(getWithdrawable(pair.callOptionId, _asset))
+               .add(getWithdrawable(pair.putOptionId, _asset)); 
             }   
         }
         return total;
-    }
-    event Received(address indexed source, uint amount);
-    receive() external payable { 
-        emit Received(msg.sender, msg.value);
+    } 
+    receive() external payable {  
     }
 
 
-    function rollToNextByOption(uint256 _quota, uint8 _optionId) internal virtual returns(uint256 _pendingAmount);
-    function dryRunSettlementByOption(bool _execute, uint8 _optionId) internal virtual view returns(StructureData.SettlementAccountingResult memory _result);
-    function closePreviousByOption(bool _execute, uint8 _optionId) internal virtual returns(StructureData.MaturedState memory _maturedState);
+    function rollToNextByOption(uint8 _optionId, uint256 _quota) internal virtual returns(uint256 _pendingAmount);
+    function dryRunSettlementByOption(uint8 _optionId, bool _execute) internal virtual view returns(StructureData.SettlementAccountingResult memory _result);
+    function closePreviousByOption(uint8 _optionId, bool _execute) internal virtual returns(StructureData.MaturedState memory _maturedState);
     function commitCurrentByOption(uint8 _optionId) internal virtual;
     function setOptionParametersByOption(StructureData.OptionParameters memory _optionParameters) internal virtual; 
-    function getWithdrawable(address _asset, uint8 _optionId) public virtual view returns(uint256);
+    function getWithdrawable(uint8 _optionId, address _asset) public virtual view returns(uint256);
 }
