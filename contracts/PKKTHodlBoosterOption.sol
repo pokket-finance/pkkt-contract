@@ -432,6 +432,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
                 StructureData.UserState storage userState = userStates[_optionId][userAddress]; 
                 if(userState.pendingAsset != 0) {  
                     userState.tempLocked = userState.pendingAsset;  
+                    //console.log("userState.pendingAsset  %s %d" ,  userAddress, userState.pendingAsset);
                 }   
                 userState.pendingAsset = 0;
             }

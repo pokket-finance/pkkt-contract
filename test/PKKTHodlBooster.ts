@@ -247,9 +247,15 @@ describe.only("PKKT Hodl Booster", async function () {
           await vault.connect(alice as Signer).depositETH( optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(5).mul(ETHMultiplier)});
           //bob deposit 1 btc
           await vault.connect(bob as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
-          var balance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId);
+          var balance = await vault.connect(bob as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId);
+          assert.equal(balance.lockedDepositAssetAmount.toString(), "0");
+          assert.equal(balance.toTerminateDepositAssetAmount.toString(), "0");
+          assert.equal(balance.terminatingDepositAssetAmount.toString(), "0");
+          console.log(`${bob.address} balance ${balance.lockedDepositAssetAmount} ${balance.toTerminateDepositAssetAmount} ${balance.terminatingDepositAssetAmount} 
+          ${balance.pendingDepositAssetAmount} ${await vault.underSettlement()} ${await vault.currentRound()}`);
+          var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount);
           //bob stop auto rolling of round 1, will be able to complete withdraw after the settlement next round
-          await vault.connect(alice as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].callOptionId, balance.lockedDepositAssetAmount);
+          await vault.connect(bob as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].callOptionId, diff);
 
 
           const ethPrice = 4000 * (10**ETHPricePrecision);
@@ -359,11 +365,11 @@ describe.only("PKKT Hodl Booster", async function () {
             assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(15125).mul(WBTCMultiplier).div(10000).toString());
 
             //bob want to stop the whole auto roll
-            await vault.connect(bob as Signer).initiateWithraw(BigNumber.from(1).mul(WBTCMultiplier),optionPairs[WBTCUSDTOPTION].callOptionId);
+            await vault.connect(bob as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
             //later on he changes his mind to allow part of it 
-            await vault.connect(bob as Signer).cancelWithdraw(BigNumber.from(5).mul(WBTCMultiplier).div(10), optionPairs[WBTCUSDTOPTION].callOptionId); 
+            await vault.connect(bob as Signer).cancelWithdraw(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(5).mul(WBTCMultiplier).div(10)); 
              //alice want to stop part of  the auto roll (3 auto roll + 2 release)
-            await vault.connect(alice as Signer).initiateWithraw(BigNumber.from(2).mul(ETHMultiplier),optionPairs[ETHUSDTOPTION].callOptionId);
+            await vault.connect(alice as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].callOptionId, BigNumber.from(2).mul(ETHMultiplier));
           
 
 
