@@ -17,7 +17,12 @@
                         <th>Withdraw Assets</th>
                     </tr>
                     <tr>
+                        <th>Asset</th>
+                        <th>Balance</th>
+                    </tr>
+                    <tr>
                         <td>Withdraw ETH</td>
+                        <td><%= ethBalance %></td>
                         <td>
                             <% if (canWithdrawEth) { %>
                                 <input type="checkbox" name="withdrawEth" value="<%= ethGasEstimate %>" />
@@ -28,6 +33,7 @@
                     </tr>
                     <tr>
                         <td>Withdraw WBTC</td>
+                        <td><%= wbtcBalance %></td>
                         <td>
                             <% if (canWithdrawWbtc) { %>
                                 <input type="checkbox" name="withdrawWbtc" value="<%= wbtcGasEstimate %>" />
@@ -38,6 +44,7 @@
                     </tr>
                     <tr>
                         <td>Withdraw USDC</td>
+                        <td><%= usdcBalance %></td>
                         <td>
                             <% if (canWithdrawUsdc) { %>
                                 <input type="checkbox" name="withdrawUsdc" value="<%= usdcGasEstimate %>" />

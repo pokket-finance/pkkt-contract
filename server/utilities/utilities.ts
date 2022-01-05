@@ -244,3 +244,35 @@ export async function getTrader(): Promise<SignerWithAddress> {
     const { trader } = await getNamedAccounts();
     return await ethers.getSigner(trader);
 }
+
+/**
+ * Gets the money movement data for the given asset
+ * @param vault to get the settlement cash flow result
+ * @param settler 
+ * @param assetDecimals for formatting data
+ * @param assetAddress asset to get data for
+ * @returns data about the settlement cash flow result
+ */
+export async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
+    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
+    return {
+        queuedLiquidity: ethers.utils.formatUnits(
+            assetCashFlow.newDepositAmount,
+            assetDecimals
+        ),
+        withdrawalRequest: ethers.utils.formatUnits(
+            assetCashFlow.newReleasedAmount,
+            assetDecimals
+        ),
+        leftover: ethers.utils.formatUnits(
+            assetCashFlow.leftOverAmount,
+            assetDecimals
+        ),
+        required: ethers.utils.formatUnits(
+            assetCashFlow.leftOverAmount
+                .add(assetCashFlow.newDepositAmount)
+                .sub(assetCashFlow.newReleasedAmount),
+            assetDecimals
+        )
+    };
+}

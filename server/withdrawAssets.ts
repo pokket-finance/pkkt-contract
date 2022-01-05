@@ -1,9 +1,14 @@
 import { BigNumber, Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
-import { NULL_ADDRESS } from "../constants/constants";
+import { ETH_DECIMALS, NULL_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS } from "../constants/constants";
 import { OptionVault } from "../typechain";
-import { getDeployedContractHelper, getSettler, getTrader } from "./utilities/utilities";
+import {
+    getDeployedContractHelper,
+    getSettler,
+    getTrader,
+    getMoneyMovementData
+} from "./utilities/utilities";
 
 // Get /withdrawAssets route
 export async function getWithdrawAssets(req: Request, res: Response) {
@@ -39,6 +44,13 @@ export async function getWithdrawAssets(req: Request, res: Response) {
     const gasPrice = await ethers.provider.getGasPrice();
     const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
+
+    const ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
+    const wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
+    const usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
+    const ethBalance = ethData.leftover;
+    const wbtcBalance = wbtcData.leftover;
+    const usdcBalance = usdcData.leftover;
     
     res.render(
         "withdrawAssets",
@@ -48,7 +60,10 @@ export async function getWithdrawAssets(req: Request, res: Response) {
             usdcGasEstimate,
             canWithdrawEth,
             canWithdrawWbtc,
-            canWithdrawUsdc
+            canWithdrawUsdc,
+            ethBalance,
+            wbtcBalance,
+            usdcBalance
         }
     );
 }

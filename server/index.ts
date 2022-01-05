@@ -13,7 +13,8 @@ import {
     getDeployedContractHelper,
     setSettlementParameters,
     getTrader,
-    getSettler
+    getSettler,
+    getMoneyMovementData
 } from "./utilities/utilities";
 import {
     PKKTHodlBoosterOption,
@@ -506,29 +507,29 @@ app.get("/moneyMovement", async (req, res) => {
     res.render("moneyMovement", { ethData, wbtcData, usdcData });
 });
 
-async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
-    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
-    return {
-        queuedLiquidity: ethers.utils.formatUnits(
-            assetCashFlow.newDepositAmount,
-            assetDecimals
-        ),
-        withdrawalRequest: ethers.utils.formatUnits(
-            assetCashFlow.newReleasedAmount,
-            assetDecimals
-        ),
-        leftover: ethers.utils.formatUnits(
-            assetCashFlow.leftOverAmount,
-            assetDecimals
-        ),
-        required: ethers.utils.formatUnits(
-            assetCashFlow.leftOverAmount
-                .add(assetCashFlow.newDepositAmount)
-                .sub(assetCashFlow.newReleasedAmount),
-            assetDecimals
-        )
-    };
-}
+// async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
+//     let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
+//     return {
+//         queuedLiquidity: ethers.utils.formatUnits(
+//             assetCashFlow.newDepositAmount,
+//             assetDecimals
+//         ),
+//         withdrawalRequest: ethers.utils.formatUnits(
+//             assetCashFlow.newReleasedAmount,
+//             assetDecimals
+//         ),
+//         leftover: ethers.utils.formatUnits(
+//             assetCashFlow.leftOverAmount,
+//             assetDecimals
+//         ),
+//         required: ethers.utils.formatUnits(
+//             assetCashFlow.leftOverAmount
+//                 .add(assetCashFlow.newDepositAmount)
+//                 .sub(assetCashFlow.newReleasedAmount),
+//             assetDecimals
+//         )
+//     };
+// }
 
 app.post("/sendMoney", async (req, res) => {
     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;

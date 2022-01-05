@@ -13,7 +13,7 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
     if (prevSettlerNonce === undefined) {
         prevSettlerNonce = curSettlerNonce;
     }
-    console.log(`cur none: ${curSettlerNonce} prev nonee ${prevSettlerNonce}`);
+    //console.log(`cur none: ${curSettlerNonce} prev nonee ${prevSettlerNonce}`);
     const transactionMined = (curSettlerNonce === prevSettlerNonce);
 
     // Checks if the initiateSettlement needs to be resubmited by trader
