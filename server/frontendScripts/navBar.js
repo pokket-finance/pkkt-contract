@@ -22,8 +22,12 @@ window.onload = () => {
         moneyMovementNav.classList.add("active");
     }
     else if (path === "/initiateSettlement") {
-        let intiateSettlementNav = document.getElementsByClassName("initiateSettlementNave")[0];
+        let intiateSettlementNav = document.getElementsByClassName("initiateSettlementNav")[0];
         intiateSettlementNav.classList.add("active");
+    }
+    else if (path === "/withdrawAssets") {
+        let withdrawAssetsNav = document.getElementsByClassName("withdrawAssetsNav")[0];
+        withdrawAssetsNav.classList.add("active");
     }
     else {
     

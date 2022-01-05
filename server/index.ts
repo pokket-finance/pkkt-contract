@@ -38,6 +38,7 @@ const port = 3000;
 
 import { showEpoch } from "./showEpoch";
 import { getManualInitiateSettlement, setManualInitiateSettlement } from "./initiateSettlement";
+import { getWithdrawAssets } from "./withdrawAssets";
 
 module.exports = app;
 
@@ -574,6 +575,8 @@ app.get("/initiateSettlement", getManualInitiateSettlement);
 
 app.post("/initiateSettlement", setManualInitiateSettlement);
 
+app.get("/withdrawAssets", getWithdrawAssets);
+
 // CRON JOBS
 
 // The maximum gas price we are willing to use
@@ -581,29 +584,29 @@ app.post("/initiateSettlement", setManualInitiateSettlement);
 const MAX_GAS_PRICE = 150;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
-cron.schedule('* * * * *', async () => {
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    const settler = await getSettler();
-    try {
-        const gasPriceWei = await ethers.provider.getGasPrice();
-        if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
-            // Let the trader know and allow them
-            // to resubmit the transaction with a higher gas price
-            await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
-            console.log(`Server initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
-            app.set("initiateSettlementResubmit", true);
-            app.set("settlerNonce", await settler.getTransactionCount());
-        }
-        else {
-            await vault.connect(settler as Signer).initiateSettlement();
-            console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
-            app.set("initiateSettlementResubmit", false);
-            app.set("settlerNonce", await settler.getTransactionCount());
-        }
-    } catch (err) {
-        console.error(err);
-    }
-});
+// cron.schedule('* * * * *', async () => {
+//     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+//     const settler = await getSettler();
+//     try {
+//         const gasPriceWei = await ethers.provider.getGasPrice();
+//         if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
+//             // Let the trader know and allow them
+//             // to resubmit the transaction with a higher gas price
+//             await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
+//             console.log(`Server initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
+//             app.set("initiateSettlementResubmit", true);
+//             app.set("settlerNonce", await settler.getTransactionCount());
+//         }
+//         else {
+//             await vault.connect(settler as Signer).initiateSettlement();
+//             console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
+//             app.set("initiateSettlementResubmit", false);
+//             app.set("settlerNonce", await settler.getTransactionCount());
+//         }
+//     } catch (err) {
+//         console.error(err);
+//     }
+// });
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

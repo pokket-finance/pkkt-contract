@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TraderPerspective</title>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <link rel="stylesheet" href="/button.css">
+        <script src="/navBar.js"></script>
+        <script src="/calculateTransactionCost.js"></script>
+    </head>
+    <body>
+        <%- include("partials/navbar") %>
+        <form action="/withdrawAssets" method="post" style="width: 50%; margin: auto;" enctype="application/x-www-form-urlencoded">
+            <div class="row">
+                <table class="styled-table">
+                    <tr>
+                        <th>Withdraw Assets</th>
+                    </tr>
+                    <tr>
+                        <td>Withdraw ETH</td>
+                        <td><input type="checkbox" name="withdrawEth" value="<%= ethGasEstimate %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Withdraw WBTC</td>
+                        <td><input type="checkbox" name="withdrawWbtc" value="<%= wbtcGasEstimate %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Withdraw USDC</td>
+                        <td><input type="checkbox" name="withdrawUsdc" value="<%= usdcGasEstimate %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Recommended Gas Price (Gwei)</td>
+                        <td><%= recommendedGasPrice %></td>
+                    </tr>
+                    <tr>
+                        <td>Set Gas Price (Gwei)</td>
+                        <td><input type="text" name="manualGasPrice" on value="<%= recommendedGasPrice %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Cost to Withdraw (ETH)</td>
+                        <td class="transactionCost">0</td>
+                    </tr>
+                </table>
+            </div>
+            <input type="submit" class="button" />
+        </form>
+    </body>
+</html>
