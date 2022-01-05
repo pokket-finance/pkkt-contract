@@ -409,7 +409,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
    function rollToNextByOption(uint8 _optionId, uint256 _quota) internal override returns(uint256 _pendingAmount){    
       
        if (currentRound > 2) {
-           require(optionStates[_optionId][currentRound-1].strikePrice > 0,  "!Strike Price");
+           require(optionStates[_optionId][currentRound-2].strikePrice > 0,  "!Strike Price");
         } 
    
         quota[_optionId] = _quota; 

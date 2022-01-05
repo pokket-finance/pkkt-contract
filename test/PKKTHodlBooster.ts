@@ -247,15 +247,10 @@ describe.only("PKKT Hodl Booster", async function () {
           await vault.connect(alice as Signer).depositETH( optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(5).mul(ETHMultiplier)});
           //bob deposit 1 btc
           await vault.connect(bob as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
-          var balance = await vault.connect(bob as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId);
-          assert.equal(balance.lockedDepositAssetAmount.toString(), "0");
-          assert.equal(balance.toTerminateDepositAssetAmount.toString(), "0");
-          assert.equal(balance.terminatingDepositAssetAmount.toString(), "0");
-          console.log(`${bob.address} balance ${balance.lockedDepositAssetAmount} ${balance.toTerminateDepositAssetAmount} ${balance.terminatingDepositAssetAmount} 
-          ${balance.pendingDepositAssetAmount} ${await vault.underSettlement()} ${await vault.currentRound()}`);
+          var balance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].callOptionId);
           var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount);
           //bob stop auto rolling of round 1, will be able to complete withdraw after the settlement next round
-          await vault.connect(bob as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].callOptionId, diff);
+          await vault.connect(alice as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, diff);
 
 
           const ethPrice = 4000 * (10**ETHPricePrecision);
@@ -511,16 +506,19 @@ describe.only("PKKT Hodl Booster", async function () {
           console.log(`Open Round ${await vault.currentRound()}` );
           //var ethHodlBoosterCallToTerminate = (await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           var balance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId);
-          await vault.connect(alice as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].putOptionId, balance.lockedDepositAssetAmount); //5.125 eth with premium
+          await vault.connect(alice as Signer).initiateWithraw(optionPairs[ETHUSDTOPTION].callOptionId, 
+            balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount)); //5.125 eth with premium
           //var ethHodlBoosterCallToTerminate2 = (await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           
           //var wbtcHodlBoosterPutToTerminate = (await wbtcHodlBoosterPut.connect(bob as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           var balance2 = await vault.connect(bob as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].putOptionId);
-          await vault.connect(bob as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].putOptionId, balance2.lockedDepositAssetAmount);  //51250.0 usdt with premium 
+          await vault.connect(bob as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].putOptionId, 
+            balance2.lockedDepositAssetAmount.sub(balance2.toTerminateDepositAssetAmount));  //51250.0 usdt with premium 
           //var wbtcHodlBoosterPutToTerminate2 = (await wbtcHodlBoosterPut.connect(bob as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           //var wbtcHodlBoosterCallTerminate = (await wbtcHodlBoosterCall.connect(carol as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           var balance3 = await vault.connect(carol as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].callOptionId);
-          await vault.connect(carol as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, balance3.lockedDepositAssetAmount); //1.025 wbtc with premium
+          await vault.connect(carol as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, 
+            balance3.lockedDepositAssetAmount.sub(balance3.toTerminateDepositAssetAmount)); //1.025 wbtc with premium
           //var wbtcHodlBoosterCallTerminate2 = (await wbtcHodlBoosterCall.connect(carol as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
 
           await renderTVL(true);
