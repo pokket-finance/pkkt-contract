@@ -268,7 +268,17 @@ app.get("/", async (req, res) => {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(optionVault, settler, round, [ethHodlBoosterPutOption, ethHodlBoosterCallOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
+    const canSettleVault = await canSettle(
+        optionVault,
+        settler,
+        round,
+        [
+            ethHodlBoosterPutOption,
+            ethHodlBoosterCallOption,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption
+        ]
+    );
 
     if (canSettleVault && round.gt(2)) {
         const strikePriceDecimals = 4;
@@ -354,19 +364,6 @@ app.post("/exerciseDecision", async (req, res) => {
     const ethDecision = getExecutionStatus(req.body.ethOption);
     const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
     await setSettlementParameters(ethDecision, wbtcDecision);
-    // After the settlement parameters are set
-    // send the money to the trader
-    // const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    // const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
-    // const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
-    // const settler = await getSettler();
-    // const trader = await getTrader();
-    // await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
-    // await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
-    // await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
-    // console.log((await ethers.provider.getBalance(trader.address)).toString());
-    // console.log((await wbtc.connect(trader as Signer).balanceOf(trader.address)).toString());
-    // console.log((await usdc.connect(trader as Signer).balanceOf(trader.address)).toString());
     res.redirect("/show/epoch");
 });
 
@@ -609,6 +606,37 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 //         console.error(err);
 //     }
 // });
+
+// Force a No exercise decision for the vaults
+// if the trader does not manually exercise 
+cron.schedule("* * * * *", async () => {
+    const [
+        optionVault,
+        ethHodlBoosterCallOption,
+        ethHodlBoosterPutOption,
+        wbtcHodlBoosterCallOption,
+        wbtcHodlBoosterPutOption
+    ] = await getOptionContracts();
+    const settler = await getSettler();
+    const round = await optionVault.currentRound();
+    const canSettleVault = await canSettle(
+        optionVault,
+        settler,
+        round,
+        [
+            ethHodlBoosterPutOption,
+            ethHodlBoosterCallOption,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption
+        ]
+    );
+    // Force Settlement
+    if (canSettleVault) {
+        await setSettlementParameters(OptionExecution.NoExecution, OptionExecution.NoExecution);
+    }
+}, {
+    timezone: "Asia/Shanghai"
+});
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
