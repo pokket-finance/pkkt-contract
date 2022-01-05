@@ -123,7 +123,9 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
 
 
     function initiateSettlement() external override onlyRole(StructureData.SETTLER_ROLE) {
-        currentRound = currentRound + 1;  
+        require(!underSettlement, "Being settled"); 
+        currentRound = currentRound + 1;   
+        underSettlement = true;  
         for(uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i];  
             uint256 pending1 = rollToNextByOption(MAX_INT, pair.callOptionId);
@@ -161,14 +163,21 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             });
             executionAccountingResult[i * 3 + 2] = pairResult3; 
         } 
+         
+       if (currentRound <= 1) {
+           underSettlement = false;
+       }
     }
 
     function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(StructureData.SETTLER_ROLE) {  
 
+        require(underSettlement, "Not being settled"); 
         uint256 count = _execution.length; 
         if (currentRound <= 2) {
             require(count == 0, "no matured round");
         }
+         
+
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory execution = _execution[i];  
             StructureData.OptionPairDefinition storage pair = optionPairs[execution.pairId];
@@ -246,15 +255,18 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             //todo: check overflow
             leftOverAmount[assetAddress] = leftOver + int256(deposit) - int256(released);
         }
+
+        underSettlement = false; 
     } 
 
 
     function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(StructureData.SETTLER_ROLE) {
 
           uint256 count = _parameters.length;        
-          if (currentRound == 1) {
+          if (currentRound <= 1) {
              require(count == 0, "nothing to set");
-          }
+          }         
+          require(!underSettlement, "Being settled"); 
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
               setOptionParametersByOption(parameter);
