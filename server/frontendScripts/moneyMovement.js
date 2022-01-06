@@ -9,6 +9,9 @@ window.addEventListener("load", () => {
     initiateClickListener("input[name='withdrawEth']");
     initiateClickListener("input[name='withdrawWbtc']");
     initiateClickListener("input[name='withdrawUsdc']");
+
+    let manualGasPrice = document.querySelector("input[name='manualGasPrice']");
+    manualGasPrice.addEventListener("input", calculateTransaction);
 });
 
 /**
@@ -53,7 +56,6 @@ let gasEstimate = 0;
  */
 function updateGasEstimate(event) {
     let newGasEstimate = parseInt(event.target.value);
-    console.log(event.target);
     if (event.target.checked) {
         gasEstimate += newGasEstimate;
     }
@@ -69,9 +71,6 @@ function updateGasEstimate(event) {
 function calculateTransaction() {
     let gasPrice = parseFloat(document.querySelector("input[name='manualGasPrice']").value);
     let transactionPrice = gasPrice * gasEstimate / 10000000000;
-    console.log(gasPrice);
-    console.log(gasEstimate);
-    console.log(transactionPrice);
     let costToWithdraw = document.querySelector(".transactionCost");
     costToWithdraw.innerHTML = transactionPrice;
 }

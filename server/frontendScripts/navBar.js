@@ -25,10 +25,6 @@ window.onload = () => {
         let intiateSettlementNav = document.getElementsByClassName("initiateSettlementNav")[0];
         intiateSettlementNav.classList.add("active");
     }
-    else if (path === "/withdrawAssets") {
-        let withdrawAssetsNav = document.getElementsByClassName("withdrawAssetsNav")[0];
-        withdrawAssetsNav.classList.add("active");
-    }
     else {
     
     }

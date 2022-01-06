@@ -15,7 +15,7 @@ const main = async (taskArgs, { ethers, deployments,
     getNamedAccounts}) => {
     console.log("Initializing users...");
     // The first two signers are the deployer and settler so we ignore them
-    const [, , alice, bob] = await ethers.getSigners();
+    const [, , alice, bob, , carol] = await ethers.getSigners();
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
     const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
     const ethHodlBoosterPutOption = await getDeployedContractHelper(
@@ -33,7 +33,7 @@ const main = async (taskArgs, { ethers, deployments,
         ethers,
         deployments
     ) as PKKTHodlBoosterOption;
-    const users = [alice, bob];
+    const users = [alice, bob, carol];
     for (let user of users) {
         
         //console.log(`${user.address} `);

@@ -39,7 +39,6 @@ const port = 3000;
 
 import { showEpoch } from "./routes/showEpoch";
 import { getManualInitiateSettlement, setManualInitiateSettlement } from "./routes/initiateSettlement";
-import { getWithdrawAssets, postWithdrawAssets } from "./routes/withdrawAssets";
 import { getSetEpoch, postSetEpoch, postSetPredictedEpoch } from "./routes/setEpoch";
 import { getMoneyMovement, postMoneyMovement } from "./routes/moneyMovement";
 
@@ -305,10 +304,6 @@ app.post("/moneyMovement", postMoneyMovement);
 app.get("/initiateSettlement", getManualInitiateSettlement);
 
 app.post("/initiateSettlement", setManualInitiateSettlement);
-
-app.get("/withdrawAssets", getWithdrawAssets);
-
-app.post("/withdrawAssets", postWithdrawAssets);
 
 // CRON JOBS
 
