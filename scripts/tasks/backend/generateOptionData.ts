@@ -14,7 +14,8 @@ import {
     WBTC_PRICE_PRECISION,
     ETH_PRICE_PRECISION,
     RATIO_MULTIPLIER,
-    OptionExecution
+    OptionExecution,
+    NULL_ADDRESS
 } from "../../../constants/constants";
 import { getDeployedContractHelper } from "./utilities";
 
@@ -153,6 +154,79 @@ async function main({ command }, { ethers, deployments }) {
             execute: OptionExecution.NoExecution
           }]);
         await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+    }
+    else if (command == 7) {
+        // round 1
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        // round 2
+        await optionVault.connect(settler as Signer).initiateSettlement();
+
+        await deposits();
+
+        await optionVault.connect(settler as Signer).settle([]);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+
+        // round 3
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw();
+        await optionVault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+          }, 
+          {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+          }]);
+
+          await optionVault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS); 
+          await optionVault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address); 
+          await optionVault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address); 
+
+
+          await optionVault.connect(settler as Signer).setOptionParameters([
+            {
+              strikePrice:ethPrice*1.04,
+              pricePrecision:ETH_PRICE_PRECISION,
+              premiumRate: 0.02 * RATIO_MULTIPLIER,
+              option: ethHodlBoosterCallOption.address
+            },  
+            {
+              strikePrice:ethPrice*0.96,
+              pricePrecision:ETH_PRICE_PRECISION,
+              premiumRate: 0.02 * RATIO_MULTIPLIER,
+              option: ethHodlBoosterPutOption.address
+            },
+            {
+              strikePrice:btcPrice*1.04,
+              pricePrecision:WBTC_PRICE_PRECISION,
+              premiumRate: 0.02 * RATIO_MULTIPLIER,
+              option: wbtcHodlBoosterCallOption.address
+            }, 
+            {
+              strikePrice:btcPrice * 0.96,
+              pricePrecision:WBTC_PRICE_PRECISION,
+              premiumRate: 0.02 * RATIO_MULTIPLIER,
+              option: wbtcHodlBoosterPutOption.address
+            },
+            ]);
+            
+          /* open round 4*/
+          await optionVault.connect(settler as Signer).initiateSettlement();   
+          await optionVault.connect(settler as Signer).settle([{
+            callOption: ethHodlBoosterCallOption.address,
+            putOption: ethHodlBoosterPutOption.address,
+            execute: OptionExecution.ExecuteCall
+          }, 
+          {
+            callOption: wbtcHodlBoosterCallOption.address,
+            putOption: wbtcHodlBoosterPutOption.address,
+            execute: OptionExecution.NoExecution
+          }]);
     }
 
     async function deposits() {

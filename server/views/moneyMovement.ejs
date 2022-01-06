@@ -5,12 +5,13 @@
         <link rel="stylesheet" href="/navbar.css">
         <link rel="stylesheet" href="/table.css">
         <link rel="stylesheet" href="/button.css">
-        <script type="text/javascript" src="/navbar.js"></script>
+        <script src="/navbar.js"></script>
+        <script src="/moneyMovement.js"></script>
     </head>
 
     <body>
         <%- include("partials/navbar") %>
-        <form action="/sendMoney" method="post" enctype="application/x-www-form-urlencoded">
+        <form action="/moneyMovement" method="post" enctype="application/x-www-form-urlencoded">
             <div class="row">
                 <table class="styled-table">
                     <tr>
@@ -29,28 +30,40 @@
                         <td><%= ethData.queuedLiquidity %></td>
                         <td><%= ethData.withdrawalRequest %></td>
                         <td><%= ethData.leftover %></td>
-                        <td><%= ethData.required %></td>
-                        <td><input type="checkbox" name="ethSend" /></td>
+                        <td class="ethRequired"><%= ethData.required %></td>
+                        <td class="ethSelectionData"><input type="checkbox" name="withdrawEth" value="<%= ethGasEstimate %>" /></td>
                     </tr>
                     <tr>
                         <td>WBTC</td>
                         <td><%= wbtcData.queuedLiquidity %></td>
                         <td><%= wbtcData.withdrawalRequest %></td>
                         <td><%= wbtcData.leftover %></td>
-                        <td><%= wbtcData.required %></td>
-                        <td><input type="checkbox" name="wbtcSend" /></td>
+                        <td class="wbtcRequired"><%= wbtcData.required %></td>
+                        <td class="wbtcSelectionData"><input type="checkbox" name="withdrawWbtc" value="<%= wbtcGasEstimate %>" /></td>
                     </tr>
                     <tr>
                         <td>USDC</td>
                         <td><%= usdcData.queuedLiquidity %></td>
                         <td><%= usdcData.withdrawalRequest %></td>
                         <td><%= usdcData.leftover %></td>
-                        <td><%= usdcData.required %></td>
-                        <td><input type="checkbox" name="usdcSend" /></td>
+                        <td class="usdcRequired"><%= usdcData.required %></td>
+                        <td class="usdcSelectionData"><input type="checkbox" name="withdrawWbtc" value="<%= usdcGasEstimate %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Recommended Gas Price (Gwei)</td>
+                        <td><%= recommendedGasPrice %></td>
+                    </tr>
+                    <tr>
+                        <td>Set Gas Price (Gwei)</td>
+                        <td><input type="text" name="manualGasPrice" value="<%= recommendedGasPrice %>" /></td>
+                    </tr>
+                    <tr>
+                        <td>Cost to Withdraw (ETH)</td>
+                        <td class="transactionCost">0</td>
                     </tr>
                 </table>
             </div>
-            <input type="submit" class="button" value="Send Money" />
+            <input type="submit" class="button" value="Withdraw Assets" />
         </form>
     </body>
 </html>
