@@ -30,12 +30,14 @@ export async function getMoneyMovement(req: Request, res: Response) {
         leftover: "0",
         required: "0"
     };
+    ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
     let ethGasEstimate;
     try {
         ethGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, NULL_ADDRESS);
-        ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
     } catch (err) {
         console.error("No Residule Eth");
+        ethData.leftover = "0";
+        ethData.required = "0";
     }
 
     let wbtcData = {
@@ -44,12 +46,14 @@ export async function getMoneyMovement(req: Request, res: Response) {
         leftover: "0",
         required: "0"
     };
+    wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
     let wbtcGasEstimate;
     try {
         wbtcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, wbtc.address);
-        wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
     } catch (err) {
         console.error("No residule wbtc")
+        wbtcData.leftover = "0";
+        wbtcData.required = "0";
     }
 
     let usdcData = { 
@@ -58,12 +62,14 @@ export async function getMoneyMovement(req: Request, res: Response) {
         leftover: "0",
         required: "0"
     };
+    usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
     let usdcGasEstimate;
     try {
         usdcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, usdc.address);
-        usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
     } catch (err) {
         console.error("No residule usdc");
+        usdcData.leftover = "0";
+        usdcData.required = "0";
     }
 
     const gasPrice = await ethers.provider.getGasPrice();
