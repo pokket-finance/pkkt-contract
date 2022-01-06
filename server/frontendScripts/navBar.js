@@ -9,7 +9,7 @@ window.onload = () => {
         let showEpochNav = document.getElementsByClassName("showEpochNav")[0];
         showEpochNav.classList.add("active");
     }
-    else if (path === "/initiateEpoch") {
+    else if (path === "/set/epoch") {
         let setEpochNav = document.getElementsByClassName("setEpochNav")[0];
         setEpochNav.classList.add("active");
     }
