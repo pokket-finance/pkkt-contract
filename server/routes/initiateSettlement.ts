@@ -1,8 +1,8 @@
 import { Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
-import { OptionVault } from "../typechain";
-import { getDeployedContractHelper, getSettler } from "./utilities/utilities";
+import { OptionVault } from "../../typechain";
+import { getDeployedContractHelper, getSettler } from "../utilities/utilities";
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {

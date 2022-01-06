@@ -174,14 +174,6 @@ type OptionPairExecutionAccountingResult = {
  * @returns whether or not we can settle the vault
  */
  export async function canSettle(vault, settler, round, options: PKKTHodlBoosterOption[]): Promise<boolean> {
-    // for(let index = 0; index < 6; ++index) {
-    //     let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
-    //     if (accounting.callOptionResult.option === NULL_ADDRESS || accounting.putOptionResult.option === NULL_ADDRESS) {
-    //         return false;
-    //     }
-    // }
-    // const areOptionParametersSet = await areOptionParamsSet(round);
-    // return !areOptionParametersSet;
     for(let option of options) {
         let underSettlement = await option.underSettlement();
         if (!underSettlement) {

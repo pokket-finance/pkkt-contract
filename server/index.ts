@@ -37,9 +37,10 @@ import { ERC20Mock } from "../typechain";
 const app = express();
 const port = 3000;
 
-import { showEpoch } from "./showEpoch";
-import { getManualInitiateSettlement, setManualInitiateSettlement } from "./initiateSettlement";
-import { getWithdrawAssets, postWithdrawAssets } from "./withdrawAssets";
+import { showEpoch } from "./routes/showEpoch";
+import { getManualInitiateSettlement, setManualInitiateSettlement } from "./routes/initiateSettlement";
+import { getWithdrawAssets, postWithdrawAssets } from "./routes/withdrawAssets";
+import { getSetEpoch, postSetEpoch, postSetPredictedEpoch } from "./routes/setEpoch";
 
 module.exports = app;
 
@@ -51,33 +52,15 @@ app.use(express.static(path.join(__dirname, "css")));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
-app.get("/initiateEpoch", async (req, res) => {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+app.get("/set/epoch", getSetEpoch);
 
-    const settler = await getSettler()
-    const round = await optionVault.currentRound();
-    let areOptionParametersSet = await areOptionParamsSet(round);
-    const underSettlement = await canSettle(optionVault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
-    if (underSettlement) {
-        areOptionParametersSet = true;
-    }
-    let predictedEthOption = getPredictedOptionData("predictedEthOption");
-    let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
-    res.render(
-        "initiateEpoch",
-        { round, areOptionParametersSet, predictedEthOption, predictedWbtcOption }
-    );
-});
+app.post("/set/epoch", postSetEpoch);
+
+app.post("/set/predicted/epoch", postSetPredictedEpoch)
 
 app.get("/show/epoch", showEpoch);
 
-// app.get("/show/epoch", async (req, res) => {
+// app.post("/set/epoch", async (req, res) => {
 //     const [
 //         optionVault,
 //         ethHodlBoosterCallOption,
@@ -85,159 +68,100 @@ app.get("/show/epoch", showEpoch);
 //         wbtcHodlBoosterCallOption,
 //         wbtcHodlBoosterPutOption
 //     ] = await getOptionContracts();
-//     let round = await optionVault.currentRound();
-
-//     let optionRound = round.sub(1);
-//     if (round.isZero()) {
-//         optionRound = BigNumber.from(0);
-//     }
-//     let predictedEthOption = getPredictedOptionData("predictedEthOption");
-//     let predictedWbtcOption = getPredictedOptionData("predictedWbtcOption");
-
-//     // Get contract option data to display
-//     const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
-//     const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
-//     const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
-//     const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
-//     const ethOption = {
-//         callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-//         putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-//         callPremium: ethCallOptionState.premiumRate / RATIO_MULTIPLIER,
-//         putPremium: ethPutOptionState.premiumRate / RATIO_MULTIPLIER
-//     }
-//     const wbtcOption = {
-//         callStrike: wbtcCallOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-//         putStrike: wbtcPutOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-//         callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
-//         putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
-//     }
-//     res.render(
-//         "showEpoch",
+//     const ethCallPremium = parseFloat(req.body.ethCallPremium);
+//     const ethPutPremium = parseFloat(req.body.ethPutPremium);
+//     const wbtcCallPremium = parseFloat(req.body.wbtcCallPremium);
+//     const wbtcPutPremium = parseFloat(req.body.wbtcPutPremium);
+//     const ethCallStrikePrice = req.body.ethCallStrike * (10 ** ETH_PRICE_PRECISION);
+//     const ethPutStrikePrice = req.body.ethPutStrike * (10 ** ETH_PRICE_PRECISION);
+//     const wbtcCallStrikePrice = req.body.wbtcCallStrike * (10 ** WBTC_PRICE_PRECISION);
+//     const wbtcPutStrikePrice = req.body.wbtcPutStrike * (10 ** WBTC_PRICE_PRECISION);
+//     let optionParameters = [
 //         {
-//             round,
-//             ethOption,
-//             predictedEthOption: predictedEthOption,
-//             wbtcOption,
-//             predictedWbtcOption: predictedWbtcOption
+//             pricePrecision: ETH_PRICE_PRECISION,
+//             strikePrice: ethCallStrikePrice,
+//             premiumRate: ethCallPremium * RATIO_MULTIPLIER,
+//             option: ethHodlBoosterCallOption.address
+//         },
+//         {
+//             pricePrecision: ETH_PRICE_PRECISION,
+//             strikePrice: ethPutStrikePrice,
+//             premiumRate: ethPutPremium * RATIO_MULTIPLIER,
+//             option: ethHodlBoosterPutOption.address
+//         },
+//         {
+//             pricePrecision: WBTC_PRICE_PRECISION,
+//             strikePrice: wbtcCallStrikePrice,
+//             premiumRate: wbtcCallPremium * RATIO_MULTIPLIER,
+//             option: wbtcHodlBoosterCallOption.address
+//         },
+//         {
+//             pricePrecision: WBTC_PRICE_PRECISION,
+//             strikePrice: wbtcPutStrikePrice,
+//             premiumRate: wbtcPutPremium * RATIO_MULTIPLIER,
+//             option: wbtcHodlBoosterPutOption.address
 //         }
-//     );
+//     ];
+//     const settler = await getSettler()
+//     try {
+//         await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+//     } catch (err) {
+//         console.error(err);
+//     }
+
+//     const predictedEthCallPremium = parseFloat(req.body.predictedEthCallPremium);
+//     const predictedEthPutPremium = parseFloat(req.body.predictedEthPutPremium);
+//     const predictedWbtcCallPremium = parseFloat(req.body.predictedWbtcCallPremium);
+//     const predictedWbtcPutPremium = parseFloat(req.body.predictedWbtcPutPremium);
+//     const predictedEthCallStrikePrice = req.body.predictedEthCallStrike;
+//     const predictedEthPutStrikePrice = req.body.predictedEthPutStrike;
+//     const predictedWbtcCallStrikePrice = req.body.predictedWbtcCallStrike;
+//     const predictedWbtcPutStrikePrice = req.body.predictedWbtcPutStrike;
+//     const predictedEthOption = {
+//         callStrike: predictedEthCallStrikePrice,
+//         putStrike: predictedEthPutStrikePrice,
+//         callPremium: predictedEthCallPremium,
+//         putPremium: predictedEthPutPremium
+//     }
+//     const predictedWbtcOption = {
+//         callStrike: predictedWbtcCallStrikePrice,
+//         putStrike: predictedWbtcPutStrikePrice,
+//         callPremium: predictedWbtcCallPremium,
+//         putPremium: predictedWbtcPutPremium
+//     }
+
+//     app.set("predictedEthOption", predictedEthOption);
+//     app.set("predictedWbtcOption", predictedWbtcOption);
+//     res.redirect("/show/epoch");
 // });
 
-function getPredictedOptionData(dataName: string) {
-    let predictedOptionData = app.get(dataName);
-    if (predictedOptionData === undefined) {
-        predictedOptionData = {
-            callStrike: 0,
-            putStrike: 0,
-            callPremium: 0,
-            putPremium: 0
-        }
-    }
-    return predictedOptionData;
-}
+// app.post("/setPredictedOptionParameters", async (req, res) => {
+//     const ethCallPremium = parseFloat(req.body.predictedEthCallPremium);
+//     const ethPutPremium = parseFloat(req.body.predictedEthPutPremium);
+//     const wbtcCallPremium = parseFloat(req.body.predictedWbtcCallPremium);
+//     const wbtcPutPremium = parseFloat(req.body.predictedWbtcPutPremium);
+//     const ethCallStrikePrice = req.body.predictedEthCallStrike;
+//     const ethPutStrikePrice = req.body.predictedEthPutStrike;
+//     const wbtcCallStrikePrice = req.body.predictedWbtcCallStrike;
+//     const wbtcPutStrikePrice = req.body.predictedWbtcPutStrike;
+//     const predictedEthOption = {
+//         callStrike: ethCallStrikePrice,
+//         putStrike: ethPutStrikePrice,
+//         callPremium: ethCallPremium,
+//         putPremium: ethPutPremium
+//     }
+//     const predictedWbtcOption = {
+//         callStrike: wbtcCallStrikePrice,
+//         putStrike: wbtcPutStrikePrice,
+//         callPremium: wbtcCallPremium,
+//         putPremium: wbtcPutPremium
+//     }
 
-app.post("/setOptionParameters", async (req, res) => {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-    const ethCallPremium = parseFloat(req.body.ethCallPremium);
-    const ethPutPremium = parseFloat(req.body.ethPutPremium);
-    const wbtcCallPremium = parseFloat(req.body.wbtcCallPremium);
-    const wbtcPutPremium = parseFloat(req.body.wbtcPutPremium);
-    const ethCallStrikePrice = req.body.ethCallStrike * (10 ** ETH_PRICE_PRECISION);
-    const ethPutStrikePrice = req.body.ethPutStrike * (10 ** ETH_PRICE_PRECISION);
-    const wbtcCallStrikePrice = req.body.wbtcCallStrike * (10 ** WBTC_PRICE_PRECISION);
-    const wbtcPutStrikePrice = req.body.wbtcPutStrike * (10 ** WBTC_PRICE_PRECISION);
-    let optionParameters = [
-        {
-            pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethCallStrikePrice,
-            premiumRate: ethCallPremium * RATIO_MULTIPLIER,
-            option: ethHodlBoosterCallOption.address
-        },
-        {
-            pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethPutStrikePrice,
-            premiumRate: ethPutPremium * RATIO_MULTIPLIER,
-            option: ethHodlBoosterPutOption.address
-        },
-        {
-            pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: wbtcCallStrikePrice,
-            premiumRate: wbtcCallPremium * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterCallOption.address
-        },
-        {
-            pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: wbtcPutStrikePrice,
-            premiumRate: wbtcPutPremium * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterPutOption.address
-        }
-    ];
-    const settler = await getSettler()
-    try {
-        await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
-    } catch (err) {
-        console.error(err);
-    }
+//     app.set("predictedEthOption", predictedEthOption);
+//     app.set("predictedWbtcOption", predictedWbtcOption);
 
-    const predictedEthCallPremium = parseFloat(req.body.predictedEthCallPremium);
-    const predictedEthPutPremium = parseFloat(req.body.predictedEthPutPremium);
-    const predictedWbtcCallPremium = parseFloat(req.body.predictedWbtcCallPremium);
-    const predictedWbtcPutPremium = parseFloat(req.body.predictedWbtcPutPremium);
-    const predictedEthCallStrikePrice = req.body.predictedEthCallStrike;
-    const predictedEthPutStrikePrice = req.body.predictedEthPutStrike;
-    const predictedWbtcCallStrikePrice = req.body.predictedWbtcCallStrike;
-    const predictedWbtcPutStrikePrice = req.body.predictedWbtcPutStrike;
-    const predictedEthOption = {
-        callStrike: predictedEthCallStrikePrice,
-        putStrike: predictedEthPutStrikePrice,
-        callPremium: predictedEthCallPremium,
-        putPremium: predictedEthPutPremium
-    }
-    const predictedWbtcOption = {
-        callStrike: predictedWbtcCallStrikePrice,
-        putStrike: predictedWbtcPutStrikePrice,
-        callPremium: predictedWbtcCallPremium,
-        putPremium: predictedWbtcPutPremium
-    }
-
-    app.set("predictedEthOption", predictedEthOption);
-    app.set("predictedWbtcOption", predictedWbtcOption);
-    res.redirect("/show/epoch");
-});
-
-app.post("/setPredictedOptionParameters", async (req, res) => {
-    const ethCallPremium = parseFloat(req.body.predictedEthCallPremium);
-    const ethPutPremium = parseFloat(req.body.predictedEthPutPremium);
-    const wbtcCallPremium = parseFloat(req.body.predictedWbtcCallPremium);
-    const wbtcPutPremium = parseFloat(req.body.predictedWbtcPutPremium);
-    const ethCallStrikePrice = req.body.predictedEthCallStrike;
-    const ethPutStrikePrice = req.body.predictedEthPutStrike;
-    const wbtcCallStrikePrice = req.body.predictedWbtcCallStrike;
-    const wbtcPutStrikePrice = req.body.predictedWbtcPutStrike;
-    const predictedEthOption = {
-        callStrike: ethCallStrikePrice,
-        putStrike: ethPutStrikePrice,
-        callPremium: ethCallPremium,
-        putPremium: ethPutPremium
-    }
-    const predictedWbtcOption = {
-        callStrike: wbtcCallStrikePrice,
-        putStrike: wbtcPutStrikePrice,
-        callPremium: wbtcCallPremium,
-        putPremium: wbtcPutPremium
-    }
-
-    app.set("predictedEthOption", predictedEthOption);
-    app.set("predictedWbtcOption", predictedWbtcOption);
-
-    res.redirect("/show/epoch");
-});
+//     res.redirect("/show/epoch");
+// });
 
 app.get("/", async (req, res) => {
     const [
@@ -610,34 +534,34 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 
 // Force a No exercise decision for the vaults
 // if the trader does not manually exercise 
-cron.schedule("* * * * *", async () => {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
-    const settler = await getSettler();
-    const round = await optionVault.currentRound();
-    const canSettleVault = await canSettle(
-        optionVault,
-        settler,
-        round,
-        [
-            ethHodlBoosterPutOption,
-            ethHodlBoosterCallOption,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption
-        ]
-    );
-    // Force Settlement
-    if (canSettleVault) {
-        await setSettlementParameters(OptionExecution.NoExecution, OptionExecution.NoExecution);
-    }
-}, {
-    timezone: "Asia/Shanghai"
-});
+// cron.schedule("* * * * *", async () => {
+//     const [
+//         optionVault,
+//         ethHodlBoosterCallOption,
+//         ethHodlBoosterPutOption,
+//         wbtcHodlBoosterCallOption,
+//         wbtcHodlBoosterPutOption
+//     ] = await getOptionContracts();
+//     const settler = await getSettler();
+//     const round = await optionVault.currentRound();
+//     const canSettleVault = await canSettle(
+//         optionVault,
+//         settler,
+//         round,
+//         [
+//             ethHodlBoosterPutOption,
+//             ethHodlBoosterCallOption,
+//             wbtcHodlBoosterCallOption,
+//             wbtcHodlBoosterPutOption
+//         ]
+//     );
+//     // Force Settlement
+//     if (canSettleVault) {
+//         await setSettlementParameters(OptionExecution.NoExecution, OptionExecution.NoExecution);
+//     }
+// }, {
+//     timezone: "Asia/Shanghai"
+// });
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

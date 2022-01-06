@@ -1,14 +1,14 @@
 import { BigNumber, Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
-import { ETH_DECIMALS, NULL_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS } from "../constants/constants";
-import { OptionVault } from "../typechain";
+import { ETH_DECIMALS, NULL_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS } from "../../constants/constants";
+import { OptionVault } from "../../typechain";
 import {
     getDeployedContractHelper,
     getSettler,
     getTrader,
     getMoneyMovementData
-} from "./utilities/utilities";
+} from "../utilities/utilities";
 
 // Get /withdrawAssets route
 export async function getWithdrawAssets(req: Request, res: Response) {
