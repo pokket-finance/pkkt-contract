@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "devDependencies": {
-    "ethers": "5.4.0",
     "@graphprotocol/graph-cli": "^0.25.1",
     "@graphprotocol/graph-ts": "^0.24.1",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers",
@@ -25,8 +24,9 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
     "ethereum-waffle": "^3.0.0",
+    "ethers": "5.4.0",
     "hardhat": "^2.4.3-rc.0",
-    "hardhat-contract-sizer": "^2.0.3",
+    "hardhat-contract-sizer": "^2.3.0",
     "hardhat-deploy": "^0.8.11",
     "hardhat-gas-reporter": "^1.0.6",
     "hardhat-log-remover": "^2.0.2",
@@ -102,7 +102,8 @@
     "json-stable-stringify": "^1.0.1",
     "moment-timezone": "^0.5.33",
     "node-cron": "^3.0.0",
-    "simple-git": "^2.45.1"
+    "simple-git": "^2.45.1",
+    "yarn": "^1.22.17"
   },
   "mocha": {
     "timeout": 20000

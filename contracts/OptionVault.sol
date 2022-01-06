@@ -1,60 +1,45 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.4;
  
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";  
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
  
-import {StructureData} from "./libraries/StructureData.sol";     
-import "./interfaces/ISettlementAggregator.sol";  
-import "./interfaces/IPKKTStructureOption.sol";
+import {StructureData} from "./libraries/StructureData.sol";   
+//import "./interfaces/ISettlementAggregator.sol";  
+//import "./interfaces/IPKKTStructureOption.sol";
 
-abstract contract OptionVault is ISettlementAggregator, AccessControl, ReentrancyGuard {
+abstract contract OptionVault is AccessControl, ReentrancyGuard {
     
+ 
+
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+    using StructureData for uint128; 
      
-     uint256 public override currentRound;  
-     bool public underSettlement;    
-     
-     mapping(uint256=>uint256) public optionHeights;
-
-    /*
-     * cash flow perspective (based on asset address)
-     */ 
-    uint8 assetCount;
-    mapping(uint8=>address) private asset;
-    mapping(address=>StructureData.SettlementCashflowResult) public settlementCashflowResult; 
-    mapping(address=>uint256) private releasedAmount; //debit
-    mapping(address=>uint256) private depositAmount; //credit
-    mapping(address=>int256) private leftOverAmount;  //history balance
-    
-    /*
-     *  actual balance perspective
-     *  withdrawable = redeemable + released
-     *  balance = withdrawable + leftOver  
-     */
-    mapping(address=>uint256) private assetBalanceAfterSettle;
-    mapping(address=>uint256) private assetWithdrawableAfterSettle;
-    mapping(address=>uint256) private assetTraderWithdrawn;
-
-    /*
-     * accounting perspective(based on option pair)
-     */ 
+     uint16 public currentRound;  
+    bool public underSettlement;    
     uint8 public optionPairCount;
-    mapping(uint8=>StructureData.OptionPairDefinition) public optionPairs;
+
+    mapping(address=>StructureData.SettlementCashflowResult) public settlementCashflowResult; 
+
+    mapping(uint8=> StructureData.OptionPairDefinition) public optionPairs;
     
-    mapping(uint8 => StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult; 
+    mapping(uint8 =>StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult; 
  
 
+    mapping(uint8=>mapping(uint16=>StructureData.OptionState)) public optionStates;
+
+    mapping(uint256=>uint16) public optionHeights;  
+    uint8 private assetCount; 
+    mapping(uint8=>address) private asset;
+    mapping(address=>StructureData.AssetData) private assetData;  
+
     constructor( address _settler) {
-        require(_settler != address(0), "Empty settler address");
+        require(_settler != address(0), "!settler");
         
         // Contract deployer will be able to grant and revoke trading role
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -64,44 +49,33 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
     
    
      
-    function clientWithdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) internal {
+    function clientWithdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) internal nonReentrant {
          if (!_redeem) {
-             require(balanceEnough(_contractAddress), "Released amount not available yet");
+             require(balanceEnough(_contractAddress), "!Released amount");
          }
-        _withdraw(_target, _amount, _contractAddress);
+        StructureData.withdraw(_target, _amount, _contractAddress);
     } 
-     function _withdraw(address _target, uint256 _amount, address _contractAddress) private{
 
-        if (_contractAddress == address(0)) {
-            payable(_target).transfer(_amount);
-        }
-        else { 
-            IERC20(_contractAddress).safeTransfer(_target, _amount); 
-        }
-    }  
- 
 
- 
-    function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) public override onlyRole(DEFAULT_ADMIN_ROLE){
-         
+    function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) 
+    public  { 
+         _checkRole(DEFAULT_ADMIN_ROLE, msg.sender);
         uint256 length = _optionPairDefinitions.length;
+        uint8 optionPairCount_ = optionPairCount;
+        uint8 assetCount_ = assetCount;
         for(uint256 i = 0; i < length; i++) {
             StructureData.OptionPairDefinition memory pair = _optionPairDefinitions[i];
-            pair.callOptionId = optionPairCount * 2 + 1;
+            pair.callOptionId = optionPairCount_ * 2 + 1;
             pair.putOptionId = pair.callOptionId + 1;
-            optionPairs[optionPairCount] = pair;  
-            optionPairCount++; 
-            if (assetCount == 0) {
-                asset[assetCount] = pair.depositAsset;
-                assetCount ++ ;
-                asset[assetCount] = pair.counterPartyAsset;
-                assetCount ++ ;
-
+            optionPairs[optionPairCount_++] = pair;   
+            if (assetCount_ == 0) {
+                asset[assetCount_++] = pair.depositAsset; 
+                asset[assetCount_++] = pair.counterPartyAsset;  
             }
             else {
                 bool callAdded = false;
                 bool putAdded = false;
-                for(uint8 j = 0; j <assetCount; j++) {
+                for(uint8 j = 0; j <assetCount_; j++) {
                     if (asset[j] == pair.depositAsset) {
                         callAdded = true;
                     }
@@ -110,34 +84,34 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
                     }
                 }
                 if (!callAdded) { 
-                    asset[assetCount] = pair.depositAsset;
-                    assetCount ++ ;
+                    asset[assetCount_++] = pair.depositAsset; 
                 }
                 if (!putAdded) { 
-                    asset[assetCount] = pair.counterPartyAsset;
-                    assetCount++ ;
+                    asset[assetCount_++] = pair.counterPartyAsset; 
                 }
             }
-        }  
+        }
+        optionPairCount = optionPairCount_;  
+        assetCount = assetCount_;
     } 
 
+ 
 
-    uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-
-    function initiateSettlement() external override onlyRole(StructureData.SETTLER_ROLE) {
-        require(!underSettlement, "Being settled"); 
+    function initiateSettlement() external {
+        
+         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        require(!underSettlement, "underSettlement"); 
         currentRound = currentRound + 1;   
         underSettlement = true;  
         for(uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i];  
-            uint256 pending1 = rollToNextByOption(pair.callOptionId, MAX_INT);
-            uint256 pending2 = rollToNextByOption(pair.putOptionId, MAX_INT);
+            uint128 pending1 = rollToNextByOption(pair.callOptionId);
+            uint128 pending2 = rollToNextByOption(pair.putOptionId);
             if (pending1 > 0) { 
-                depositAmount[pair.depositAsset] = depositAmount[pair.depositAsset].add(pending1);
+                assetData[pair.depositAsset].depositAmount = assetData[pair.depositAsset].depositAmount.add(pending1);
             }
             if (pending2 > 0) { 
-                depositAmount[pair.counterPartyAsset] = depositAmount[pair.counterPartyAsset].add(pending2);
+                assetData[pair.counterPartyAsset].depositAmount = assetData[pair.counterPartyAsset].depositAmount.add(pending2);
             }
             if (currentRound <= 2) {
                 continue;
@@ -151,20 +125,20 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
             });
             executionAccountingResult[i * 3] = pairResult; 
             StructureData.SettlementAccountingResult memory executeCallOption = dryRunSettlementByOption(pair.callOptionId, true); 
-            StructureData.OptionPairExecutionAccountingResult memory pairResult2 = StructureData.OptionPairExecutionAccountingResult({
+            pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecuteCall,
                 callOptionResult: executeCallOption,
                 putOptionResult: noneExecutePutOption
             });
-            executionAccountingResult[i * 3 + 1] = pairResult2; 
+            executionAccountingResult[i * 3 + 1] = pairResult; 
 
             StructureData.SettlementAccountingResult memory executePutOption = dryRunSettlementByOption(pair.putOptionId, true); 
-            StructureData.OptionPairExecutionAccountingResult memory pairResult3 = StructureData.OptionPairExecutionAccountingResult({
+            pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecutePut,
                 callOptionResult: noneExecuteCallOption,
                 putOptionResult: executePutOption
             });
-            executionAccountingResult[i * 3 + 2] = pairResult3; 
+            executionAccountingResult[i * 3 + 2] = pairResult; 
         } 
          
        if (currentRound <= 1) {
@@ -172,9 +146,10 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
        }
     }
 
-    function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(StructureData.SETTLER_ROLE) {  
-
-        require(underSettlement, "Not being settled"); 
+    function settle(StructureData.OptionPairExecution[] memory _execution) external {   
+        
+         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        require(underSettlement, "!underSettlement"); 
         uint256 count = _execution.length; 
         if (currentRound <= 2) {
             require(count == 0, "no matured round");
@@ -184,150 +159,122 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory execution = _execution[i];  
             StructureData.OptionPairDefinition storage pair = optionPairs[execution.pairId];
-            StructureData.MaturedState memory maturedState;
-            StructureData.MaturedState memory maturedState2; 
-
-            if (execution.execute == StructureData.OptionExecution.NoExecution) {
-                maturedState = closePreviousByOption(pair.callOptionId, false);
-                maturedState2 = closePreviousByOption(pair.putOptionId, false);
+            StructureData.MaturedState memory maturedState= 
+            closePreviousByOption(pair.callOptionId, execution.execute == StructureData.OptionExecution.ExecuteCall);
+            if (maturedState.releasedDepositAssetAmount > 0) { 
+                assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
+                .add(maturedState.releasedDepositAssetAmountWithPremium);
             }
-            else if (execution.execute == StructureData.OptionExecution.ExecuteCall) {
-                maturedState = closePreviousByOption(pair.callOptionId, true);
-                maturedState2 = closePreviousByOption(pair.putOptionId, false);
-            }
-            if (execution.execute == StructureData.OptionExecution.ExecutePut) {
-                maturedState = closePreviousByOption(pair.callOptionId, false);
-                maturedState2 = closePreviousByOption(pair.putOptionId, true);
+            else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
+                assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
+                .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
             } 
-            if (maturedState.releasedDepositAssetAmount > 0) {
-                uint256 releasedDepositAssetAmount  = releasedAmount[pair.depositAsset];
-                releasedAmount[pair.depositAsset] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount)
-                .add(maturedState.releasedDepositAssetPremiumAmount); 
+
+
+            maturedState = closePreviousByOption(pair.putOptionId, execution.execute == StructureData.OptionExecution.ExecutePut);
+             if (maturedState.releasedDepositAssetAmount > 0) { 
+                assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
+                .add(maturedState.releasedDepositAssetAmountWithPremium);
             }
-            else if (maturedState.releasedCounterPartyAssetAmount > 0) {
-                uint256 releasedCounterPartyAssetAmount = releasedAmount[pair.counterPartyAsset];
-                releasedAmount[pair.counterPartyAsset] = releasedCounterPartyAssetAmount.add(maturedState.releasedCounterPartyAssetAmount)
-                .add(maturedState.releasedCounterPartyAssetPremiumAmount); 
-            }  
-            
-            if (maturedState2.releasedDepositAssetAmount > 0) {
-                uint256 releasedDepositAssetAmount  = releasedAmount[pair.depositAsset];
-                releasedAmount[pair.depositAsset] = releasedDepositAssetAmount.add(maturedState2.releasedDepositAssetAmount)
-                .add(maturedState2.releasedDepositAssetPremiumAmount); 
-            }
-            else if (maturedState2.releasedCounterPartyAssetAmount > 0) {
-                uint256 releasedCounterPartyAssetAmount = releasedAmount[pair.counterPartyAsset];
-                releasedAmount[pair.counterPartyAsset] = releasedCounterPartyAssetAmount.add(maturedState2.releasedCounterPartyAssetAmount)
-                .add(maturedState2.releasedCounterPartyAssetPremiumAmount);  
-            }  
+            else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
+                assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
+                .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
+            } 
         }
-        if (currentRound > 1) { 
-            uint8 optionCount = optionPairCount * 2;
-            for(uint8 i = 1; i <= optionCount; i++) { 
+        if (currentRound > 1) {  
+            for(uint8 i = 1; i <= optionPairCount * 2; i++) { 
                 commitCurrentByOption(i); 
             } 
-            optionHeights[currentRound - 1] = block.number;
+            optionHeights[block.number] = currentRound - 1;
         }
 
  
         for(uint8 i = 0; i < assetCount; i++) {
             address assetAddress = asset[i];
-            uint256 released = releasedAmount[assetAddress];
-            uint256 deposit = depositAmount[assetAddress]; 
-            int256 leftOver = leftOverAmount[assetAddress]; 
-            
-            //no snaphot previously, so, no balance change
-            int256 balanceChange = currentRound == 2 ? int256(0) : (getBalanceChange(assetAddress) - int256(deposit) + int256(released));
-            leftOver = leftOver + balanceChange;
+            StructureData.AssetData storage assetSubData = assetData[assetAddress];  
+            //no snaphot previously, so, no balance change 
+            int128 leftOver = assetSubData.leftOverAmount + 
+            (currentRound == 2 ? int128(0) : (getBalanceChange(assetAddress) - int128(assetSubData.depositAmount) + int128(assetSubData.releasedAmount)));
 
-            assetTraderWithdrawn[assetAddress] = 0;
-            assetBalanceAfterSettle[assetAddress] = getAvailableBalance(assetAddress);
-            assetWithdrawableAfterSettle[assetAddress] = collectWithdrawable(assetAddress);
-            //console.log("asset %s balance:%d withdrawable:%d", assetAddress, assetBalanceAfterSettle[assetAddress], assetWithdrawableAfterSettle[assetAddress]);
-
-            //console.log("asset %s released:%d deposit:%d", assetAddress, released, deposit);
-            
+            assetSubData.traderWithdrawn = 0; 
+            assetSubData.balanceAfterSettle = uint128(StructureData.getAvailableBalance(assetAddress));
+            assetSubData.withdrawableAfterSettle = collectWithdrawable(assetAddress); 
             StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
-                newReleasedAmount: released,
-                newDepositAmount: deposit,
+                newReleasedAmount: assetSubData.releasedAmount,
+                newDepositAmount: assetSubData.depositAmount,
                 leftOverAmount: leftOver,
                 contractAddress: assetAddress
             }); 
             settlementCashflowResult[assetAddress] = instruction;
-            releasedAmount[assetAddress] = 0;
-            depositAmount[assetAddress] = 0;
             //todo: check overflow
-            leftOverAmount[assetAddress] = leftOver + int256(deposit) - int256(released);
+            assetSubData.leftOverAmount = leftOver + int128(assetSubData.depositAmount) - int128(assetSubData.releasedAmount);
+            assetSubData.depositAmount = 0;
+            assetSubData.releasedAmount = 0;
         }
 
         underSettlement = false; 
     } 
 
 
-    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(StructureData.SETTLER_ROLE) {
+    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external  {
 
+         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
           uint256 count = _parameters.length;        
-          if (currentRound <= 1) {
-             require(count == 0, "nothing to set");
-          }         
-          require(!underSettlement, "Being settled"); 
+          //if (currentRound <= 1) {
+             //require(count == 0, "nothing to set");
+          //}         
+          //require(!underSettlement, "Being settled"); 
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
-              setOptionParametersByOption(parameter);
+              StructureData.OptionState storage optionState = optionStates[parameter.optionId][currentRound - 1]; 
+              require(optionState.strikePrice == 0, "StrikePrice set");
+              optionState.strikePrice = parameter.strikePrice;
+              optionState.premiumRate = parameter.premiumRate; 
           }
     }
 
     //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external override onlyRole(StructureData.SETTLER_ROLE) nonReentrant{
-        int256 balance  = leftOverAmount[_asset]; 
-        require(balance > 0, "nothing to withdraw");
-        assetTraderWithdrawn[_asset] = uint256(balance);
-         _withdraw(_trader, uint256(balance), _asset);
-         leftOverAmount[_asset] = 0;
+    function withdrawAsset(address _trader, address _asset) external  {
+        
+         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        StructureData.AssetData storage assetSubData = assetData[_asset];  
+        uint128 balance  = uint128(assetSubData.leftOverAmount); 
+        //require(balance > 0, "nothing to withdraw");
+        StructureData.withdraw(_trader, balance, _asset);
+        assetSubData.traderWithdrawn = balance;
+        assetSubData.leftOverAmount = 0;
     }
 
-    function balanceEnough(address _asset) public override view returns(bool) {
-        int256 balance  = leftOverAmount[_asset]; 
+    function balanceEnough(address _asset) public view returns(bool) {
+        StructureData.AssetData storage assetSubData = assetData[_asset];  
+        int128 balance  = assetSubData.leftOverAmount; 
         if (balance >= 0) {
             return true;
-        }
-        uint256 availableBalance = getAvailableBalance(_asset); 
-        if (availableBalance == 0) {
+        } 
+        if (StructureData.getAvailableBalance(_asset) == 0) {
             return false;
         }
          
         return (balance + getBalanceChange(_asset)) >= 0;
     }
 
-
-
-    function getAvailableBalance(address _asset) private view returns(uint256) {
-       if (_asset != address(0)) {
-            return IERC20(_asset).balanceOf(address(this)); 
-       }
-       else{
-          return address(this).balance;
-       }
-    } 
-     
-    function getBalanceChange(address _asset) private view returns(int256){
-        int256 availableBalance = int256(getAvailableBalance(_asset));  
-        int256 balanceAfterSettle = int256(assetBalanceAfterSettle[_asset]);
-        int256 withdrawableAfterSettle = int256(assetWithdrawableAfterSettle[_asset]);
-        int256 withdrawableNow = int256(collectWithdrawable(_asset)); 
-        int256 traderWithdraw = int256(assetTraderWithdrawn[_asset]); 
-        int256 leastBalance =  balanceAfterSettle + withdrawableNow - withdrawableAfterSettle; 
-        return availableBalance - leastBalance + traderWithdraw; 
+ 
+    function getBalanceChange(address _asset) private view returns(int128){
+        StructureData.AssetData storage assetSubData = assetData[_asset];       
+       // int128 leastBalance = int128(assetSubData.balanceAfterSettle + collectWithdrawable(_asset) - assetSubData.withdrawableAfterSettle); 
+        //return  int128(uint128(getAvailableBalance(_asset))) - leastBalance + int128(assetSubData.traderWithdrawn); 
+        return  int128(uint128(StructureData.getAvailableBalance(_asset)).add(assetSubData.traderWithdrawn).add(assetSubData.withdrawableAfterSettle))
+         - int128(assetSubData.balanceAfterSettle.add(collectWithdrawable(_asset)));
     }
  
-    function collectWithdrawable(address _asset) private view returns(uint256) {
+    function collectWithdrawable(address _asset) private view returns(uint128) {
          
-         uint256 total = 0;
+         uint128 total = 0;
          for(uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i]; 
             if (pair.depositAsset == _asset ||
                 pair.counterPartyAsset == _asset) {
-               total = total.add(getWithdrawable(pair.callOptionId, _asset))
+               total = total.add(getWithdrawable(pair.callOptionId, _asset)) 
                .add(getWithdrawable(pair.putOptionId, _asset)); 
             }   
         }
@@ -337,10 +284,9 @@ abstract contract OptionVault is ISettlementAggregator, AccessControl, Reentranc
     }
 
 
-    function rollToNextByOption(uint8 _optionId, uint256 _quota) internal virtual returns(uint256 _pendingAmount);
+    function rollToNextByOption(uint8 _optionId) internal virtual returns(uint128 _pendingAmount);
     function dryRunSettlementByOption(uint8 _optionId, bool _execute) internal virtual view returns(StructureData.SettlementAccountingResult memory _result);
     function closePreviousByOption(uint8 _optionId, bool _execute) internal virtual returns(StructureData.MaturedState memory _maturedState);
-    function commitCurrentByOption(uint8 _optionId) internal virtual;
-    function setOptionParametersByOption(StructureData.OptionParameters memory _optionParameters) internal virtual; 
-    function getWithdrawable(uint8 _optionId, address _asset) public virtual view returns(uint256);
+    function commitCurrentByOption(uint8 _optionId) internal virtual; 
+    function getWithdrawable(uint8 _optionId, address _asset) internal virtual view returns(uint128);
 }

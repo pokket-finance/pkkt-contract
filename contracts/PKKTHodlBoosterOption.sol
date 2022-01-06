@@ -2,67 +2,47 @@
 pragma solidity =0.8.4;
  
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol"; 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
- 
-import {Utils} from "./libraries/Utils.sol";  
+import "hardhat/console.sol"; 
 import {StructureData} from "./libraries/StructureData.sol";     
 import "./interfaces/IPKKTStructureOption.sol";  
 import "./OptionVault.sol";
 
 contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     
-    using SafeERC20 for IERC20;
-    using SafeMath for uint256;
+    using SafeERC20 for IERC20; 
     using StructureData for StructureData.UserState;
-    using Utils for uint256;
-
-    event Deposit(uint8 indexed optionId, address indexed account, uint256 indexed round, uint256 amount);
-    event Withdraw(uint8 indexed optionId, address indexed account, address indexed asset, uint256 amount);
-    event CloseOption(uint8 indexed optionId, uint256 indexed round);
-    event CommitOption(uint8 indexed optionId, uint256 indexed round);
-    event OpenOption(uint8 indexed optionId, uint256 indexed round);
-    event OptionCreated(uint8 indexed optionId, string name);
-    event OptionTransfer(uint8 indexed optionId, address indexed account, uint256 premium, uint256 round);
-    
+    using StructureData for uint128; 
      
-     mapping(uint8=>mapping(uint256=>StructureData.OptionState)) public optionStates;
      mapping(uint8=>address[]) private usersInvolved;  
      mapping(uint8=>mapping(address=>StructureData.UserState)) private userStates;  
-     mapping(uint8=>uint256) public totalReleasedDepositAssetAmount; 
-     mapping(uint8=>uint256) public totalReleasedCounterPartyAssetAmount; 
+     mapping(uint8=>StructureData.OptionData) private optionData;
      
      //private data for complete withdrawal and redeposit 
-     mapping(uint8=>mapping(address=>uint256)) private releasedDepositAssetAmount;
-     mapping(uint8=>mapping(address=>uint256)) private releasedCounterPartyAssetAmount;  
-     mapping(uint8=>uint256) private assetToTerminateForNextRound; 
-     mapping(uint8=>uint256) private quota; 
+     //mapping(uint8=>mapping(address=>uint128)) private releasedDepositAssetAmount;
+     //mapping(uint8=>mapping(address=>uint128)) private releasedCounterPartyAssetAmount;  
      
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
     //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
-    constructor( address _settler, StructureData.OptionPairDefinition[] memory _optionPairDefinitions) OptionVault(_settler) { 
-        //todo: addOptionPair
+    constructor( address _settler, StructureData.OptionPairDefinition[] memory _optionPairDefinitions) OptionVault(_settler) {  
         addOptionPairs(_optionPairDefinitions);
     }
 
-    modifier validateOptionById(uint256 _optionId) {  
-        require(_optionId != 0 && _optionId <= optionPairCount*2 , "!optionId");
-        _;
+    function validateOptionById(uint8 _optionId) private {  
+        require(_optionId != 0 && _optionId <= optionPairCount*2 , "!optionId"); 
     }
  
 
-    function getAccountBalance(uint8 _optionId) external override view validateOptionById(_optionId) returns (StructureData.UserBalance memory) {
+    function getAccountBalance(uint8 _optionId) external view override returns (StructureData.UserBalance memory) {
   
        StructureData.UserState storage userState = userStates[_optionId][msg.sender];  
 
        StructureData.UserBalance memory result = StructureData.UserBalance({
            pendingDepositAssetAmount:userState.pendingAsset,
-           releasedDepositAssetAmount: releasedDepositAssetAmount[_optionId][msg.sender],
-           releasedCounterPartyAssetAmount: releasedCounterPartyAssetAmount[_optionId][msg.sender],
+           releasedDepositAssetAmount: userState.releasedDepositAssetAmount,
+           releasedCounterPartyAssetAmount: userState.releasedCounterPartyAssetAmount,
            lockedDepositAssetAmount:0,
            terminatingDepositAssetAmount: 0,
            toTerminateDepositAssetAmount: 0
@@ -70,7 +50,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
        if (underSettlement) {  
            if (currentRound > 2) {
               //when there are maturing round waiting for settlement, it becomes complex 
-                uint256 premium = optionStates[_optionId][currentRound - 2].premiumRate;
+                uint16 premium = optionStates[_optionId][currentRound - 2].premiumRate;
                 result.lockedDepositAssetAmount = userState.deriveVirtualLocked(premium);
                 result.terminatingDepositAssetAmount = userState.assetToTerminate.withPremium(premium);
                 result.toTerminateDepositAssetAmount = userState.assetToTerminateForNextRound;
@@ -87,47 +67,43 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
        return result;
     }
 
-    function getWithdrawable(uint8 _optionId, address _asset) public override view validateOptionById(_optionId) returns(uint256) {
-        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2]; 
-        //console.log("asset: %s %d", _asset, _optionId);
-        //console.log("pair: %s %s", pair.depositAsset, pair.counterPartyAsset);
-       require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "Invalid asset");
+    function getWithdrawable(uint8 _optionId, address _asset) internal override view returns(uint128) {
+        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];  
+       //require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "!asset");
        if ((_optionId == pair.callOptionId && _asset == pair.depositAsset) || 
             (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)) { 
-            return optionStates[_optionId][currentRound].totalAmount.add(totalReleasedDepositAssetAmount[_optionId]);
+            return optionStates[_optionId][currentRound].totalAmount.add(optionData[_optionId].totalReleasedDepositAssetAmount);
         }
         else {
-            return totalReleasedCounterPartyAssetAmount[_optionId];
+            return  optionData[_optionId].totalReleasedCounterPartyAssetAmount;
         }  
     }
 
-    function getOptionSnapShot(uint8 _optionId) external override view validateOptionById(_optionId) returns(StructureData.OptionSnapshot memory) { 
+    function getOptionSnapShot(uint8 _optionId) external override view returns(StructureData.OptionSnapshot memory) { 
        StructureData.OptionState storage currentOption = optionStates[_optionId][currentRound]; 
        StructureData.OptionState memory lockedOption;
        StructureData.OptionState memory onGoingOption;
-        
+       StructureData.OptionData storage data = optionData[_optionId];
        StructureData.OptionSnapshot memory result = StructureData.OptionSnapshot({
             totalPending: currentOption.totalAmount,
-            totalReleasedDeposit :  totalReleasedDepositAssetAmount[_optionId],
-            totalReleasedCounterParty : totalReleasedCounterPartyAssetAmount[_optionId],
+            totalReleasedDeposit :  data.totalReleasedDepositAssetAmount,
+            totalReleasedCounterParty : data.totalReleasedCounterPartyAssetAmount,
             totalLocked : 0,
             totalTerminating : 0,
             totalToTerminate: 0
        }); 
        if (underSettlement) { 
            lockedOption = optionStates[_optionId][currentRound - 1];
+            result.totalToTerminate = data.assetToTerminateForNextRound;
            if (currentRound > 2) {
               //when there are maturing round waiting for settlement, it becomes complex
               onGoingOption = optionStates[_optionId][currentRound - 2];
-              result.totalToTerminate = assetToTerminateForNextRound[_optionId];
               result.totalTerminating = onGoingOption.totalTerminate.withPremium(onGoingOption.premiumRate); 
-              result.totalLocked = lockedOption.totalAmount.add(
-                onGoingOption.totalAmount.withPremium(onGoingOption.premiumRate)
-              ).sub(result.totalTerminating);
+              result.totalLocked = lockedOption.totalAmount.add( 
+                onGoingOption.totalAmount.withPremium(onGoingOption.premiumRate)).sub(result.totalTerminating);
            }
            else {
-               result.totalLocked = lockedOption.totalAmount; 
-               result.totalToTerminate = assetToTerminateForNextRound[_optionId];
+               result.totalLocked = lockedOption.totalAmount;  
            }
        }
        else if (currentRound > 1) {
@@ -158,29 +134,31 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }*/
 
 
-    function initiateWithraw(uint8 _optionId, uint256 _assetToTerminate) external override validateOptionById(_optionId) {
-        require(_assetToTerminate > 0 , "!_assetToTerminate"); 
-        require(currentRound > 1, "No on going"); 
+    function initiateWithraw(uint8 _optionId, uint128 _assetToTerminate) external override {
+        //require(_assetToTerminate > 0 , "!_assetToTerminate"); 
+        //require(currentRound > 1, "No on going"); 
+        validateOptionById(_optionId);
         StructureData.UserState storage userState =  userStates[_optionId][msg.sender];  
         if (underSettlement) {  
-            uint256 newAssetToTerminate = userState.assetToTerminateForNextRound.add(_assetToTerminate); 
+            uint128 newAssetToTerminate = userState.assetToTerminateForNextRound + _assetToTerminate; 
             if (currentRound == 2) {
-                require(newAssetToTerminate <=  userState.tempLocked, "Exceeds available"); 
+                require(newAssetToTerminate <=  userState.tempLocked, "Exceeds"); 
                 StructureData.OptionState storage previousOption = optionStates[_optionId][currentRound - 1]; 
                 previousOption.totalTerminate = previousOption.totalTerminate.add(_assetToTerminate);  
             }
             else {
                 StructureData.OptionState storage onGoingOption = optionStates[_optionId][currentRound - 2];
-                uint256 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
-                require(newAssetToTerminate <=  totalLocked, "Exceeds available");   
+                uint128 totalLocked = userState.deriveVirtualLocked(onGoingOption.premiumRate); 
+                require(newAssetToTerminate <=  totalLocked, "Exceeds");   
                 //store temporarily
-                assetToTerminateForNextRound[_optionId] = assetToTerminateForNextRound[_optionId].add(_assetToTerminate); 
+                optionData[_optionId].assetToTerminateForNextRound = optionData[_optionId].assetToTerminateForNextRound
+                .add(_assetToTerminate); 
             } 
             userState.assetToTerminateForNextRound = newAssetToTerminate;
         }
         else {
-            uint256 newAssetToTerminate = userState.assetToTerminate.add(_assetToTerminate); 
-            require(newAssetToTerminate <=  userState.ongoingAsset, "Exceeds available");
+            uint128 newAssetToTerminate = userState.assetToTerminate.add(_assetToTerminate);
+            require(newAssetToTerminate <=  userState.ongoingAsset, "Exceeds");
             userState.assetToTerminate = newAssetToTerminate;
             StructureData.OptionState storage previousOption = optionStates[_optionId][currentRound - 1];
             previousOption.totalTerminate = previousOption.totalTerminate.add(_assetToTerminate);
@@ -188,23 +166,23 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
 
     }
 
-    function cancelWithdraw(uint8 _optionId, uint256 _assetToTerminate) external override  validateOptionById(_optionId){ 
-        require(_assetToTerminate > 0 , "!_assetToTerminate"); 
-        require(currentRound > 1, "No on going");
+    function cancelWithdraw(uint8 _optionId, uint128 _assetToTerminate) external override  { 
+        //require(_assetToTerminate > 0 , "!_assetToTerminate"); 
+        //require(currentRound > 1, "No on going");
+        validateOptionById(_optionId);
         StructureData.UserState storage userState =  userStates[_optionId][msg.sender]; 
         if (underSettlement) {  
-            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.sub(_assetToTerminate); 
-            if (currentRound == 2) { 
-                StructureData.OptionState storage previousOption = optionStates[_optionId][currentRound - 1]; 
-                previousOption.totalTerminate = previousOption.totalTerminate.sub(_assetToTerminate);  
+            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound - _assetToTerminate; 
+            if (currentRound == 2) {  
+                optionStates[_optionId][currentRound - 1].totalTerminate = optionStates[_optionId][currentRound - 1].totalTerminate.sub(_assetToTerminate);  
             }
             else { 
                 //store temporarily
-                assetToTerminateForNextRound[_optionId] = assetToTerminateForNextRound[_optionId].sub(_assetToTerminate); 
+                optionData[_optionId].assetToTerminateForNextRound = optionData[_optionId].assetToTerminateForNextRound.sub(_assetToTerminate); 
             }  
         }
         else {  
-            userState.assetToTerminate = userState.assetToTerminate.sub(_assetToTerminate); 
+            userState.assetToTerminate = userState.assetToTerminate.sub( _assetToTerminate); 
             StructureData.OptionState storage previousOption = optionStates[_optionId][currentRound - 1];
             previousOption.totalTerminate = previousOption.totalTerminate.sub(_assetToTerminate);
         }
@@ -271,34 +249,36 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
     */
     
-    function withdraw(uint8 _optionId, uint256 _amount, address _asset) external override validateOptionById(_optionId) nonReentrant { 
-       require(_amount > 0, "!amount");  
-       require(!underSettlement, "Being settled");  
+    function withdraw(uint8 _optionId, uint128 _amount, address _asset) external override  { 
+       //require(_amount > 0, "!amount");   
+       
+        validateOptionById(_optionId);
        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
-       require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "Invalid asset");
+       //require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "!asset");
+       
+        StructureData.UserState storage userState =  userStates[_optionId][msg.sender]; 
        if ((_optionId == pair.callOptionId && _asset == pair.depositAsset) || 
             (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)) {
            //todo: 0 out released amount if missing balance from trader
-           uint256 releasedAmount = releasedDepositAssetAmount[_optionId][msg.sender];
-           if (releasedAmount <= _amount) { 
-               StructureData.UserState storage userState =  userStates[_optionId][msg.sender];  
-               uint256 redeemAmount = _amount.sub(releasedAmount);
+           uint128 releasedAmount = userState.releasedDepositAssetAmount;
+           if (releasedAmount <= _amount) {  
+               uint128 redeemAmount = _amount.sub(releasedAmount);
                userState.pendingAsset = userState.pendingAsset.sub(redeemAmount);
-               releasedDepositAssetAmount[_optionId][msg.sender] = 0; 
-               totalReleasedDepositAssetAmount[_optionId] = totalReleasedDepositAssetAmount[_optionId].sub(releasedAmount);
+               userState.releasedDepositAssetAmount = 0; 
+               optionData[_optionId].totalReleasedDepositAssetAmount = optionData[_optionId].totalReleasedDepositAssetAmount.sub(releasedAmount);
                StructureData.OptionState storage optionState = optionStates[_optionId][currentRound];
                optionState.totalAmount = optionState.totalAmount.sub(redeemAmount);  
            }
            else { 
-               releasedDepositAssetAmount[_optionId][msg.sender] = releasedAmount.sub(_amount); 
-               totalReleasedDepositAssetAmount[_optionId] = totalReleasedDepositAssetAmount[_optionId].sub(_amount);
+               userState.releasedDepositAssetAmount = releasedAmount.sub(_amount); 
+               optionData[_optionId].totalReleasedDepositAssetAmount = optionData[_optionId].totalReleasedDepositAssetAmount.sub(_amount);
            }
        }
        else {
  
            //same result as completeWithdraw  
-           releasedCounterPartyAssetAmount[_optionId][msg.sender] = releasedCounterPartyAssetAmount[_optionId][msg.sender].sub(_amount);
-           totalReleasedCounterPartyAssetAmount[_optionId] = totalReleasedCounterPartyAssetAmount[_optionId].sub(_amount);
+           userState.releasedCounterPartyAssetAmount = userState.releasedCounterPartyAssetAmount.sub(_amount);
+           optionData[_optionId].totalReleasedCounterPartyAssetAmount = optionData[_optionId].totalReleasedCounterPartyAssetAmount.sub( _amount);
        }
        clientWithdraw(msg.sender, _amount, _asset, false);
         emit Withdraw(_optionId, msg.sender, _asset, _amount);
@@ -331,34 +311,36 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }*/
  
     //deposit eth
-    function depositETH(uint8 _optionId) external payable override validateOptionById(_optionId) nonReentrant{ 
-       require(currentRound > 0, "!Started"); 
+    function depositETH(uint8 _optionId) external override payable  { 
+       //require(currentRound > 0, "!Started"); 
        require(msg.value > 0, "!value"); 
        
+       validateOptionById(_optionId);
        StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
        address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset;
        require(depositAsset == address(0), "!ETH");
 
         //todo: convert to weth  
-       _depositFor(_optionId, msg.sender, msg.value, currentRound, 0);
+       _depositFor(_optionId, msg.sender, uint128(msg.value), currentRound, 0);
        //payable(vaultAddress()).transfer(msg.value);
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint8 _optionId, uint256 _amount) external override validateOptionById(_optionId)  nonReentrant{   
-        require(currentRound > 0, "!Started"); 
+    function deposit(uint8 _optionId, uint128 _amount) external override{   
+        //require(currentRound > 0, "!Started"); 
         require(_amount > 0, "!amount"); 
+        validateOptionById(_optionId);
         StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
-       address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset;
-       require(depositAsset != address(0), "ETH");
+        address depositAsset = pair.callOptionId == _optionId ? pair.depositAsset : pair.counterPartyAsset; 
+        require(depositAsset != address(0), "ETH");
         _depositFor(_optionId, msg.sender, _amount,currentRound, 0);  
         IERC20(depositAsset).safeTransferFrom(msg.sender, address(this), _amount);
     }
  
   
-    function _depositFor(uint8 _optionId, address _userAddress, uint256 _amount, uint256 _round, uint256 _toTerminate) private { 
+    function _depositFor(uint8 _optionId, address _userAddress, uint128 _amount, uint16 _round, uint128 _toTerminate) private { 
         StructureData.OptionState storage optionState = optionStates[_optionId][_round];
-        require(optionState.totalAmount.add(_amount) <= quota[_optionId], "Not enough quota");
+        //require(optionState.totalAmount + (_amount) <= quota[_optionId], "Not enough quota");
         StructureData.UserState storage userState =  userStates[_optionId][_userAddress]; 
         //first time added
         if (!userState.hasState) { 
@@ -368,7 +350,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         if (_round != currentRound) { 
             userState.tempLocked = userState.tempLocked.add(_amount); 
             userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.add(_toTerminate);
-            assetToTerminateForNextRound[_optionId] = assetToTerminateForNextRound[_optionId].add(_toTerminate);
+            optionData[_optionId].assetToTerminateForNextRound = optionData[_optionId].assetToTerminateForNextRound.add(_toTerminate);
         }
         else { 
             userState.pendingAsset = userState.pendingAsset.add(_amount); 
@@ -396,9 +378,9 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed  
-    function getRoundData(uint8 _optionId, uint256 _blockHeight) external view override validateOptionById(_optionId) returns(StructureData.OptionState memory) {
-        return optionStates[_optionId][optionHeights[_blockHeight]];
-    } 
+    //function getRoundData(uint8 _optionId, uint256 _blockHeight) external view override returns(StructureData.OptionState memory) {
+    //    return optionStates[_optionId][optionHeights[_blockHeight]];
+    //} 
 
 
    /*
@@ -406,20 +388,18 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     */
 
    //first, open t+1 round
-   function rollToNextByOption(uint8 _optionId, uint256 _quota) internal override returns(uint256 _pendingAmount){    
+   function rollToNextByOption(uint8 _optionId) internal override returns(uint128 _pendingAmount){    
       
-       if (currentRound > 2) {
-           require(optionStates[_optionId][currentRound-2].strikePrice > 0,  "!Strike Price");
-        } 
+       //if (currentRound > 2) {
+        //   require(optionStates[_optionId][currentRound-2].strikePrice > 0,  "!StrikePrice");
+        //} 
    
-        quota[_optionId] = _quota; 
         StructureData.OptionState memory currentOption =  
         StructureData.OptionState({
                             round: currentRound,
                             totalAmount: 0,
                             totalTerminate: 0,
-                            premiumRate:  0,
-                            pricePrecision: 0,
+                            premiumRate:  0, 
                             strikePrice: 0,
                             executed: false,
                             callOrPut: optionPairs[(_optionId - 1)/2].callOptionId == _optionId
@@ -427,32 +407,25 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         optionStates[_optionId][currentRound] = currentOption; 
        if (currentRound > 1) {
             uint256 userCount = usersInvolved[_optionId].length;
-            for (uint i=0; i < userCount; i++) {
-                address userAddress = usersInvolved[_optionId][i];
-                StructureData.UserState storage userState = userStates[_optionId][userAddress]; 
+            for (uint i=0; i < userCount; i++) { 
+                StructureData.UserState storage userState = userStates[_optionId][ usersInvolved[_optionId][i]]; 
                 if(userState.pendingAsset != 0) {  
-                    userState.tempLocked = userState.pendingAsset;  
-                    //console.log("userState.pendingAsset  %s %d" ,  userAddress, userState.pendingAsset);
+                    userState.tempLocked = userState.pendingAsset;   
                 }   
                 userState.pendingAsset = 0;
             }
        } 
-        emit OpenOption(_optionId, currentRound); 
-        if (currentRound > 1) {
-            return optionStates[_optionId][currentRound-1].totalAmount;
-        }
-        return 0;
+       //emit OpenOption(_optionId, currentRound); 
+       return currentRound > 1 ? optionStates[_optionId][currentRound-1].totalAmount : 0;
     }
     
 
    //then dry run settlement and get accounting result
    function dryRunSettlementByOption(uint8 _optionId, bool _execute) internal override view returns(StructureData.SettlementAccountingResult memory _result) {
- 
-
-        StructureData.OptionState storage lockedOption = optionStates[_optionId][currentRound - 1]; 
+  
         StructureData.SettlementAccountingResult memory result = StructureData.SettlementAccountingResult({ 
             round: currentRound - 1,
-            depositAmount: lockedOption.totalAmount,
+            depositAmount: optionStates[_optionId][currentRound - 1].totalAmount,
             executed: _execute,
             autoRollAmount: 0,
             autoRollPremium: 0,
@@ -491,8 +464,8 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
    //then, make decision based on dry run result and close t-1 round
    function closePreviousByOption(uint8 _optionId, bool _execute) internal override  
    returns(StructureData.MaturedState memory _maturedState) {    
-        uint maturedRound = currentRound - 2;
-        StructureData.OptionState storage previousOptionState = optionStates[_optionId][maturedRound];   
+        //uint16 maturedRound = currentRound - 2;
+        StructureData.OptionState storage previousOptionState = optionStates[_optionId][currentRound - 2];   
         StructureData.OptionPairDefinition storage pair = optionPairs[(_optionId - 1)/2];
         bool isCall = pair.callOptionId == _optionId;
         StructureData.MaturedState memory maturedState = StructureData.calculateMaturity(_execute, previousOptionState, isCall,
@@ -500,91 +473,64 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             isCall ? pair.counterPartyAssetAmountDecimals : pair.depositAssetAmountDecimals);     
         previousOptionState.executed = _execute;
         if (_execute) {
-            totalReleasedCounterPartyAssetAmount[_optionId] = totalReleasedCounterPartyAssetAmount[_optionId].
-            add(maturedState.releasedCounterPartyAssetAmount).add(maturedState.releasedCounterPartyAssetPremiumAmount); 
+            optionData[_optionId].totalReleasedCounterPartyAssetAmount = optionData[_optionId].totalReleasedCounterPartyAssetAmount
+            .add(maturedState.releasedCounterPartyAssetAmountWithPremium); 
         }
         else {
-            totalReleasedDepositAssetAmount[_optionId] = totalReleasedDepositAssetAmount[_optionId].
-            add(maturedState.releasedDepositAssetAmount).add(maturedState.releasedDepositAssetPremiumAmount);
+            optionData[_optionId].totalReleasedDepositAssetAmount= optionData[_optionId].totalReleasedDepositAssetAmount
+            .add(maturedState.releasedDepositAssetAmountWithPremium);
 
         }
         if (previousOptionState.totalAmount > 0) { 
+            
+            uint256 userCount = usersInvolved[_optionId].length; 
+            
+            uint128 totalAutoRollBase = previousOptionState.totalAmount.sub(previousOptionState.totalTerminate);
             if (_execute) { 
-                autoRollToCounterPartyByOption(_optionId, previousOptionState, maturedState);
+                autoRollToCounterPartyByOption(userCount, totalAutoRollBase, _optionId, previousOptionState, 
+                maturedState.releasedCounterPartyAssetAmountWithPremium, maturedState.autoRollCounterPartyAssetAmountWithPremium);
             }
             else { 
-                autoRollByOption(_optionId, previousOptionState, maturedState);
+                autoRollByOption(userCount, totalAutoRollBase, _optionId, previousOptionState, 
+                maturedState.releasedDepositAssetAmountWithPremium, maturedState.autoRollDepositAssetAmountWithPremium);
             }
         }    
-        emit CloseOption(_optionId, maturedRound);
+        //emit CloseOption(_optionId, currentRound - 2);
         return maturedState;
    }
 
    //next, commit t round
    function commitCurrentByOption(uint8 _optionId) internal override {   
         
-        uint256 lockedRound = currentRound - 1;
-        StructureData.OptionState storage optionState = optionStates[_optionId][lockedRound];  
+        //uint16 lockedRound = currentRound - 1;
+        //StructureData.OptionState storage optionState = optionStates[_optionId][currentRound - 1];  
         //mint for the current option
         //_mint(address(this), optionState.totalAmount);
         uint256 userCount = usersInvolved[_optionId].length;
         for (uint i=0; i < userCount; i++) {
-            address userAddress = usersInvolved[_optionId][i];
-            StructureData.UserState storage userState = userStates[_optionId][userAddress]; 
-            if (userState.assetToTerminateForNextRound != 0){ 
-                userState.assetToTerminate = userState.assetToTerminateForNextRound;
-                userState.assetToTerminateForNextRound = 0;
-            } 
-            else if (userState.assetToTerminate != 0){
-                userState.assetToTerminate = 0;
-            }            
-            if(userState.tempLocked == 0) {  
-                userState.ongoingAsset = 0;
-                continue;
-            } 
-            //transfer each user a share of the option to trigger transfer event
-            //can be used to calculate the user option selling operations
-            //utilizing some web3 indexed services, take etherscan api/graphql etc.
-            //_transfer(address(this), userAddress, userState.tempLocked);
-            emit OptionTransfer(_optionId, userAddress, optionState.premiumRate, optionState.round);
-            userState.ongoingAsset = userState.tempLocked; 
-            userState.tempLocked = 0; 
+            StructureData.updateUserState(userStates[_optionId][usersInvolved[_optionId][i]]);
          }
          
-        optionState.totalTerminate = optionState.totalTerminate.add(assetToTerminateForNextRound[_optionId]); 
-        assetToTerminateForNextRound[_optionId] = 0; 
-        emit CommitOption(_optionId, lockedRound); 
+        optionStates[_optionId][currentRound - 1].totalTerminate = optionStates[_optionId][currentRound - 1].totalTerminate.add(optionData[_optionId].assetToTerminateForNextRound); 
+        optionData[_optionId].assetToTerminateForNextRound = 0; 
+        //emit CommitOption(_optionId, currentRound - 1); 
    }
        
-   //at last, specify option parameters
-   function setOptionParametersByOption(StructureData.OptionParameters memory _optionParameters) internal override  {
-         
-        uint256 previousRound = currentRound - 1;
-        StructureData.OptionState storage optionState = optionStates[_optionParameters.optionId][previousRound]; 
-        require(optionState.strikePrice == 0, "Strike Price already set");
-        optionState.strikePrice = _optionParameters.strikePrice;
-        optionState.premiumRate = _optionParameters.premiumRate;
-        optionState.pricePrecision = _optionParameters.pricePrecision;
-   }
-
  
  
 
-   function autoRollToCounterPartyByOption(uint8 _optionId, StructureData.OptionState storage _optionState, StructureData.MaturedState memory _maturedState) private {
-        uint256 userCount = usersInvolved[_optionId].length; 
-        uint256 totalAutoRollBase = _optionState.totalAmount.sub(_optionState.totalTerminate);
+   function autoRollToCounterPartyByOption(uint256 _userCount, uint128 _totalAutoRollBase, uint8 _optionId, StructureData.OptionState storage _optionState, 
+    uint128 _totalReleased, uint128 _totalAutoRoll) private {  
         //uint256 lockedRound = currentRound - 1;  
-        uint256 totalReleased2 = _maturedState.releasedCounterPartyAssetAmount.add(_maturedState.releasedCounterPartyAssetPremiumAmount);
-        uint256 totalAutoRoll2 = _maturedState.autoRollCounterPartyAssetAmount.add(_maturedState.autoRollCounterPartyAssetPremiumAmount);  
         uint8 counterPartyOptionId = _optionId % 2 == 1 ? (_optionId + 1) : (_optionId - 1);
         //uint256 assetToTerminateForNextRoundByOption = assetToTerminateForNextRound[_optionId];
         //debit assetToTerminateForNextRound if executed
-        if (assetToTerminateForNextRound[_optionId] > 0 && totalAutoRoll2 > 0) { 
-             assetToTerminateForNextRound[_optionId] = Utils.subOrZero(assetToTerminateForNextRound[_optionId],  
-             totalAutoRollBase.withPremium(_optionState.premiumRate));
+        if (optionData[_optionId].assetToTerminateForNextRound > 0 && _totalAutoRoll > 0) { 
+             optionData[_optionId].assetToTerminateForNextRound = optionData[_optionId].assetToTerminateForNextRound.subOrZero(  
+             _totalAutoRollBase.withPremium(_optionState.premiumRate));
 
         }
-        for (uint i=0; i < userCount; i++) {
+        for (uint i=0; i < _userCount; i++) {
             address userAddress = usersInvolved[_optionId][i];
             StructureData.UserState storage userState = userStates[_optionId][userAddress];  
              
@@ -592,46 +538,42 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
                 userState.assetToTerminate = 0;
                 continue;
             } 
-            uint256 amountToTerminate = Utils.getAmountToTerminate(totalReleased2, userState.assetToTerminate, _optionState.totalTerminate);
+            uint128 amountToTerminate = StructureData.getAmountToTerminate(_totalReleased, userState.assetToTerminate, _optionState.totalTerminate);
             if (amountToTerminate > 0) {
-                releasedCounterPartyAssetAmount[_optionId][userAddress] = 
-                releasedCounterPartyAssetAmount[_optionId][userAddress].add(amountToTerminate);
+                userState.releasedCounterPartyAssetAmount  = 
+                userState.releasedCounterPartyAssetAmount.add(amountToTerminate);
             } 
-            uint256 remainingAmount = Utils.getAmountToTerminate(totalAutoRoll2, userState.ongoingAsset.sub(userState.assetToTerminate), totalAutoRollBase);
+            uint128 remainingAmount = StructureData.getAmountToTerminate(_totalAutoRoll, userState.ongoingAsset.sub(userState.assetToTerminate), _totalAutoRollBase);
             if (remainingAmount > 0){    
-                (uint256 onGoingTerminate,) = userState.deriveWithdrawRequest(_optionState.premiumRate);
+                (uint128 onGoingTerminate,) = userState.deriveWithdrawRequest(_optionState.premiumRate);
                 if (onGoingTerminate != 0) {
-                    uint256 virtualOnGoing =  userState.ongoingAsset.withPremium(_optionState.premiumRate);
-                    onGoingTerminate = Utils.getAmountToTerminate(remainingAmount, onGoingTerminate, virtualOnGoing);
+                    uint128 virtualOnGoing =  userState.ongoingAsset.withPremium(_optionState.premiumRate);
+                    onGoingTerminate = StructureData.getAmountToTerminate(remainingAmount, onGoingTerminate, virtualOnGoing);
                 } 
                 
                 _depositFor(counterPartyOptionId, userAddress, remainingAmount, currentRound - 1, 0);
             } 
             userState.assetToTerminate = 0;
-        } 
-         
+        }  
    }
  
-   function autoRollByOption(uint8 _optionId, StructureData.OptionState storage _optionState, StructureData.MaturedState memory _maturedState) private {
-        uint256 userCount = usersInvolved[_optionId].length; 
-        uint256 totalAutoRollBase = _optionState.totalAmount.sub(_optionState.totalTerminate);
+   function autoRollByOption(uint256 _userCount, uint128 _totalAutoRollBase, uint8 _optionId, StructureData.OptionState storage _optionState, 
+   uint128 _totalReleased, uint128 _totalAutoRoll) private {
         //uint256 lockedRound = currentRound - 1; 
-        uint256 totalReleased = _maturedState.releasedDepositAssetAmount.add(_maturedState.releasedDepositAssetPremiumAmount);
-        uint256 totalAutoRoll = _maturedState.autoRollDepositAssetAmount.add(_maturedState.autoRollDepositAssetPremiumAmount);
-        for (uint i=0; i < userCount; i++) {
+          for (uint i=0; i < _userCount; i++) {
             address userAddress = usersInvolved[_optionId][i];
-            StructureData.UserState storage userState = userStates[_optionId][userAddress];  
+            StructureData.UserState storage userState = userStates[_optionId][userAddress];   
             if (userState.ongoingAsset == 0) {
                 userState.assetToTerminate = 0;
                 continue;
             }
                 
-            uint256 amountToTerminate = Utils.getAmountToTerminate(totalReleased, userState.assetToTerminate, _optionState.totalTerminate);
+            uint128 amountToTerminate = StructureData.getAmountToTerminate(_totalReleased, userState.assetToTerminate, _optionState.totalTerminate);
             if (amountToTerminate > 0) { 
-                releasedDepositAssetAmount[_optionId][userAddress] = 
-                releasedDepositAssetAmount[_optionId][userAddress].add(amountToTerminate); 
+                userState.releasedDepositAssetAmount  = 
+                userState.releasedDepositAssetAmount.add(amountToTerminate); 
             }
-            uint256 remainingAmount = Utils.getAmountToTerminate(totalAutoRoll, userState.ongoingAsset.sub(userState.assetToTerminate), totalAutoRollBase);
+            uint128 remainingAmount = StructureData.getAmountToTerminate(_totalAutoRoll, userState.ongoingAsset.sub(userState.assetToTerminate), _totalAutoRollBase);
             if (remainingAmount > 0) { 
                 _depositFor(_optionId, userAddress, remainingAmount, currentRound - 1, 0);
             } 
@@ -639,4 +581,5 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             userState.assetToTerminate = 0;
         }  
    }
+ 
 }
