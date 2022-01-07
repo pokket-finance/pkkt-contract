@@ -237,6 +237,14 @@ export async function getTrader(): Promise<SignerWithAddress> {
     return await ethers.getSigner(trader);
 }
 
+export function settlementResubmit(app): boolean {
+    let initiateSettlementResubmit = app.get("initiateSettlementResubmit");
+    if (initiateSettlementResubmit === undefined) {
+        initiateSettlementResubmit = false;
+    }
+    return initiateSettlementResubmit;
+}
+
 /**
  * Gets the money movement data for the given asset
  * @param vault to get the settlement cash flow result

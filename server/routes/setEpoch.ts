@@ -5,7 +5,8 @@ import {
     getSettler,
     getOptionContracts,
     areOptionParamsSet,
-    canSettle
+    canSettle,
+    settlementResubmit
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -31,9 +32,17 @@ export async function getSetEpoch (req: Request, res: Response) {
     }
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
+
+    const initiateSettlementResubmit = settlementResubmit(req.app);
     res.render(
         "setEpoch",
-        { round, areOptionParametersSet, predictedEthOption, predictedWbtcOption }
+        {
+            round,
+            areOptionParametersSet,
+            predictedEthOption,
+            predictedWbtcOption,
+            initiateSettlementResubmit
+        }
     );
 };
 

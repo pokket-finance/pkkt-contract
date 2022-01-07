@@ -50,7 +50,7 @@ dotenv.config();
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
-      gasPrice: 8000000000,
+      gasPrice: 100000000000,
       accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
     },
   },

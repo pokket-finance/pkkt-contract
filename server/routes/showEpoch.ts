@@ -7,7 +7,7 @@ import {
     WBTC_PRICE_PRECISION
 } from "../../constants/constants";
 import {
-    getOptionContracts
+    getOptionContracts, settlementResubmit
 } from "../utilities/utilities";
 
 // /show/epoch route
@@ -45,6 +45,9 @@ export async function showEpoch(req: Request, res: Response) {
         callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
         putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
     }
+
+    const initiateSettlementResubmit = settlementResubmit(req.app);
+
     res.render(
         "showEpoch",
         {
@@ -52,7 +55,8 @@ export async function showEpoch(req: Request, res: Response) {
             ethOption,
             predictedEthOption: predictedEthOption,
             wbtcOption,
-            predictedWbtcOption: predictedWbtcOption
+            predictedWbtcOption: predictedWbtcOption,
+            initiateSettlementResubmit
         }
     );
 }

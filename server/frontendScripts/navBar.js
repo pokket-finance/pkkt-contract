@@ -1,6 +1,6 @@
 // Modifies nav bar
 
-window.onload = () => {
+window.addEventListener("load", () => {
     let path = window.location.pathname;    
     let navbar = document.getElementById("navbar");
     
@@ -28,4 +28,4 @@ window.onload = () => {
     else {
     
     }
-};
+});

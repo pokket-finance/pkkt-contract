@@ -2,7 +2,7 @@ import { Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { OptionVault } from "../../typechain";
-import { getDeployedContractHelper, getSettler } from "../utilities/utilities";
+import { getDeployedContractHelper, getSettler, settlementResubmit } from "../utilities/utilities";
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {
@@ -17,10 +17,7 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
     const transactionMined = (curSettlerNonce === prevSettlerNonce);
 
     // Checks if the initiateSettlement needs to be resubmited by trader
-    let initiateSettlementResubmit = req.app.get("initiateSettlementResubmit");
-    if (initiateSettlementResubmit === undefined) {
-        initiateSettlementResubmit = false;
-    }
+    let initiateSettlementResubmit = settlementResubmit(req.app);
 
     const gasPrice = await ethers.provider.getGasPrice();
     const gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei");
