@@ -30,7 +30,7 @@ function updateRequired(selector, dataSelector) {
     else if (required < 0) {
         element.setAttribute("style", "color:red");
         let selectionData = document.querySelector(dataSelector);
-        selectionData.innerHTML= "Send funds back to vault";
+        selectionData.innerHTML= `Send funds back to ${element.dataset.vaultAddress}`;
     }
     else {
         let selectionData = document.querySelector(dataSelector);

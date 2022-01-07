@@ -13,7 +13,8 @@ import {
     getMoneyMovementData,
     getDeployedContractHelper,
     getSettler,
-    getTrader
+    getTrader,
+    settlementResubmit
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -53,7 +54,7 @@ export async function getMoneyMovement(req: Request, res: Response) {
     } catch (err) {
         console.error("No residule wbtc")
         wbtcData.leftover = "0";
-        wbtcData.required = "0";
+        //wbtcData.required = "0";
     }
 
     let usdcData = { 
@@ -69,12 +70,16 @@ export async function getMoneyMovement(req: Request, res: Response) {
     } catch (err) {
         console.error("No residule usdc");
         usdcData.leftover = "0";
-        usdcData.required = "0";
+        //usdcData.required = "0";
     }
 
     const gasPrice = await ethers.provider.getGasPrice();
     const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
+
+    const initiateSettlementResubmit = settlementResubmit(req.app);
+
+    const success = req.params.success;
 
     res.render(
         "moneyMovement",
@@ -85,7 +90,10 @@ export async function getMoneyMovement(req: Request, res: Response) {
             usdcData,
             ethGasEstimate,
             wbtcGasEstimate,
-            usdcGasEstimate
+            usdcGasEstimate,
+            initiateSettlementResubmit,
+            success,
+            vaultAddress: vault.address
         }
     );
 }
@@ -98,14 +106,20 @@ export async function postMoneyMovement(req: Request, res: Response) {
     const trader = await getTrader();
     const settler = await getSettler();
 
-    if (req.body.withdrawEth !== undefined) {
-        await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
+    try {
+        if (req.body.withdrawEth !== undefined) {
+            await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
+        }
+        if (req.body.withdrawWbtc !== undefined) {
+            await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+        }
+        if (req.body.withdrawUsdc !== undefined) {
+            await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
+        }
+        res.redirect("/moneyMovement:true");
+    } catch (err) {
+        console.error(err);
+        res.redirect("/moneyMovement:false")
     }
-    if (req.body.withdrawWbtc !== undefined) {
-        await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
-    }
-    if (req.body.withdrawUsdc !== undefined) {
-        await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
-    }
-    res.redirect("/moneyMovement");
+
 }

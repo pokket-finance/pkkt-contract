@@ -7,6 +7,12 @@
         <link rel="stylesheet" href="/button.css">
         <script src="/navbar.js"></script>
         <script src="/moneyMovement.js"></script>
+        <style>
+            p {
+                text-align: center;
+                font-size: larger;
+            }
+        </style>
     </head>
 
     <body>
@@ -30,7 +36,7 @@
                         <td><%= ethData.queuedLiquidity %></td>
                         <td><%= ethData.withdrawalRequest %></td>
                         <td><%= ethData.leftover %></td>
-                        <td class="ethRequired"><%= ethData.required %></td>
+                        <td class="ethRequired" data-vault-address="<%= vaultAddress %>"><%= ethData.required %></td>
                         <td class="ethSelectionData"><input type="checkbox" name="withdrawEth" value="<%= ethGasEstimate %>" /></td>
                     </tr>
                     <tr>
@@ -38,7 +44,7 @@
                         <td><%= wbtcData.queuedLiquidity %></td>
                         <td><%= wbtcData.withdrawalRequest %></td>
                         <td><%= wbtcData.leftover %></td>
-                        <td class="wbtcRequired"><%= wbtcData.required %></td>
+                        <td class="wbtcRequired" data-vault-address="<%= vaultAddress %>"><%= wbtcData.required %></td>
                         <td class="wbtcSelectionData"><input type="checkbox" name="withdrawWbtc" value="<%= wbtcGasEstimate %>" /></td>
                     </tr>
                     <tr>
@@ -46,7 +52,7 @@
                         <td><%= usdcData.queuedLiquidity %></td>
                         <td><%= usdcData.withdrawalRequest %></td>
                         <td><%= usdcData.leftover %></td>
-                        <td class="usdcRequired"><%= usdcData.required %></td>
+                        <td class="usdcRequired" data-vault-address="<%= vaultAddress %>"><%= usdcData.required %></td>
                         <td class="usdcSelectionData"><input type="checkbox" name="withdrawUsdc" value="<%= usdcGasEstimate %>" /></td>
                     </tr>
                     <tr>
@@ -64,6 +70,13 @@
                 </table>
             </div>
             <input type="submit" class="button" value="Withdraw Assets" />
+            <% if (success !== undefined) { %>
+                <% if (success) { %>
+                    <p>Withdraw Successful!</p>
+                <% } else { %>
+                    <p>Error in Withdraw!</p>
+                <% } %>
+            <% } %>
         </form>
     </body>
 </html>
