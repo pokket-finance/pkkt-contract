@@ -14,7 +14,10 @@ import {
     getDeployedContractHelper,
     getSettler,
     getTrader,
-    settlementResubmit
+    settlementResubmit,
+    canSettle,
+    getOptionContracts,
+    areOptionParamsSet
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -38,7 +41,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
     } catch (err) {
         console.error("No Residule Eth");
         ethData.leftover = "0";
-        ethData.required = "0";
+        if (parseFloat(ethData.required) > 0) {
+            ethData.required = "0";
+        }
     }
 
     let wbtcData = {
@@ -54,7 +59,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
     } catch (err) {
         console.error("No residule wbtc")
         wbtcData.leftover = "0";
-        //wbtcData.required = "0";
+        if (parseFloat(wbtcData.required) > 0) {
+            wbtcData.required = "0";
+        }
     }
 
     let usdcData = { 
@@ -70,7 +77,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
     } catch (err) {
         console.error("No residule usdc");
         usdcData.leftover = "0";
-        //usdcData.required = "0";
+        if (parseFloat(usdcData.required) > 0){
+            usdcData.required = "0";
+        }
     }
 
     const gasPrice = await ethers.provider.getGasPrice();
@@ -80,6 +89,23 @@ export async function getMoneyMovement(req: Request, res: Response) {
     const initiateSettlementResubmit = settlementResubmit(req.app);
 
     const success = req.params.success;
+    let canWithdraw;
+    if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
+        canWithdraw = false;
+    }
+    else {
+        const round = await vault.currentRound();
+        const [
+            ,
+            ethHodlBoosterCallOption,
+            ethHodlBoosterPutOption,
+            wbtcHodlBoosterCallOption,
+            wbtcHodlBoosterPutOption
+        ] = await getOptionContracts();
+        const canSettleVault = (await canSettle(vault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption])) && round.gt(2);
+        const areOptionParametersSet = await areOptionParamsSet(round);
+        canWithdraw = !canSettleVault && !areOptionParametersSet;
+    }
 
     res.render(
         "moneyMovement",
@@ -93,7 +119,8 @@ export async function getMoneyMovement(req: Request, res: Response) {
             usdcGasEstimate,
             initiateSettlementResubmit,
             success,
-            vaultAddress: vault.address
+            vaultAddress: vault.address,
+            canWithdraw
         }
     );
 }

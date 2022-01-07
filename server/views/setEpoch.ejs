@@ -5,6 +5,7 @@
         <link rel="stylesheet" href="/navbar.css">
         <link rel="stylesheet" href="/table.css">
         <link rel="stylesheet" href="/button.css">
+        <link rel="stylesheet" href="/successText.css">
         <style>
             .temp {
                 margin: auto;
@@ -120,6 +121,13 @@
                     <input type="submit" class="button" name="launchEpoch" value="Set Predicted Epoch Option Data" />
                 <% if (!areOptionParametersSet) { %>
                     </div>
+                <% } %>
+                <% if (success !== undefined) { %>
+                    <% if (success) { %>
+                        <p>Option Parameters Set!</p>
+                    <% } else { %>
+                        <p>Error in Setting Option Parameters!</p>
+                    <% } %>
                 <% } %>
             </form>
         <% if (areOptionParametersSet) { %>

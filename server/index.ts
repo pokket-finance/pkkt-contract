@@ -39,7 +39,7 @@ app.use(express.static(path.join(__dirname, "css")));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "/views"));
 
-app.get("/set/epoch", getSetEpoch);
+app.get("/set/epoch:success?", getSetEpoch);
 
 app.post("/set/epoch", postSetEpoch);
 
@@ -47,9 +47,9 @@ app.post("/set/predicted/epoch", postSetPredictedEpoch)
 
 app.get("/show/epoch", showEpoch);
 
-app.get("/", getSetOptionDecision);
+app.get("/set/decision:success?", getSetOptionDecision);
 
-app.post("/exerciseDecision", postSetOptionDecision);
+app.post("/set/decision", postSetOptionDecision);
 
 app.get("/moneyMovement:success?", getMoneyMovement);
 

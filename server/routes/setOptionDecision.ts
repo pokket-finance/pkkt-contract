@@ -135,7 +135,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             exercisePutWbtcData,
             canSettleVault,
             round,
-            initiateSettlementResubmit
+            initiateSettlementResubmit,
+            success: req.params.success
         }
     );
 }
@@ -143,8 +144,13 @@ export async function getSetOptionDecision(req: Request, res: Response) {
 export async function postSetOptionDecision(req: Request, res: Response) {
     const ethDecision = getExecutionStatus(req.body.ethOption);
     const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
-    await setSettlementParameters(ethDecision, wbtcDecision);
-    res.redirect("/show/epoch");
+    try{
+        await setSettlementParameters(ethDecision, wbtcDecision);
+        res.redirect("/set/decision:true");
+    } catch (err) {
+        console.error(err);
+        res.redirect("/set/decision:false");
+    }
 }
 
 /**

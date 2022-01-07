@@ -9,15 +9,15 @@ window.addEventListener("load", () => {
         let showEpochNav = document.getElementsByClassName("showEpochNav")[0];
         showEpochNav.classList.add("active");
     }
-    else if (path === "/set/epoch") {
+    else if (path === "/set/epoch" || path === "/set/epoch:true" || path === "/set/epoch:false") {
         let setEpochNav = document.getElementsByClassName("setEpochNav")[0];
         setEpochNav.classList.add("active");
     }
-    else if (path === "/") {
+    else if (path === "/set/decision" || path === "/set/decision:true" || path === "/set/decision:false") {
         let decisionNav = document.getElementsByClassName("decisionNav")[0];
         decisionNav.classList.add("active");
     }
-    else if (path === "/moneyMovement") {
+    else if (path === "/moneyMovement" || path === "/moneyMovement:true" || path === "/moneyMovement:false") {
         let moneyMovementNav = document.getElementsByClassName("moneyMovementNav")[0];
         moneyMovementNav.classList.add("active");
     }

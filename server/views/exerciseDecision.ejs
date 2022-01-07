@@ -5,11 +5,12 @@
         <link rel="stylesheet" href="/navbar.css">
         <link rel="stylesheet" href="/table.css">
         <link rel="stylesheet" href="/button.css">
+        <link rel="stylesheet" href="/successText.css">
         <script type="text/javascript" src="/navBar.js"></script>
     </head>
     <body>
         <%- include("partials/navbar") %>
-        <form action="/exerciseDecision" method="post" enctype="application/x-www-form-urlencoded">
+        <form action="/set/decision" method="post" enctype="application/x-www-form-urlencoded">
             <div class="row">
                 <table class="styled-table">
                     <tr>
@@ -122,6 +123,13 @@
             </div>
             <% if (canSettleVault && round > 2) { %>
                 <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
+            <% } %>
+            <% if (success !== undefined) { %>
+                <% if (success) { %>
+                    <p>Exercise Decisions Set!</p>
+                <% } else { %>
+                    <p>Error in Setting Exercise Decisions!</p>
+                <% } %>
             <% } %>
         </form>
     </body>

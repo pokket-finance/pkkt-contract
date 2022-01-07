@@ -119,6 +119,8 @@ async function main({ command }, { ethers, deployments }) {
     }
     // empty settle
     else if (command == 5 ) {
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await deposits();
         await optionVault.connect(settler as Signer).settle([]);
     }
     // Right before trader sends money back
@@ -225,6 +227,11 @@ async function main({ command }, { ethers, deployments }) {
         putOption: wbtcHodlBoosterPutOption.address,
         execute: OptionExecution.NoExecution
         }]);
+    } else if (command == 9) {
+        await optionVault.connect(settler as Signer).initiateSettlement();   
+        await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
+        await wbtcHodlBoosterPutOption.connect(bob as Signer).maxInitiateWithdraw();  //51250.0 usdt with premium 
+        await wbtcHodlBoosterCallOption.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
     }
 
     async function deposits() {

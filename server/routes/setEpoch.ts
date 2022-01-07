@@ -34,6 +34,9 @@ export async function getSetEpoch (req: Request, res: Response) {
     let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
 
     const initiateSettlementResubmit = settlementResubmit(req.app);
+
+    const success = req.params.success;
+
     res.render(
         "setEpoch",
         {
@@ -41,7 +44,8 @@ export async function getSetEpoch (req: Request, res: Response) {
             areOptionParametersSet,
             predictedEthOption,
             predictedWbtcOption,
-            initiateSettlementResubmit
+            initiateSettlementResubmit,
+            success
         }
     );
 };
@@ -91,10 +95,11 @@ export async function postSetEpoch(req: Request, res: Response) {
     const settler = await getSettler();
     try {
         await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+        res.redirect("/set/epoch:true");
     } catch (err) {
         console.error(err);
+        res.redirect("/set/epoch:false");
     }
-    res.redirect("/set/epoch");
 };
 
 export async function postSetPredictedEpoch(req: Request, res: Response) {
@@ -121,8 +126,7 @@ export async function postSetPredictedEpoch(req: Request, res: Response) {
 
     req.app.set("predictedEthOption", predictedEthOption);
     req.app.set("predictedWbtcOption", predictedWbtcOption);
-
-    res.redirect("/set/epoch");
+    res.redirect("/set/epoch:true");
 }
 
 function getPredictedOptionData(app, dataName: string) {

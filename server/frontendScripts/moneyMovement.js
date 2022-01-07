@@ -1,9 +1,13 @@
 
 window.addEventListener("load", () => {
     // Update the page elements
-    updateRequired(".ethRequired", ".ethSelectionData");
-    updateRequired(".wbtcRequired", ".wbtcSelectionData");
-    updateRequired(".usdcRequired", ".usdcSelectionData");
+    updateRequired(".ethRequired");
+    updateRequired(".wbtcRequired");
+    updateRequired(".usdcRequired");
+
+    updateLeftover(".ethLeftover", ".ethSelectionData");
+    updateLeftover(".wbtcLeftover", ".wbtcSelectionData");
+    updateLeftover(".usdcLeftover", ".usdcSelectionData");
 
     // initiate the click event listeners
     initiateClickListener("input[name='withdrawEth']");
@@ -20,7 +24,30 @@ window.addEventListener("load", () => {
  * @param {string} selector query selector string for the movable asset
  * @param {string} dataSelector query selector string for the selection table element
  */
-function updateRequired(selector, dataSelector) {
+function updateLeftover(selector, dataSelector) {
+    let element = document.querySelector(selector);
+    let leftover = parseFloat(element.innerHTML);
+    if (leftover > 0) {
+        element.setAttribute("style", "color:green");
+        element.insertAdjacentHTML("afterBegin", "+");
+    }
+    else if (leftover < 0) {
+        element.setAttribute("style", "color:red");
+        let selectionData = document.querySelector(dataSelector);
+        selectionData.innerHTML= `Send funds back to ${element.dataset.vaultAddress}`;
+    }
+    else {
+        let selectionData = document.querySelector(dataSelector);
+        selectionData.innerHTML = "";
+    }
+}
+
+/**
+ * Updates the color of the movable assets column
+ * Updates the html of the selection column
+ * @param {string} selector query selector string for the movable asset
+ */
+ function updateRequired(selector) {
     let element = document.querySelector(selector);
     let required = parseFloat(element.innerHTML);
     if (required > 0) {
@@ -29,12 +56,6 @@ function updateRequired(selector, dataSelector) {
     }
     else if (required < 0) {
         element.setAttribute("style", "color:red");
-        let selectionData = document.querySelector(dataSelector);
-        selectionData.innerHTML= `Send funds back to ${element.dataset.vaultAddress}`;
-    }
-    else {
-        let selectionData = document.querySelector(dataSelector);
-        selectionData.innerHTML = "";
     }
 }
 
