@@ -9,18 +9,19 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 //import "hardhat/console.sol";
  
 import {StructureData} from "./libraries/StructureData.sol";   
-//import "./interfaces/ISettlementAggregator.sol";  
-//import "./interfaces/IPKKTStructureOption.sol";
+import {Utils} from "./libraries/Utils.sol";   
+import {OptionLifecycle} from "./libraries/OptionLifecycle.sol"; 
+import "./interfaces/ISettlementAggregator.sol";   
 
-abstract contract OptionVault is AccessControl, ReentrancyGuard {
+abstract contract OptionVault is AccessControl, ReentrancyGuard, ISettlementAggregator {
     
  
 
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    using StructureData for uint128; 
+    using Utils for uint128; 
      
-     uint16 public currentRound;  
+     uint16 public override currentRound;  
     bool public underSettlement;    
     uint8 public optionPairCount;
 
@@ -29,17 +30,16 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
     mapping(uint8=> StructureData.OptionPairDefinition) public optionPairs;
     
     mapping(uint8 =>StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult; 
- 
-
-    mapping(uint8=>mapping(uint16=>StructureData.OptionState)) public optionStates;
-
+  
     mapping(uint256=>uint16) public optionHeights;  
+    
+    mapping(uint8=>StructureData.OptionData) internal optionData;
     uint8 private assetCount; 
     mapping(uint8=>address) private asset;
     mapping(address=>StructureData.AssetData) private assetData;  
 
     constructor( address _settler) {
-        require(_settler != address(0), "!settler");
+        require(_settler != address(0));
         
         // Contract deployer will be able to grant and revoke trading role
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -51,14 +51,14 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
      
     function clientWithdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) internal nonReentrant {
          if (!_redeem) {
-             require(balanceEnough(_contractAddress), "!Released amount");
+             require(balanceEnough(_contractAddress));
          }
-        StructureData.withdraw(_target, _amount, _contractAddress);
+        OptionLifecycle.withdraw(_target, _amount, _contractAddress);
     } 
 
 
     function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) 
-    public  { 
+    public override { 
          _checkRole(DEFAULT_ADMIN_ROLE, msg.sender);
         uint256 length = _optionPairDefinitions.length;
         uint8 optionPairCount_ = optionPairCount;
@@ -97,16 +97,18 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
 
  
 
-    function initiateSettlement() external {
+    function initiateSettlement() external override {
         
          _checkRole(StructureData.SETTLER_ROLE, msg.sender);
-        require(!underSettlement, "underSettlement"); 
+        require(!underSettlement); 
         currentRound = currentRound + 1;   
         underSettlement = true;  
         for(uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i];  
-            uint128 pending1 = rollToNextByOption(pair.callOptionId);
-            uint128 pending2 = rollToNextByOption(pair.putOptionId);
+            StructureData.OptionData storage callOption = optionData[pair.callOptionId];
+            uint128 pending1 = OptionLifecycle.rollToNextByOption(callOption, currentRound, true);
+            StructureData.OptionData storage putOption = optionData[pair.putOptionId];
+            uint128 pending2 = OptionLifecycle.rollToNextByOption(putOption, currentRound, false);
             if (pending1 > 0) { 
                 assetData[pair.depositAsset].depositAmount = assetData[pair.depositAsset].depositAmount.add(pending1);
             }
@@ -116,15 +118,20 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             if (currentRound <= 2) {
                 continue;
             }
-            StructureData.SettlementAccountingResult memory noneExecuteCallOption = dryRunSettlementByOption(pair.callOptionId, false);
-            StructureData.SettlementAccountingResult memory noneExecutePutOption = dryRunSettlementByOption(pair.putOptionId, false);
+            
+            StructureData.SettlementAccountingResult memory noneExecuteCallOption = 
+            OptionLifecycle.dryRunSettlementByOption(callOption, pair.callOptionId, true, pair.depositAssetAmountDecimals, pair.counterPartyAssetAmountDecimals, currentRound, false);
+            StructureData.SettlementAccountingResult memory noneExecutePutOption = 
+            OptionLifecycle.dryRunSettlementByOption(putOption, pair.putOptionId, false, pair.counterPartyAssetAmountDecimals, pair.depositAssetAmountDecimals, currentRound, false);
+           
             StructureData.OptionPairExecutionAccountingResult memory pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.NoExecution,
                 callOptionResult: noneExecuteCallOption,
                 putOptionResult: noneExecutePutOption
             });
             executionAccountingResult[i * 3] = pairResult; 
-            StructureData.SettlementAccountingResult memory executeCallOption = dryRunSettlementByOption(pair.callOptionId, true); 
+            StructureData.SettlementAccountingResult memory executeCallOption =  
+            OptionLifecycle.dryRunSettlementByOption(callOption, pair.callOptionId, true, pair.depositAssetAmountDecimals, pair.counterPartyAssetAmountDecimals, currentRound, true);
             pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecuteCall,
                 callOptionResult: executeCallOption,
@@ -132,7 +139,8 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             });
             executionAccountingResult[i * 3 + 1] = pairResult; 
 
-            StructureData.SettlementAccountingResult memory executePutOption = dryRunSettlementByOption(pair.putOptionId, true); 
+            StructureData.SettlementAccountingResult memory executePutOption =
+            OptionLifecycle.dryRunSettlementByOption(putOption, pair.putOptionId, false, pair.counterPartyAssetAmountDecimals, pair.depositAssetAmountDecimals, currentRound, true);
             pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecutePut,
                 callOptionResult: noneExecuteCallOption,
@@ -141,18 +149,23 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             executionAccountingResult[i * 3 + 2] = pairResult; 
         } 
          
-       if (currentRound <= 1) {
+       if (currentRound == 1) {
            underSettlement = false;
+           return;
+       }
+       if (currentRound == 2) {
+            
+           settle(new StructureData.OptionPairExecution[](0));
        }
     }
 
-    function settle(StructureData.OptionPairExecution[] memory _execution) external {   
+    function settle(StructureData.OptionPairExecution[] memory _execution) public override{   
         
          _checkRole(StructureData.SETTLER_ROLE, msg.sender);
-        require(underSettlement, "!underSettlement"); 
+        require(underSettlement); 
         uint256 count = _execution.length; 
         if (currentRound <= 2) {
-            require(count == 0, "no matured round");
+            require(count == 0);
         }
          
 
@@ -182,9 +195,11 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             } 
         }
         if (currentRound > 1) {  
-            for(uint8 i = 1; i <= optionPairCount * 2; i++) { 
-                commitCurrentByOption(i); 
-            } 
+            for(uint8 i = 1; i <= optionPairCount * 2; i++) {  
+            
+                StructureData.OptionData storage option = optionData[i]; 
+                OptionLifecycle.commitByOption(option, currentRound - 1); 
+            }
             optionHeights[block.number] = currentRound - 1;
         }
 
@@ -197,7 +212,7 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             (currentRound == 2 ? int128(0) : (getBalanceChange(assetAddress) - int128(assetSubData.depositAmount) + int128(assetSubData.releasedAmount)));
 
             assetSubData.traderWithdrawn = 0; 
-            assetSubData.balanceAfterSettle = uint128(StructureData.getAvailableBalance(assetAddress));
+            assetSubData.balanceAfterSettle = uint128(OptionLifecycle.getAvailableBalance(assetAddress, address(this)));
             assetSubData.withdrawableAfterSettle = collectWithdrawable(assetAddress); 
             StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
                 newReleasedAmount: assetSubData.releasedAmount,
@@ -216,7 +231,7 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
     } 
 
 
-    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external  {
+    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override {
 
          _checkRole(StructureData.SETTLER_ROLE, msg.sender);
           uint256 count = _parameters.length;        
@@ -226,32 +241,32 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
           //require(!underSettlement, "Being settled"); 
           for(uint256 i = 0; i < count; i++) {
               StructureData.OptionParameters memory parameter = _parameters[i];
-              StructureData.OptionState storage optionState = optionStates[parameter.optionId][currentRound - 1]; 
-              require(optionState.strikePrice == 0, "StrikePrice set");
+              StructureData.OptionState storage optionState = optionData[parameter.optionId].optionStates[currentRound - 1]; 
+              require(optionState.strikePrice == 0);
               optionState.strikePrice = parameter.strikePrice;
               optionState.premiumRate = parameter.premiumRate; 
           }
     }
 
     //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external  {
+    function withdrawAsset(address _trader, address _asset) external override {
         
          _checkRole(StructureData.SETTLER_ROLE, msg.sender);
         StructureData.AssetData storage assetSubData = assetData[_asset];  
         uint128 balance  = uint128(assetSubData.leftOverAmount); 
         //require(balance > 0, "nothing to withdraw");
-        StructureData.withdraw(_trader, balance, _asset);
+        OptionLifecycle.withdraw(_trader, balance, _asset);
         assetSubData.traderWithdrawn = balance;
         assetSubData.leftOverAmount = 0;
     }
 
-    function balanceEnough(address _asset) public view returns(bool) {
+    function balanceEnough(address _asset) public view override returns(bool) {
         StructureData.AssetData storage assetSubData = assetData[_asset];  
         int128 balance  = assetSubData.leftOverAmount; 
         if (balance >= 0) {
             return true;
         } 
-        if (StructureData.getAvailableBalance(_asset) == 0) {
+        if (OptionLifecycle.getAvailableBalance(_asset, address(this)) == 0) {
             return false;
         }
          
@@ -263,7 +278,7 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
         StructureData.AssetData storage assetSubData = assetData[_asset];       
        // int128 leastBalance = int128(assetSubData.balanceAfterSettle + collectWithdrawable(_asset) - assetSubData.withdrawableAfterSettle); 
         //return  int128(uint128(getAvailableBalance(_asset))) - leastBalance + int128(assetSubData.traderWithdrawn); 
-        return  int128(uint128(StructureData.getAvailableBalance(_asset)).add(assetSubData.traderWithdrawn).add(assetSubData.withdrawableAfterSettle))
+        return  int128(uint128(OptionLifecycle.getAvailableBalance(_asset,address(this))).add(assetSubData.traderWithdrawn).add(assetSubData.withdrawableAfterSettle))
          - int128(assetSubData.balanceAfterSettle.add(collectWithdrawable(_asset)));
     }
  
@@ -274,19 +289,23 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard {
             StructureData.OptionPairDefinition storage pair = optionPairs[i]; 
             if (pair.depositAsset == _asset ||
                 pair.counterPartyAsset == _asset) {
-               total = total.add(getWithdrawable(pair.callOptionId, _asset)) 
-               .add(getWithdrawable(pair.putOptionId, _asset)); 
+                StructureData.OptionData storage callOption = optionData[pair.callOptionId];
+                total = total.add(pair.depositAsset == _asset ? 
+                    callOption.optionStates[currentRound].totalAmount.add(callOption.totalReleasedDepositAssetAmount):
+                    callOption.totalReleasedCounterPartyAssetAmount);
+                
+                StructureData.OptionData storage putOption = optionData[pair.putOptionId];    
+                total = total.add(pair.counterPartyAsset == _asset ? 
+                    putOption.optionStates[currentRound].totalAmount.add(putOption.totalReleasedDepositAssetAmount):
+                    putOption.totalReleasedCounterPartyAssetAmount); 
             }   
         }
         return total;
     } 
     receive() external payable {  
     }
+  
+    function closePreviousByOption(uint8 _optionId, bool _execute) internal virtual returns(StructureData.MaturedState memory _maturedState);  
 
-
-    function rollToNextByOption(uint8 _optionId) internal virtual returns(uint128 _pendingAmount);
-    function dryRunSettlementByOption(uint8 _optionId, bool _execute) internal virtual view returns(StructureData.SettlementAccountingResult memory _result);
-    function closePreviousByOption(uint8 _optionId, bool _execute) internal virtual returns(StructureData.MaturedState memory _maturedState);
-    function commitCurrentByOption(uint8 _optionId) internal virtual; 
-    function getWithdrawable(uint8 _optionId, address _asset) internal virtual view returns(uint128);
+ 
 }

@@ -23,35 +23,22 @@ interface IPKKTStructureOption {
     //deposit other erc20 coin, take wbtc or stable coin
     function deposit(uint8 _optionId, uint128 _amount) external;
 
-    //redeem unsettled amount
-    //function redeem(uint256 _amount, uint8 _optionId) external;  
-
     //complete withdraw happens on the option vault
     function initiateWithraw(uint8 _optionId, uint128 _assetToTerminate) external; 
 
     function cancelWithdraw(uint8 _optionId, uint128 _assetToTerminate) external;
-
-    //function maxInitiateWithdraw(uint8 _optionId) external;
-
-    //function maxCancelWithdraw(uint8 _optionId) external;
+ 
     
     function withdraw(uint8 _optionId, uint128 _amount, address _asset) external; 
-
-    //function completeWithdraw(uint8 _optionId, uint256 _amount, address _asset) external; 
-
-    //only allowed for re-depositing the matured deposit asset, the max can be deducted from getMatured() with asset matched depositAsset in address
-    //function redeposit(uint8 _optionId, uint256 _amount) external;
-
-
-    //only allowed for re-depositing the matured counterParty asset, the max can be deducted from getMatured() with asset matched counterPartyAsset in address
-    //function redepositToCounterParty(uint8 _optionId, uint256 _amount) external;
+ 
  
 
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
     //the blockheight is the the height when the round is committed 
-    //function getRoundData(uint8 _optionId, uint256 _blockHeight) external view returns(StructureData.OptionState memory);
+    //function getRoundDataByBlock(uint8 _optionId, uint256 _blockHeight) external view returns(StructureData.OptionState memory);
 
+    function getOptionStateByRound(uint8 _optionId, uint16 _round) external view returns(StructureData.OptionState memory);
  
 }
 

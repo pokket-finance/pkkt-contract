@@ -17,7 +17,7 @@ const main = async ({
    
   
   console.log("03 - Deploying PKKTHodlBoosterOption on", network.name); 
-  const structureData = await deploy("StructureData", {
+  const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer,
   });
   const optionVault = await deploy("PKKTHodlBoosterOption", {
@@ -44,7 +44,7 @@ const main = async ({
     ]],
     contract: "PKKTHodlBoosterOption",
     libraries: {
-      StructureData: structureData.address,
+      OptionLifecycle: optionLifecycle.address,
     } 
   }); 
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);    
