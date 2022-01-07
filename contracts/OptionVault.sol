@@ -29,9 +29,7 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard, ISettlementAggr
 
     mapping(uint8=> StructureData.OptionPairDefinition) public optionPairs;
     
-    mapping(uint8 =>StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult; 
-  
-    mapping(uint256=>uint16) public optionHeights;  
+    mapping(uint8 =>StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult;
     
     mapping(uint8=>StructureData.OptionData) internal optionData;
     uint8 private assetCount; 
@@ -155,7 +153,8 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard, ISettlementAggr
        }
        if (currentRound == 2) {
             
-           settle(new StructureData.OptionPairExecution[](0));
+            //todo: 3 pair ids
+           settle(new StructureData.OptionPairExecution[](3));
        }
     }
 
@@ -164,43 +163,74 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard, ISettlementAggr
          _checkRole(StructureData.SETTLER_ROLE, msg.sender);
         require(underSettlement); 
         uint256 count = _execution.length; 
-        if (currentRound <= 2) {
-            require(count == 0);
-        }
-         
-
         for(uint256 i = 0; i < count; i++) { 
             StructureData.OptionPairExecution memory execution = _execution[i];  
             StructureData.OptionPairDefinition storage pair = optionPairs[execution.pairId];
-            StructureData.MaturedState memory maturedState= 
-            closePreviousByOption(pair.callOptionId, execution.execute == StructureData.OptionExecution.ExecuteCall);
-            if (maturedState.releasedDepositAssetAmount > 0) { 
-                assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
-                .add(maturedState.releasedDepositAssetAmountWithPremium);
-            }
-            else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
-                assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
-                .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
-            } 
-
-
-            maturedState = closePreviousByOption(pair.putOptionId, execution.execute == StructureData.OptionExecution.ExecutePut);
-             if (maturedState.releasedDepositAssetAmount > 0) { 
-                assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
-                .add(maturedState.releasedDepositAssetAmountWithPremium);
-            }
-            else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
-                assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
-                .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
-            } 
-        }
-        if (currentRound > 1) {  
-            for(uint8 i = 1; i <= optionPairCount * 2; i++) {  
             
-                StructureData.OptionData storage option = optionData[i]; 
-                OptionLifecycle.commitByOption(option, currentRound - 1); 
+            StructureData.OptionData storage callOption = optionData[pair.callOptionId];
+            StructureData.OptionData storage putOption = optionData[pair.putOptionId]; 
+            if (currentRound > 2) {  
+               StructureData.MaturedState memory maturedState;
+                StructureData.OptionState storage previousCallOptionState  = callOption.optionStates[currentRound -2];
+                if (previousCallOptionState.totalAmount > 0 ) {
+                    bool executeCall = execution.execute == StructureData.OptionExecution.ExecuteCall;
+                    maturedState = 
+                    OptionLifecycle.closePreviousByOption(callOption, previousCallOptionState, true, 
+                    pair.depositAssetAmountDecimals, pair.counterPartyAssetAmountDecimals, executeCall);
+                    if (maturedState.releasedDepositAssetAmount > 0) { 
+                        assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
+                        .add(maturedState.releasedDepositAssetAmountWithPremium);
+                    }
+                    else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
+                        assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
+                        .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
+                    }
+                    if (executeCall){ 
+                        autoRollToCounterPartyByOption(callOption,  previousCallOptionState,
+                        putOption, pair.putOptionId, 
+                        maturedState.releasedCounterPartyAssetAmountWithPremium, 
+                        maturedState.autoRollCounterPartyAssetAmountWithPremium);
+                    }   
+                    else { 
+                        autoRollByOption(callOption, pair.callOptionId, previousCallOptionState, 
+                        maturedState.releasedDepositAssetAmountWithPremium, 
+                        maturedState.autoRollDepositAssetAmountWithPremium);
+                    }       
+                }
+
+                StructureData.OptionState storage previousPutOptionState  = putOption.optionStates[currentRound -2];
+                
+                if (previousPutOptionState.totalAmount > 0) {
+                    bool executePut = execution.execute == StructureData.OptionExecution.ExecutePut;
+                    maturedState = OptionLifecycle.closePreviousByOption(putOption, previousPutOptionState, false, 
+                    pair.counterPartyAssetAmountDecimals, pair.depositAssetAmountDecimals, executePut);
+                    if (maturedState.releasedDepositAssetAmount > 0) { 
+                        assetData[pair.counterPartyAsset].releasedAmount = assetData[pair.counterPartyAsset].releasedAmount
+                        .add(maturedState.releasedDepositAssetAmountWithPremium);
+                    }
+                    else if (maturedState.releasedCounterPartyAssetAmount > 0) { 
+                        assetData[pair.depositAsset].releasedAmount = assetData[pair.depositAsset].releasedAmount
+                        .add(maturedState.releasedCounterPartyAssetAmountWithPremium);
+                    }  
+                    if (executePut){
+
+                        autoRollToCounterPartyByOption(putOption,  previousPutOptionState,
+                        callOption, pair.callOptionId, 
+                        maturedState.releasedCounterPartyAssetAmountWithPremium, 
+                        maturedState.autoRollCounterPartyAssetAmountWithPremium);
+                    }   
+                    else{
+
+                        autoRollByOption(putOption, pair.putOptionId, previousPutOptionState, 
+                        maturedState.releasedDepositAssetAmountWithPremium, 
+                        maturedState.autoRollDepositAssetAmountWithPremium);
+                    }   
+                }
+
             }
-            optionHeights[block.number] = currentRound - 1;
+
+            OptionLifecycle.commitByOption(putOption, currentRound - 1);  
+            OptionLifecycle.commitByOption(callOption, currentRound - 1); 
         }
 
  
@@ -305,7 +335,9 @@ abstract contract OptionVault is AccessControl, ReentrancyGuard, ISettlementAggr
     receive() external payable {  
     }
   
-    function closePreviousByOption(uint8 _optionId, bool _execute) internal virtual returns(StructureData.MaturedState memory _maturedState);  
-
- 
+     function autoRollToCounterPartyByOption(StructureData.OptionData storage _option, StructureData.OptionState storage _optionState, 
+   StructureData.OptionData storage _counterPartyOption, uint8 _counterPartyOptionId,
+    uint128 _totalReleased, uint128 _totalAutoRoll) internal virtual;
+   function autoRollByOption(StructureData.OptionData storage _option, uint8 _optionId, StructureData.OptionState storage _optionState, 
+   uint128 _totalReleased, uint128 _totalAutoRoll) internal virtual;
 }

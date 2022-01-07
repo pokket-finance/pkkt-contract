@@ -253,10 +253,9 @@ describe.only("PKKT Hodl Booster", async function () {
           //bob deposit 1 btc
           await vault.connect(bob as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
           var balance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].callOptionId);
-          var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount);
+          var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
           //bob stop auto rolling of round 1, will be able to complete withdraw after the settlement next round
-          await vault.connect(alice as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, diff);
-
+          await vault.connect(alice as Signer).initiateWithraw(optionPairs[WBTCUSDTOPTION].callOptionId, diff); 
 
           const ethPrice = 4000 * (10**PricePrecision);
           const btcPrice = 50000 * (10**PricePrecision); 

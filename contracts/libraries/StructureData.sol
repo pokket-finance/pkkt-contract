@@ -39,8 +39,6 @@ library StructureData {
        uint128 autoRollCounterPartyAssetAmount; 
        uint128 autoRollCounterPartyAssetPremiumAmount; 
        uint128 autoRollCounterPartyAssetAmountWithPremium;
-
-       uint16 round;
        
    }
 

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
 import "./Utils.sol";
 import "./StructureData.sol";
+import "hardhat/console.sol";  
 
 library OptionLifecycle {
     
@@ -15,23 +16,7 @@ library OptionLifecycle {
     using SafeMath for uint256;
     using StructureData for StructureData.UserState;
 
-    function deriveWithdrawRequest(StructureData.UserState memory userState, uint256 premiumRate) internal pure returns (uint128 _onGoingRoundAmount, uint128 _lockedRoundAmount) {
-       if (userState.tempLocked == 0) {
-           return (userState.assetToTerminateForNextRound, 0);
-       }
-       uint128 onGoing = userState.ongoingAsset;
-       if (onGoing == 0) {
-           return (0, userState.assetToTerminateForNextRound);
-       } 
-       uint128 virtualOnGoing = (onGoing - userState.assetToTerminate).withPremium(premiumRate);
-       if (userState.assetToTerminateForNextRound <= virtualOnGoing) {
-           return (userState.assetToTerminateForNextRound, 0);
-       }
-       else {
-           return (virtualOnGoing, userState.assetToTerminateForNextRound - virtualOnGoing);
-       }
-    }
-
+ 
     function deriveVirtualLocked(StructureData.UserState memory userState, uint16 premiumRate) internal pure returns (uint128) {
         uint128 onGoing = userState.ongoingAsset;
         if (onGoing == 0) {
@@ -79,8 +64,7 @@ library OptionLifecycle {
           releasedCounterPartyAssetAmountWithPremium: 0,
           autoRollCounterPartyAssetAmount: 0,
           autoRollCounterPartyAssetPremiumAmount: 0,
-          autoRollCounterPartyAssetAmountWithPremium: 0,
-          round: _optionState.round
+          autoRollCounterPartyAssetAmountWithPremium: 0
        });  
         if (_execute) {  
 
@@ -131,13 +115,8 @@ library OptionLifecycle {
                 }            
                 if(userState.tempLocked == 0) {  
                     userState.ongoingAsset = 0;
-                    return;
+                    continue;
                 } 
-                //transfer each user a share of the option to trigger transfer event
-                //can be used to calculate the user option selling operations
-                //utilizing some web3 indexed services, take etherscan api/graphql etc.
-                //_transfer(address(this), userAddress, userState.tempLocked);
-                //emit OptionTransfer(_optionId, userAddress, optionState.premiumRate, optionState.round);
                 userState.ongoingAsset = userState.tempLocked; 
                 userState.tempLocked = 0;  
             }
@@ -198,6 +177,9 @@ library OptionLifecycle {
        if (_currentRound > 2) { 
              
             StructureData.OptionState storage previousOptionState =  _option.optionStates[_currentRound - 2];
+            if (previousOptionState.totalAmount == 0) {
+                return result;
+            }
             StructureData.MaturedState memory maturedState = calculateMaturity(_execute, previousOptionState, _isCall,
             _depositAssetAmountDecimals, _counterPartyAssetAmountDecimals); 
             if (_execute) { 
@@ -215,7 +197,26 @@ library OptionLifecycle {
        } 
        return result;
    }
+  function closePreviousByOption(StructureData.OptionData storage _option, StructureData.OptionState storage previousOptionState, 
+   bool _isCall, uint8 _depositAssetAmountDecimals,  uint8 _counterPartyAssetAmountDecimals, bool _execute) external  
+   returns(StructureData.MaturedState memory _maturedState) {    
+        //uint16 maturedRound = currentRound - 2;    
+        StructureData.MaturedState memory maturedState = calculateMaturity(_execute, previousOptionState, _isCall,
+            _depositAssetAmountDecimals, _counterPartyAssetAmountDecimals);   
+        previousOptionState.executed = _execute; 
+         
+        if (_execute) {
+            _option.totalReleasedCounterPartyAssetAmount = _option.totalReleasedCounterPartyAssetAmount
+            .add(maturedState.releasedCounterPartyAssetAmountWithPremium); 
+        }
+        else {
+            _option.totalReleasedDepositAssetAmount= _option.totalReleasedDepositAssetAmount
+            .add(maturedState.releasedDepositAssetAmountWithPremium);
 
+        }
+        return maturedState;
+   }
+ 
     function getAccountBalance(StructureData.OptionData storage _option, address _user, bool _underSettlement, uint16 _currentRound) external view
     returns(StructureData.UserBalance memory) {
 
@@ -336,10 +337,10 @@ library OptionLifecycle {
 
     } 
    
-    function withdrawStorage(StructureData.OptionData storage _option, address _user, uint128 _amount, uint16 _currentRound, bool _isCounterParty) external  { 
+    function withdrawStorage(StructureData.OptionData storage _option, address _user, uint128 _amount, uint16 _currentRound, bool _isDeposit) external  { 
        //require(_amount > 0, "!amount");    
        StructureData.UserState storage userState = _option.userStates[_user];  
-       if (!_isCounterParty) {
+       if (_isDeposit) {
            //todo: 0 out released amount if missing balance from trader
            uint128 releasedAmount = userState.releasedDepositAssetAmount;
            if (releasedAmount <= _amount) {  
@@ -375,8 +376,10 @@ library OptionLifecycle {
         } 
         if (!_isOpenRound) { 
             userState.tempLocked = userState.tempLocked.add(_amount); 
-            userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.add(_toTerminate);
-            _option.assetToTerminateForNextRound = _option.assetToTerminateForNextRound.add(_toTerminate);
+            if (_toTerminate > 0) { 
+                userState.assetToTerminateForNextRound = userState.assetToTerminateForNextRound.add(_toTerminate);
+                _option.assetToTerminateForNextRound = _option.assetToTerminateForNextRound.add(_toTerminate);
+            }
         }
         else { 
             userState.pendingAsset = userState.pendingAsset.add(_amount); 
