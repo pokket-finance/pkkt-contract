@@ -195,10 +195,7 @@ library OptionLifecycle {
         StructureData.OptionData storage _option,
         uint16 _currentRound,
         bool _callOrPut
-    ) external returns (uint128 _pendingAmount) {
-        //if (currentRound > 2) {
-        //   require(optionStates[_optionId][currentRound-2].strikePrice > 0,  "!StrikePrice");
-        //}
+    ) external returns (uint128 _pendingAmount) { 
         StructureData.OptionState memory currentOption = StructureData
             .OptionState({
                 round: _currentRound,
@@ -221,8 +218,7 @@ library OptionLifecycle {
                 }
                 userState.pendingAsset = 0;
             }
-        }
-        //emit OpenOption(_optionId, currentRound);
+        } 
         return
             _currentRound > 1
                 ? _option.optionStates[_currentRound - 1].totalAmount
@@ -361,13 +357,11 @@ library OptionLifecycle {
                 result.terminatingDepositAssetAmount = uint256(userState
                     .assetToTerminate)
                     .withPremium(premiumRate).toUint128();
-                result.toTerminateDepositAssetAmount = userState
-                    .assetToTerminateForNextRound;
             } else {
                 result.lockedDepositAssetAmount = userState.tempLocked;
-                result.toTerminateDepositAssetAmount = userState
-                    .assetToTerminateForNextRound;
             }
+            result.toTerminateDepositAssetAmount = userState
+                    .assetToTerminateForNextRound;
         } else {
             result.lockedDepositAssetAmount = userState.ongoingAsset;
             result.toTerminateDepositAssetAmount = userState.assetToTerminate;

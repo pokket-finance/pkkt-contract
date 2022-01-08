@@ -644,16 +644,16 @@ describe.only("PKKT Hodl Booster", async function () {
         return  {assetAddress, assetBalance} ;
       }
 
-      async function renderExecutionPlan(index: BigNumberish, p: Table){
+      async function renderExecutionPlan(index: number, p: Table){
 
         var accounting = await vault.connect(settler as Signer).executionAccountingResult(index); 
         var currentRound = await vault.currentRound();
-        var pair = optionPairs[BigNumber.from(index).div("3").toNumber()]; 
+        var pair = optionPairs[index/3]; 
         if (!pair){ 
           return;
         } 
-        var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.depositAsset);
-        var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.counterPartyAsset);
+        var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.depositAssetAmountDecimals);
+        var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.counterPartyAssetAmountDecimals);
         var maturedCallOptionState = await vault.getOptionStateByRound(pair.callOptionId, currentRound - 1);
         var maturedPutOptionState = await vault.getOptionStateByRound(pair.putOptionId, currentRound- 1);
         var callStrikePrice = ethers.utils.formatUnits(maturedCallOptionState.strikePrice, StrikePriceDecimals);

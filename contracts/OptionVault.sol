@@ -208,7 +208,7 @@ abstract contract OptionVault is
             return;
         }
         if (currentRound == 2) {
-            for(uint8 i = 0; i < optionPairCount * 2; i++) { 
+            for(uint8 i = 1; i <= optionPairCount * 2; i++) { 
                 OptionLifecycle.commitByOption(optionData[i], 1); 
             }            
             updateAsset();
@@ -330,8 +330,8 @@ abstract contract OptionVault is
                     );
                 }
             }
-            OptionLifecycle.commitByOption(putOption, previousRound);
             OptionLifecycle.commitByOption(callOption, previousRound);
+            OptionLifecycle.commitByOption(putOption, previousRound);
         }
 
         updateAsset();
@@ -382,14 +382,13 @@ abstract contract OptionVault is
         uint256[] memory _parameters
     ) external override {
         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
-        uint256 count = _parameters.length;
-        //if (currentRound <= 1) {
-        //require(count == 0, "nothing to set");
-        //}
-        //require(!underSettlement, "Being settled");
+        uint256 count = _parameters.length; 
+        require(!underSettlement);
+        require(currentRound > 1);
+        require(count == optionPairCount*2);
         for (uint8 i = 0; i < count; i++) {
             uint256 parameter = _parameters[i];
-            StructureData.OptionState storage optionState = optionData[i].optionStates[currentRound - 1];
+            StructureData.OptionState storage optionState = optionData[i+1].optionStates[currentRound - 1];
             OptionLifecycle.setOptionParameters(parameter, optionState); 
         }
     }
@@ -398,7 +397,7 @@ abstract contract OptionVault is
     function withdrawAsset(address _trader, address _asset) external override {
         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
         StructureData.AssetData storage assetSubData = assetData[_asset];
-        require(assetSubData.leftOverAmount > 0, "nothing to withdraw"); 
+        require(assetSubData.leftOverAmount > 0); 
         uint128 balance = uint128(assetSubData.leftOverAmount);
         OptionLifecycle.withdraw(_trader, uint256(balance), _asset);
         assetSubData.traderWithdrawn = balance;

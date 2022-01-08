@@ -114,8 +114,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             _amount,
             currentRound,
             (_optionId == pair.callOptionId && _asset == pair.depositAsset) ||
-                (_optionId == pair.putOptionId &&
-                    _asset == pair.counterPartyAsset)
+            (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)
         );
         clientWithdraw(msg.sender, _amount, _asset, false);
         emit Withdraw(_optionId, msg.sender, _asset, _amount);
