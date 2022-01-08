@@ -4,8 +4,8 @@ import {StructureData} from "../libraries/StructureData.sol";
  
 interface IPKKTStructureOption {
  
-     event Deposit(uint8 indexed optionId, address indexed account, uint16 indexed round, uint128 amount);
-     event Withdraw(uint8 indexed optionId, address indexed account, address indexed asset, uint128 amount);
+     event Deposit(uint8 indexed optionId, address indexed account, uint16 indexed round, uint256 amount);
+     event Withdraw(uint8 indexed optionId, address indexed account, address indexed asset, uint256 amount);
      //event CloseOption(uint8 indexed optionId, uint16 indexed round);
      //event CommitOption(uint8 indexed optionId, uint16 indexed round);
      //event OpenOption(uint8 indexed optionId, uint16 indexed round);
@@ -21,15 +21,15 @@ interface IPKKTStructureOption {
     function depositETH(uint8 _optionId) external payable;
 
     //deposit other erc20 coin, take wbtc or stable coin
-    function deposit(uint8 _optionId, uint128 _amount) external;
+    function deposit(uint8 _optionId, uint256 _amount) external;
 
     //complete withdraw happens on the option vault
-    function initiateWithraw(uint8 _optionId, uint128 _assetToTerminate) external; 
+    function initiateWithraw(uint8 _optionId, uint256 _assetToTerminate) external; 
 
-    function cancelWithdraw(uint8 _optionId, uint128 _assetToTerminate) external;
+    function cancelWithdraw(uint8 _optionId, uint256 _assetToTerminate) external;
  
     
-    function withdraw(uint8 _optionId, uint128 _amount, address _asset) external; 
+    function withdraw(uint8 _optionId, uint256 _amount, address _asset) external; 
  
  
 

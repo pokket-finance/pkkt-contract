@@ -30,41 +30,25 @@ library Utils {
         return a - b;
     }
     
-    function add(uint128 a, uint128 b) internal pure returns (uint128) {
-        return a + b;
-    }
-
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint128 a, uint128 b) internal pure returns (uint128) {
-        return a - b;
-    }
-    function getAmountToTerminate(uint256 _maturedAmount, uint256 _assetToTerminate, uint256 _assetAmount) internal pure returns(uint128) {
+ 
+    function getAmountToTerminate(uint256 _maturedAmount, uint256 _assetToTerminate, uint256 _assetAmount) 
+    internal pure returns(uint256) {
        if (_assetToTerminate == 0 || _assetAmount == 0 || _maturedAmount == 0) return 0;
-       return uint128(_assetToTerminate >= _assetAmount ?  _maturedAmount  : _maturedAmount.mul(_assetToTerminate).div(_assetAmount));
+       return _assetToTerminate >= _assetAmount ?  _maturedAmount  : _maturedAmount.mul(_assetToTerminate).div(_assetAmount);
    }
 
-   function withPremium(uint256 _baseAmount, uint256 _premimumRate) internal pure returns(uint128) {
-       return uint128(_baseAmount.mul(RATIOMULTIPLIER + _premimumRate).div(RATIOMULTIPLIER));
+   function withPremium(uint256 _baseAmount, uint256 _premimumRate) internal pure returns(uint256) {
+       return  _baseAmount.mul(RATIOMULTIPLIER + _premimumRate).div(RATIOMULTIPLIER);
    }
    
-   function premium(uint256 _baseAmount, uint256 _premimumRate) internal pure returns(uint128) {
-       return  uint128(_baseAmount.mul(_premimumRate).div(RATIOMULTIPLIER));
+   function premium(uint256 _baseAmount, uint256 _premimumRate) internal pure returns(uint256) {
+       return   _baseAmount.mul(_premimumRate).div(RATIOMULTIPLIER);
    }
    
-   function subOrZero(uint128 _base, uint128 _substractor) internal pure returns (uint128) {
+   function subOrZero(uint256 _base, uint256 _substractor) internal pure returns (uint256) {
        return _base >= _substractor ? _base - _substractor : 0;
    }
-
-
+  
     /*function assertUint104(uint256 num) internal pure {
         require(num <= type(uint104).max, "Overflow uint104");
     }
