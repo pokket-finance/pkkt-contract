@@ -2,8 +2,7 @@ import { BigNumber, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import {
-    ERC20Mock,
-    OptionVault,
+    ERC20Mock, 
     PKKTHodlBoosterOption,
 } from "../../../typechain";
 
@@ -24,28 +23,14 @@ async function main({ command }, { ethers, deployments }) {
     const [
         usdc,
         wbtc,
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
+        optionVault 
     ] = await getDeployedContracts(ethers, deployments);
     const users = [alice]
 
     const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
     const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
 
-    let settleParams = [
-        {
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        },
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        }
+    let settleParams = [OptionExecution.NoExecution, OptionExecution.NoExecution
     ];
 
     let commitParams = [
@@ -86,8 +71,7 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).initiateSettlement();
 
         await deposits();
-
-        await optionVault.connect(settler as Signer).settle([]);
+ 
     }
     // initiate settlement
     else if (command == 2) {
@@ -105,8 +89,7 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).initiateSettlement();
 
         await deposits();
-
-        await optionVault.connect(settler as Signer).settle([]);
+ 
         await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
 
         // round 3
@@ -139,44 +122,21 @@ async function main({ command }, { ethers, deployments }) {
 
 const getDeployedContracts = async (ethers, deployments): Promise<[
     ERC20Mock,
-    ERC20Mock,
-    OptionVault,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption
+    ERC20Mock, 
+    PKKTHodlBoosterOption, 
 ]> => {
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
-    const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
-    const optionVault = await getDeployedContractHelper("OptionVault", ethers, deployments) as OptionVault;
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption",
+    const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock; 
+    const optionVault = await getDeployedContractHelper(
+        "PKKTHodlBoosterOption",
         ethers,
         deployments
     ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
+    
     return [
         usdc,
         wbtc,
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
+        optionVault 
     ];
 }
 

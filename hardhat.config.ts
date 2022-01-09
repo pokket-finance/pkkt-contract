@@ -13,11 +13,11 @@ import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
-//import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
-//import generateSubgraphManifest from "./scripts/tasks/backend/generateSubgraphManifest";
-//import initializeUsers from "./scripts/tasks/backend/initializeUsers";
-//import generateOptionData from "./scripts/tasks/backend/generateOptionData";
-//import sendUserCoins from "./scripts/tasks/backend/sendUserCoins";
+import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
+import generateSubgraphManifest from "./scripts/tasks/backend/generateSubgraphManifest";
+import initializeUsers from "./scripts/tasks/backend/initializeUsers";
+import generateOptionData from "./scripts/tasks/backend/generateOptionData";
+import sendUserCoins from "./scripts/tasks/backend/sendUserCoins";
 
 dotenv.config();
 
@@ -127,17 +127,17 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
   .addParam("implname", "name of new implementation contract")
   .addParam("libraryname", "Name of the library to deploy with contract");
 
-/*task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
+task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction", deployDummyContracts)
   .addFlag("fresh", "If set, deletes the existing network deployments folder")
   .addFlag("init", "If set, init the first round")
-  .addOptionalParam("initbackend", "If set, initializes the backend");*/
+  .addOptionalParam("initbackend", "If set, initializes the backend");
 
-/*task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
+task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
 task("send-coins", "Send test coins to specific address", sendUserCoins)
-.addParam("target", "target address");*/
+.addParam("target", "target address");
 
-/*task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData)
+task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData)
   .addParam("command", "number of the command you want to generate data");
 
 task("generate-subgraph-manifest", "Adds necessary information to the subgraph manifest (subgraph.yaml)", generateSubgraphManifest)
-  .addOptionalParam("startBlock", "startblock for subgraph to begin indexing at, does not need to be set for local network");*/
+  .addOptionalParam("startBlock", "startblock for subgraph to begin indexing at, does not need to be set for local network");
