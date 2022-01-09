@@ -1,376 +1,489 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.4;
- 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol"; 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol"; 
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "hardhat/console.sol";
- 
-import {StructureData} from "./libraries/StructureData.sol";      
-import "./interfaces/IOptionVault.sol"; 
-import "./interfaces/ISettlementAggregator.sol"; 
-import "./interfaces/IExecuteSettlement.sol"; 
-import "./interfaces/IPKKTStructureOption.sol";
 
-contract OptionVault is IOptionVault, ISettlementAggregator, AccessControl {
-    
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+//import "hardhat/console.sol";
+
+import {StructureData} from "./libraries/StructureData.sol";
+import {Utils} from "./libraries/Utils.sol";
+import {OptionLifecycle} from "./libraries/OptionLifecycle.sol";
+import "./interfaces/ISettlementAggregator.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
+abstract contract OptionVault is
+    AccessControl,
+    ReentrancyGuard,
+    ISettlementAggregator
+{
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-     
-     uint256 public override currentRound; 
-    /*
-     * cash flow perspective (based on asset address)
-     */ 
-    uint8 assetCount;
-    mapping(uint8=>address) private asset;
-    mapping(address=>StructureData.SettlementCashflowResult) public settlementCashflowResult; 
-    mapping(address=>uint256) private releasedAmount; //debit
-    mapping(address=>uint256) private depositAmount; //credit
-    mapping(address=>int256) private leftOverAmount;  //history balance
-    
-    /*
-     *  actual balance perspective
-     *  withdrawable = redeemable + released
-     *  balance = withdrawable + leftOver  
-     */
-    mapping(address=>uint256) private assetBalanceAfterSettle;
-    mapping(address=>uint256) private assetWithdrawableAfterSettle;
-    mapping(address=>uint256) private assetTraderWithdrawn;
+    using Utils for uint256;
+    using SafeCast for uint256;
+    using SafeCast for int256;
 
-    /*
-     * accounting perspective(based on option pair)
-     */ 
-    uint8 optionPairCount;
-    mapping(uint8 => StructureData.OptionPairDefinition) private optionPairs;
-    
-    mapping(uint8 => StructureData.OptionPairExecutionAccountingResult) public executionAccountingResult; 
- 
+    uint16 public override currentRound;
+    bool public underSettlement;
+    uint8 public optionPairCount;
+
+    mapping(address => StructureData.SettlementCashflowResult)
+        public settlementCashflowResult;
+
+    mapping(uint8 => StructureData.OptionPairDefinition) public optionPairs;
+
+    mapping(uint8 => StructureData.OptionPairExecutionAccountingResult)
+        public executionAccountingResult;
+
+    mapping(uint8 => StructureData.OptionData) internal optionData;
+    uint8 private assetCount;
+    mapping(uint8 => address) private asset;
+    mapping(address => StructureData.AssetData) private assetData;
 
     constructor(address _settler) {
-       // Contract deployer will be able to grant and revoke option role
-       _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
-       _setupRole(StructureData.SETTLER_ROLE, _settler); 
-    }
-    
-    function addOption(address _optionContract) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        _setupRole(StructureData.OPTION_ROLE, _optionContract);  
+        require(_settler != address(0));
+
+        // Contract deployer will be able to grant and revoke trading role
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        // Address capable of initiating and finizalizing settlement
+        _setupRole(StructureData.SETTLER_ROLE, _settler);
     }
 
-    function removeOption(address _optionContract) public override onlyRole(DEFAULT_ADMIN_ROLE){
-        revokeRole(StructureData.OPTION_ROLE, _optionContract);  
-    }
-    function getAddress() public view override returns(address){
-        return address(this);
-    }
-
-     
-    function withdraw(address _target, uint256 _amount, address _contractAddress, bool _redeem) external override onlyRole(StructureData.OPTION_ROLE){
-         if (!_redeem) {
-             require(balanceEnough(_contractAddress), "Released amount not available yet");
-         }
-        _withdraw(_target, _amount, _contractAddress);
-    } 
-     function _withdraw(address _target, uint256 _amount, address _contractAddress) private{
-
-        if (_contractAddress == address(0)) {
-            payable(_target).transfer(_amount);
+    function clientWithdraw(
+        address _target,
+        uint256 _amount,
+        address _contractAddress,
+        bool _redeem
+    ) internal nonReentrant {
+        if (!_redeem) {
+            require(balanceEnough(_contractAddress));
         }
-        else { 
-            IERC20(_contractAddress).safeTransfer(_target, _amount); 
-        }
-    }  
- 
+        OptionLifecycle.withdraw(_target, _amount, _contractAddress);
+    }
 
- 
-    function addOptionPair(StructureData.OptionPairDefinition memory _pair) external override onlyRole(DEFAULT_ADMIN_ROLE){
-        addOption(_pair.callOption);
-        addOption(_pair.putOption);   
-        
-        optionPairs[optionPairCount] = _pair; 
-        optionPairCount++; 
-        if (assetCount == 0) {
-            asset[assetCount] = _pair.callOptionDeposit;
-            assetCount ++ ;
-            asset[assetCount] = _pair.putOptionDeposit;
-            assetCount ++ ;
-
-        }
-        else {
-            bool callAdded = false;
-            bool putAdded = false;
-            for(uint8 i = 0; i <assetCount; i++) {
-                if (asset[i] == _pair.callOptionDeposit) {
-                    callAdded = true;
+    function addOptionPairs(
+        StructureData.OptionPairDefinition[] memory _optionPairDefinitions
+    ) public override {
+        _checkRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        uint256 length = _optionPairDefinitions.length;
+        uint8 optionPairCount_ = optionPairCount;
+        uint8 assetCount_ = assetCount;
+        for (uint256 i = 0; i < length; i++) {
+            StructureData.OptionPairDefinition
+                memory pair = _optionPairDefinitions[i];
+            pair.callOptionId = optionPairCount_ * 2 + 1;
+            pair.putOptionId = pair.callOptionId + 1;
+            optionPairs[optionPairCount_++] = pair;
+            if (assetCount_ == 0) {
+                asset[assetCount_++] = pair.depositAsset;
+                asset[assetCount_++] = pair.counterPartyAsset;
+            } else {
+                bool callAdded = false;
+                bool putAdded = false;
+                for (uint8 j = 0; j < assetCount_; j++) {
+                    if (asset[j] == pair.depositAsset) {
+                        callAdded = true;
+                    }
+                    if (asset[j] == pair.counterPartyAsset) {
+                        putAdded = true;
+                    }
                 }
-                if (asset[i] == _pair.putOptionDeposit) {
-                    putAdded = true;
+                if (!callAdded) {
+                    asset[assetCount_++] = pair.depositAsset;
+                }
+                if (!putAdded) {
+                    asset[assetCount_++] = pair.counterPartyAsset;
                 }
             }
-            if (!callAdded) { 
-                asset[assetCount] = _pair.callOptionDeposit;
-                assetCount ++ ;
-            }
-            if (!putAdded) { 
-                asset[assetCount] = _pair.putOptionDeposit;
-                assetCount ++ ;
-            }
         }
-     
+        optionPairCount = optionPairCount_;
+        assetCount = assetCount_;
     }
 
-    function removeOptionPair(StructureData.OptionPairDefinition memory _pair) external override onlyRole(DEFAULT_ADMIN_ROLE){
-        removeOption(_pair.callOption);
-        removeOption(_pair.putOption); 
-        for(uint8 i = 0; i < assetCount; i++) {
+    function initiateSettlement() external override {
+        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        require(!underSettlement);
+        currentRound = currentRound + 1;
+        underSettlement = true;
+        for (uint8 i = 0; i < optionPairCount; i++) {
             StructureData.OptionPairDefinition storage pair = optionPairs[i];
-            if (pair.callOption == _pair.callOption &&
-                pair.putOption == _pair.putOption) {
-                //fake remove
-                pair.callOption = address(0);
-                pair.putOption = address(0); 
-                break;
+            StructureData.OptionData storage callOption = optionData[
+                pair.callOptionId
+            ];
+            uint128 pending1 = OptionLifecycle.rollToNextByOption(
+                callOption,
+                currentRound,
+                true
+            );
+            StructureData.OptionData storage putOption = optionData[
+                pair.putOptionId
+            ];
+            uint128 pending2 = OptionLifecycle.rollToNextByOption(
+                putOption,
+                currentRound,
+                false
+            );
+            if (pending1 > 0) {
+                assetData[pair.depositAsset].depositAmount = uint256(assetData[
+                    pair.depositAsset
+                ].depositAmount).add(pending1).toUint128();
             }
-        }
-    }
-
-
-
-    uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-
-    function initiateSettlement() external override onlyRole(StructureData.SETTLER_ROLE) {
-        currentRound = currentRound + 1;  
-        for(uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition memory pair = optionPairs[i];
-            if (pair.callOption == address(0) &&
-                pair.putOption == address(0)) {
-                continue;
-            }
-            IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
-            IExecuteSettlement putOption = IExecuteSettlement(pair.putOption);
-            uint256 pending1 = callOption.rollToNext(MAX_INT);
-            uint256 pending2 = putOption.rollToNext(MAX_INT);
-            if (pending1 > 0) { 
-                depositAmount[pair.callOptionDeposit] = depositAmount[pair.callOptionDeposit].add(pending1);
-            }
-            if (pending2 > 0) { 
-                depositAmount[pair.putOptionDeposit] = depositAmount[pair.putOptionDeposit].add(pending2);
+            if (pending2 > 0) {
+                assetData[pair.counterPartyAsset].depositAmount = uint256(assetData[
+                    pair.counterPartyAsset
+                ].depositAmount).add(pending2).toUint128();
             }
             if (currentRound <= 2) {
                 continue;
             }
-            StructureData.SettlementAccountingResult memory noneExecuteCallOption = callOption.dryRunSettlement(false);
-            StructureData.SettlementAccountingResult memory noneExecutePutOption = putOption.dryRunSettlement(false);
-            StructureData.OptionPairExecutionAccountingResult memory pairResult = StructureData.OptionPairExecutionAccountingResult({
-                execute: StructureData.OptionExecution.NoExecution,
-                callOptionResult: noneExecuteCallOption,
-                putOptionResult: noneExecutePutOption
-            });
-            executionAccountingResult[i * 3] = pairResult; 
-            StructureData.SettlementAccountingResult memory executeCallOption = callOption.dryRunSettlement(true); 
-            StructureData.OptionPairExecutionAccountingResult memory pairResult2 = StructureData.OptionPairExecutionAccountingResult({
+
+            StructureData.SettlementAccountingResult
+                memory noneExecuteCallOption = OptionLifecycle
+                    .dryRunSettlementByOption(
+                        callOption, 
+                        true,
+                        pair.depositAssetAmountDecimals,
+                        pair.counterPartyAssetAmountDecimals,
+                        currentRound,
+                        false
+                    );
+            StructureData.SettlementAccountingResult
+                memory noneExecutePutOption = OptionLifecycle
+                    .dryRunSettlementByOption(
+                        putOption, 
+                        false,
+                        pair.counterPartyAssetAmountDecimals,
+                        pair.depositAssetAmountDecimals,
+                        currentRound,
+                        false
+                    );
+
+            StructureData.OptionPairExecutionAccountingResult
+                memory pairResult = StructureData
+                    .OptionPairExecutionAccountingResult({
+                        execute: StructureData.OptionExecution.NoExecution,
+                        callOptionResult: noneExecuteCallOption,
+                        putOptionResult: noneExecutePutOption
+                    });
+            executionAccountingResult[i * 3] = pairResult;
+            StructureData.SettlementAccountingResult
+                memory executeCallOption = OptionLifecycle
+                    .dryRunSettlementByOption(
+                        callOption, 
+                        true,
+                        pair.depositAssetAmountDecimals,
+                        pair.counterPartyAssetAmountDecimals,
+                        currentRound,
+                        true
+                    );
+            pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecuteCall,
                 callOptionResult: executeCallOption,
                 putOptionResult: noneExecutePutOption
             });
-            executionAccountingResult[i * 3 + 1] = pairResult2; 
+            executionAccountingResult[i * 3 + 1] = pairResult;
 
-            StructureData.SettlementAccountingResult memory executePutOption = putOption.dryRunSettlement(true); 
-            StructureData.OptionPairExecutionAccountingResult memory pairResult3 = StructureData.OptionPairExecutionAccountingResult({
+            StructureData.SettlementAccountingResult
+                memory executePutOption = OptionLifecycle
+                    .dryRunSettlementByOption(
+                        putOption, 
+                        false,
+                        pair.counterPartyAssetAmountDecimals,
+                        pair.depositAssetAmountDecimals,
+                        currentRound,
+                        true
+                    );
+            pairResult = StructureData.OptionPairExecutionAccountingResult({
                 execute: StructureData.OptionExecution.ExecutePut,
                 callOptionResult: noneExecuteCallOption,
                 putOptionResult: executePutOption
             });
-            executionAccountingResult[i * 3 + 2] = pairResult3; 
-        } 
+            executionAccountingResult[i * 3 + 2] = pairResult;
+        }
+
+        if (currentRound == 1) {
+            underSettlement = false;
+            return;
+        }
+        if (currentRound == 2) {
+            for(uint8 i = 1; i <= optionPairCount * 2; i++) { 
+                OptionLifecycle.commitByOption(optionData[i], 1); 
+            }            
+            updateAsset();
+            underSettlement = false;
+        }
     }
 
-    function settle(StructureData.OptionPairExecution[] memory _execution) external override onlyRole(StructureData.SETTLER_ROLE) {  
+    function settle(StructureData.OptionExecution[] memory _execution)
+        external
+        override
+    {
+        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        require(underSettlement);
+        uint256 count = _execution.length;
+        require(count == optionPairCount);
+        uint16 previousRound = currentRound - 1;
+        for (uint8 i = 0; i < count; i++) {
+            StructureData.OptionExecution execution = _execution[i];
+            StructureData.OptionPairDefinition storage pair = optionPairs[i];
 
-        uint256 count = _execution.length; 
-        if (currentRound <= 2) {
-            require(count == 0, "no matured round");
-        }
-        for(uint256 i = 0; i < count; i++) { 
-            StructureData.OptionPairExecution memory pair = _execution[i];
-            (address callOptionDeposit, address putOptionDeposit) = getDespositAddress(pair.callOption, pair.putOption); 
-            //console.log("currentRound %d: callOptionDeposit:%s putOptionDeposit:%s", currentRound, callOptionDeposit,putOptionDeposit );
-            IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
-            IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
+            StructureData.OptionData storage callOption = optionData[
+                pair.callOptionId
+            ];
+            StructureData.OptionData storage putOption = optionData[
+                pair.putOptionId
+            ];
             StructureData.MaturedState memory maturedState;
-            StructureData.MaturedState memory maturedState2; 
-
-            if (pair.execute == StructureData.OptionExecution.NoExecution) {
-                maturedState = callOption.closePrevious(false);
-                maturedState2 = putOption.closePrevious(false); 
-            }
-            else if (pair.execute == StructureData.OptionExecution.ExecuteCall) {
-                maturedState = callOption.closePrevious(true);
-                maturedState2 = putOption.closePrevious(false); 
-            }
-            if (pair.execute == StructureData.OptionExecution.ExecutePut) {
-                maturedState = callOption.closePrevious(false);
-                maturedState2 = putOption.closePrevious(true); 
-            } 
-            if (maturedState.releasedDepositAssetAmount > 0) {
-                uint256 releasedDepositAssetAmount  = releasedAmount[callOptionDeposit];
-                releasedAmount[callOptionDeposit] = releasedDepositAssetAmount.add(maturedState.releasedDepositAssetAmount)
-                .add(maturedState.releasedDepositAssetPremiumAmount); 
-            }
-            else if (maturedState.releasedCounterPartyAssetAmount > 0) {
-                uint256 releasedCounterPartyAssetAmount = releasedAmount[putOptionDeposit];
-                releasedAmount[putOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState.releasedCounterPartyAssetAmount)
-                .add(maturedState.releasedCounterPartyAssetPremiumAmount); 
-            }  
-            
-            if (maturedState2.releasedDepositAssetAmount > 0) {
-                uint256 releasedDepositAssetAmount  = releasedAmount[putOptionDeposit];
-                releasedAmount[putOptionDeposit] = releasedDepositAssetAmount.add(maturedState2.releasedDepositAssetAmount)
-                .add(maturedState2.releasedDepositAssetPremiumAmount); 
-            }
-            else if (maturedState2.releasedCounterPartyAssetAmount > 0) {
-                uint256 releasedCounterPartyAssetAmount = releasedAmount[callOptionDeposit];
-                releasedAmount[callOptionDeposit] = releasedCounterPartyAssetAmount.add(maturedState2.releasedCounterPartyAssetAmount)
-                .add(maturedState2.releasedCounterPartyAssetPremiumAmount);  
-            }  
-        }
-        if (currentRound > 1) { 
-            for(uint8 i = 0; i < optionPairCount; i++) {
-                StructureData.OptionPairDefinition memory pair = optionPairs[i];
-                if (pair.callOption == address(0) &&
-                    pair.putOption == address(0)) {
-                    continue;
+            StructureData.OptionState
+                storage previousCallOptionState = callOption.optionStates[
+                    previousRound - 1
+                ];
+            if (previousCallOptionState.totalAmount > 0) { 
+                maturedState = OptionLifecycle.closePreviousByOption(
+                    callOption,
+                    previousCallOptionState,
+                    true,
+                    pair.depositAssetAmountDecimals,
+                    pair.counterPartyAssetAmountDecimals,
+                    execution == StructureData.OptionExecution.ExecuteCall
+                );
+                if (maturedState.releasedDepositAssetAmount > 0) {
+                    assetData[pair.depositAsset].releasedAmount = uint256(assetData[
+                        pair.depositAsset
+                    ].releasedAmount).add(
+                            maturedState.releasedDepositAssetAmountWithPremium
+                        ).toUint128();
+                } else if (maturedState.releasedCounterPartyAssetAmount > 0) {
+                    assetData[pair.counterPartyAsset]
+                        .releasedAmount = uint256(assetData[pair.counterPartyAsset]
+                        .releasedAmount)
+                        .add(
+                            maturedState
+                                .releasedCounterPartyAssetAmountWithPremium
+                        ).toUint128();
                 }
-                IExecuteSettlement callOption = IExecuteSettlement(pair.callOption);
-                IExecuteSettlement putOption = IExecuteSettlement(pair.putOption); 
-                callOption.commitCurrent();
-                putOption.commitCurrent();
-            } 
+                if (execution == StructureData.OptionExecution.ExecuteCall) {
+                    autoRollToCounterPartyByOption(
+                        callOption,
+                        previousCallOptionState,
+                        putOption,
+                        pair.putOptionId,
+                        maturedState.releasedCounterPartyAssetAmountWithPremium,
+                        maturedState.autoRollCounterPartyAssetAmountWithPremium
+                    );
+                } else {
+                    autoRollByOption(
+                        callOption,
+                        pair.callOptionId,
+                        previousCallOptionState,
+                        maturedState.releasedDepositAssetAmountWithPremium,
+                        maturedState.autoRollDepositAssetAmountWithPremium
+                    );
+                }
+            }
+
+            StructureData.OptionState storage previousPutOptionState = putOption
+                .optionStates[previousRound - 1];
+
+            if (previousPutOptionState.totalAmount > 0) { 
+                maturedState = OptionLifecycle.closePreviousByOption(
+                    putOption,
+                    previousPutOptionState,
+                    false,
+                    pair.counterPartyAssetAmountDecimals,
+                    pair.depositAssetAmountDecimals,
+                    execution == StructureData.OptionExecution.ExecutePut
+                );
+                if (maturedState.releasedDepositAssetAmount > 0) {
+                    assetData[pair.counterPartyAsset]
+                        .releasedAmount = uint256(assetData[pair.counterPartyAsset]
+                        .releasedAmount)
+                        .add(
+                            maturedState.releasedDepositAssetAmountWithPremium
+                        ).toUint128();
+                } else if (maturedState.releasedCounterPartyAssetAmount > 0) {
+                    assetData[pair.depositAsset].releasedAmount = uint256(assetData[
+                        pair.depositAsset
+                    ].releasedAmount).add(
+                            maturedState
+                                .releasedCounterPartyAssetAmountWithPremium
+                        ).toUint128();
+                }
+                if (execution == StructureData.OptionExecution.ExecutePut) {
+                    autoRollToCounterPartyByOption(
+                        putOption,
+                        previousPutOptionState,
+                        callOption,
+                        pair.callOptionId,
+                        maturedState.releasedCounterPartyAssetAmountWithPremium,
+                        maturedState.autoRollCounterPartyAssetAmountWithPremium
+                    );
+                } else {
+                    autoRollByOption(
+                        putOption,
+                        pair.putOptionId,
+                        previousPutOptionState,
+                        maturedState.releasedDepositAssetAmountWithPremium,
+                        maturedState.autoRollDepositAssetAmountWithPremium
+                    );
+                }
+            }
+            OptionLifecycle.commitByOption(callOption, previousRound);
+            OptionLifecycle.commitByOption(putOption, previousRound);
         }
 
- 
-        for(uint8 i = 0; i < assetCount; i++) {
+        updateAsset();
+        underSettlement = false;
+    }
+
+    function updateAsset() private {
+        for (uint8 i = 0; i < assetCount; i++) {
             address assetAddress = asset[i];
-            uint256 released = releasedAmount[assetAddress];
-            uint256 deposit = depositAmount[assetAddress]; 
-            int256 leftOver = leftOverAmount[assetAddress]; 
-            
+            StructureData.AssetData storage assetSubData = assetData[
+                assetAddress
+            ];
             //no snaphot previously, so, no balance change
-            int256 balanceChange = currentRound == 2 ? int256(0) : (getBalanceChange(assetAddress) - int256(deposit) + int256(released));
-            leftOver = leftOver + balanceChange;
+            //todo: room for gas improvement
+            int128 leftOver = assetSubData.leftOverAmount +
+                (
+                    currentRound == 2
+                        ? int128(0)
+                        : (int128(getBalanceChange(assetAddress)) -
+                            int128(assetSubData.depositAmount) +
+                            int128(assetSubData.releasedAmount))
+                );
 
-            assetTraderWithdrawn[assetAddress] = 0;
-            assetBalanceAfterSettle[assetAddress] = getAvailableBalance(assetAddress);
-            assetWithdrawableAfterSettle[assetAddress] = collectWithdrawable(assetAddress);
-            //console.log("asset %s balance:%d withdrawable:%d", assetAddress, assetBalanceAfterSettle[assetAddress], assetWithdrawableAfterSettle[assetAddress]);
-
-            //console.log("asset %s released:%d deposit:%d", assetAddress, released, deposit);
-            
-            StructureData.SettlementCashflowResult memory instruction = StructureData.SettlementCashflowResult({
-                newReleasedAmount: released,
-                newDepositAmount: deposit,
-                leftOverAmount: leftOver,
-                contractAddress: assetAddress
-            }); 
+            assetSubData.traderWithdrawn = 0;
+            assetSubData.balanceAfterSettle = OptionLifecycle.getAvailableBalance(assetAddress, address(this)).toUint128();
+            assetSubData.withdrawableAfterSettle = collectWithdrawable(
+                assetAddress
+            ).toUint128();
+            StructureData.SettlementCashflowResult
+                memory instruction = StructureData.SettlementCashflowResult({
+                    newReleasedAmount: assetSubData.releasedAmount,
+                    newDepositAmount: assetSubData.depositAmount,
+                    leftOverAmount: leftOver,
+                    contractAddress: assetAddress
+                });
             settlementCashflowResult[assetAddress] = instruction;
-            releasedAmount[assetAddress] = 0;
-            depositAmount[assetAddress] = 0;
             //todo: check overflow
-            leftOverAmount[assetAddress] = leftOver + int256(deposit) - int256(released);
+            assetSubData.leftOverAmount =
+                int128(leftOver +
+                int128(assetSubData.depositAmount) -
+                int128(assetSubData.releasedAmount));
+            assetSubData.depositAmount = 0;
+            assetSubData.releasedAmount = 0;
         }
-    } 
+    }
 
-
-    function setOptionParameters(StructureData.OptionParameters[] memory _parameters) external override onlyRole(StructureData.SETTLER_ROLE) {
-
-          uint256 count = _parameters.length;        
-          if (currentRound == 1) {
-             require(count == 0, "nothing to set");
-          }
-          for(uint256 i = 0; i < count; i++) {
-              StructureData.OptionParameters memory parameter = _parameters[i];
-              IExecuteSettlement(parameter.option).setOptionParameters(parameter);
-          }
+    function setOptionParameters(
+        uint256[] memory _parameters
+    ) external override {
+        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        uint256 count = _parameters.length; 
+        require(!underSettlement);
+        require(currentRound > 1);
+        require(count == optionPairCount*2);
+        for (uint8 i = 0; i < count; i++) {
+            uint256 parameter = _parameters[i];
+            StructureData.OptionState storage optionState = optionData[i+1].optionStates[currentRound - 1];
+            OptionLifecycle.setOptionParameters(parameter, optionState); 
+        }
     }
 
     //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external override onlyRole(StructureData.SETTLER_ROLE) {
-        int256 balance  = leftOverAmount[_asset]; 
-        require(balance > 0, "nothing to withdraw");
-        assetTraderWithdrawn[_asset] = uint256(balance);
-         _withdraw(_trader, uint256(balance), _asset);
-         leftOverAmount[_asset] = 0;
+    function withdrawAsset(address _trader, address _asset) external override {
+        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        StructureData.AssetData storage assetSubData = assetData[_asset];
+        require(assetSubData.leftOverAmount > 0); 
+        uint128 balance = uint128(assetSubData.leftOverAmount);
+        OptionLifecycle.withdraw(_trader, uint256(balance), _asset);
+        assetSubData.traderWithdrawn = balance;
+        assetSubData.leftOverAmount = 0;
     }
 
-    function balanceEnough(address _asset) public override view returns(bool) {
-        int256 balance  = leftOverAmount[_asset]; 
+    function balanceEnough(address _asset) public view override returns (bool) {
+        StructureData.AssetData storage assetSubData = assetData[_asset];
+        int128 balance = assetSubData.leftOverAmount;
         if (balance >= 0) {
             return true;
         }
-        uint256 availableBalance = getAvailableBalance(_asset); 
-        if (availableBalance == 0) {
+        if (OptionLifecycle.getAvailableBalance(_asset, address(this)) == 0) {
             return false;
         }
-         
-        return (balance + getBalanceChange(_asset)) >= 0;
+
+        return balance >= -getBalanceChange(_asset);
     }
 
+    function getBalanceChange(address _asset) private view returns (int256) {
+        StructureData.AssetData storage assetSubData = assetData[_asset];
+        // int128 leastBalance = int128(assetSubData.balanceAfterSettle + collectWithdrawable(_asset) - assetSubData.withdrawableAfterSettle);
+        //return  int128(uint128(getAvailableBalance(_asset))) - leastBalance + int128(assetSubData.traderWithdrawn);
+        return
+            int256(
+                OptionLifecycle.getAvailableBalance(_asset, address(this))
+                .add(assetSubData.traderWithdrawn).add(assetSubData.withdrawableAfterSettle)
+            ) -
+            int256(
+                uint256(assetSubData.balanceAfterSettle).add(collectWithdrawable(_asset))
+            );
+    }
 
+    function collectWithdrawable(address _asset)
+        private
+        view
+        returns (uint256)
+    {
+        uint256 total = 0;
+        for (uint8 i = 0; i < optionPairCount; i++) {
+            StructureData.OptionPairDefinition storage pair = optionPairs[i];
+            if (
+                pair.depositAsset == _asset || pair.counterPartyAsset == _asset
+            ) {
+                StructureData.OptionData storage callOption = optionData[
+                    pair.callOptionId
+                ];
+                total = total.add(
+                    pair.depositAsset == _asset
+                        ? uint256(callOption.optionStates[currentRound].totalAmount).add(
+                            callOption.totalReleasedDepositAssetAmount
+                        )
+                        : callOption.totalReleasedCounterPartyAssetAmount
+                );
 
-    function getDespositAddress(address _callOption, address _putOption) private view returns(address _callOptionDesposit, address _putOptionDeposit){
- 
-        for(uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition memory pair = optionPairs[i];
-            if (pair.callOption == _callOption &&
-                pair.putOption == _putOption) {
-                return (pair.callOptionDeposit, pair.putOptionDeposit);
+                StructureData.OptionData storage putOption = optionData[
+                    pair.putOptionId
+                ];
+                total = total.add(
+                    pair.counterPartyAsset == _asset
+                        ? uint256(putOption.optionStates[currentRound].totalAmount).add(
+                            putOption.totalReleasedDepositAssetAmount
+                        )
+                        : putOption.totalReleasedCounterPartyAssetAmount
+                );
             }
-        }
-        revert("invalid callOption/putOption");
-    }
-
-    function getAvailableBalance(address _asset) private view returns(uint256) {
-       if (_asset != address(0)) {
-            return IERC20(_asset).balanceOf(getAddress()); 
-       }
-       else{
-          return getAddress().balance;
-       }
-    } 
-     
-    function getBalanceChange(address _asset) private view returns(int256){
-        int256 availableBalance = int256(getAvailableBalance(_asset));  
-        int256 balanceAfterSettle = int256(assetBalanceAfterSettle[_asset]);
-        int256 withdrawableAfterSettle = int256(assetWithdrawableAfterSettle[_asset]);
-        int256 withdrawableNow = int256(collectWithdrawable(_asset)); 
-        int256 traderWithdraw = int256(assetTraderWithdrawn[_asset]); 
-        int256 leastBalance =  balanceAfterSettle + withdrawableNow - withdrawableAfterSettle; 
-        return availableBalance - leastBalance + traderWithdraw; 
-    }
- 
-    function collectWithdrawable(address _asset) private view returns(uint256) {
-         
-         uint256 total = 0;
-         for(uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition memory pair = optionPairs[i];
-            if (pair.callOption == address(0) &&
-                pair.putOption == address(0)) {
-                continue;
-            }
-            if (pair.callOptionDeposit == _asset ||
-                pair.putOptionDeposit == _asset) {
-               total = total.add(IPKKTStructureOption(pair.callOption).getWithdrawable(_asset))
-               .add(IPKKTStructureOption(pair.putOption).getWithdrawable(_asset)); 
-            }   
         }
         return total;
     }
-    event Received(address indexed source, uint amount);
-    receive() external payable { 
-        emit Received(msg.sender, msg.value);
-    }
+
+    receive() external payable {}
+
+    function autoRollToCounterPartyByOption(
+        StructureData.OptionData storage _option,
+        StructureData.OptionState storage _optionState,
+        StructureData.OptionData storage _counterPartyOption,
+        uint8 _counterPartyOptionId,
+        uint256 _totalReleased,
+        uint256 _totalAutoRoll
+    ) internal virtual;
+
+    function autoRollByOption(
+        StructureData.OptionData storage _option,
+        uint8 _optionId,
+        StructureData.OptionState storage _optionState,
+        uint256 _totalReleased,
+        uint256 _totalAutoRoll
+    ) internal virtual;
 }

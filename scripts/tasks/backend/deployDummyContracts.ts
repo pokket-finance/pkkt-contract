@@ -7,9 +7,10 @@ import {
     USDC_MULTIPLIER,
     WBTC_MULTIPLIER,
     NULL_ADDRESS,
-    ETH_DECIMALS
+    ETH_DECIMALS,
+    USDT_DECIMALS
 } from "../../../constants/constants";
-import { PKKTHodlBoosterOption,OptionVault } from "../../../typechain";
+import { PKKTHodlBoosterOption } from "../../../typechain";
 import { getDeployedContractHelper } from "./utilities";
 import initializeUsers from "./initializeUsers";
 import generateOptionData from "./generateOptionData";
@@ -26,10 +27,10 @@ const main = async ({ fresh, init, initbackend }, { network, ethers, deployments
     
     if (init) {
         const optionVault = await getDeployedContractHelper(
-            "OptionVault",
+            "PKKTHodlBoosterOption",
             ethers,
             deployments
-        ) as OptionVault;
+        ) as PKKTHodlBoosterOption;
         await optionVault.connect(settlerSigner as Signer).initiateSettlement();
         console.log("Initialized the current round to :" + (await (await optionVault.currentRound()).toString()));
     }
@@ -76,155 +77,42 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
     });
 
     console.log("Deployed WBTC at " + WBTC.address);
+ 
 
-    const OptionVault = await deploy("OptionVault", {
-        contract: "OptionVault",
-        from: deployer,
-        args: [
-            settler,
-        ],
-    });
-
-    const optionVault = await ethers.getContractAt(OptionVault.abi, OptionVault.address);
-
-    const structureData = await deploy("StructureData", {
+    const optionLifecycle = await deploy("OptionLifecycle", {
         from: deployer,
     });
 
-    const ethHodlBoosterCallOption = await deployOptionContract(
-        "ETHHodlBoosterCallOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "ETH-USDC-HodlBooster-Call", 
-        NULL_ADDRESS,
-        USDC.address,
-        ETH_DECIMALS,
-        USDC_DECIMALS,
-        optionVault,
-        structureData.address,
-        true,
-        deploy,
-        ethers
-    );
-
-    const ethHodlBoosterPutOption = await deployOptionContract(
-        "ETHHodlBoosterPutOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "ETH-USDC-HodlBooster-Put", 
-        USDC.address,
-        NULL_ADDRESS,
-        USDC_DECIMALS,
-        ETH_DECIMALS,
-        optionVault,
-        structureData.address,
-        false,
-        deploy,
-        ethers
-    );
-
-    // Eth Ping-pong setup
-    ethHodlBoosterCallOption.setCounterPartyOption(ethHodlBoosterPutOption.address);
-    ethHodlBoosterPutOption.setCounterPartyOption(ethHodlBoosterCallOption.address);
-
-    await optionVault.addOptionPair({
-        callOption: ethHodlBoosterCallOption.address,
-        putOption: ethHodlBoosterPutOption.address,
-        callOptionDeposit: NULL_ADDRESS,
-        putOptionDeposit: USDC.address
-    });
-
-    const wbtcHodlBoosterCallOption = await deployOptionContract(
-        "WBTCHodlBoosterCallOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "WBTC-USDC-HodlBooster-Call", 
-        WBTC.address,
-        USDC.address,
-        WBTC_DECIMALS,
-        USDC_DECIMALS,
-        optionVault,
-        structureData.address,
-        true,
-        deploy,
-        ethers
-    );
-
-    const wbtcHodlBoosterPutOption = await deployOptionContract(
-        "WBTCHodlBoosterPutOption",
-        deployer,
-        "PKKTHodlBoosterOption",
-        settler,
-        "WBTC-USDC-HodlBooster-Put", 
-        USDC.address,
-        WBTC.address,
-        USDC_DECIMALS,
-        WBTC_DECIMALS,
-        optionVault,
-        structureData.address,
-        false,
-        deploy,
-        ethers
-    );
-    
-    // wbtc ping-pong setup
-    wbtcHodlBoosterCallOption.setCounterPartyOption(wbtcHodlBoosterPutOption.address);
-    wbtcHodlBoosterPutOption.setCounterPartyOption(wbtcHodlBoosterCallOption.address);
-
-    await optionVault.addOptionPair({
-        callOption: wbtcHodlBoosterCallOption.address,
-        putOption: wbtcHodlBoosterPutOption.address,
-        callOptionDeposit: WBTC.address,
-        putOptionDeposit: USDC.address
-    });
-}
-
-const deployOptionContract = async (
-    deploymentName: String,
-    deployer: any,
-    optionType: String,
-    settler: any,
-    optionName: String, 
-    depositAssetAddress: any,
-    counterPartyAddress: any,
-    depositAssetDecimals: number,
-    counterPartyAssetDecimals: number,
-    optionVault: any,
-    isCall: boolean,
-    libraryAddress: any,
-    deploy: any,
-    ethers: any): Promise<PKKTHodlBoosterOption> => {
-    const PKKTHodlBoosterOption = await deploy(deploymentName, {
+    const optionVault = await deploy("PKKTHodlBoosterOption", {
         from: deployer,
-        contract: optionType,
-        args: [
-            optionName, 
-            isCall ? depositAssetAddress : counterPartyAddress,
-            isCall ? counterPartyAddress : depositAssetAddress,
-            isCall ? depositAssetDecimals: counterPartyAssetDecimals,
-            isCall ? counterPartyAssetDecimals: depositAssetDecimals,
-            optionVault.address,
-            isCall,
-            settler
-        ],
+        args: [settler, [
+          { 
+            depositAssetAmountDecimals: ETH_DECIMALS,
+            counterPartyAssetAmountDecimals: USDT_DECIMALS,
+            depositAsset: NULL_ADDRESS,
+            counterPartyAsset: USDC.address,
+            callOptionId: 0,
+            putOptionId: 0
+          
+          },
+          { 
+            depositAssetAmountDecimals: WBTC_DECIMALS,
+            counterPartyAssetAmountDecimals: USDT_DECIMALS,
+            depositAsset: WBTC.address,
+            counterPartyAsset: USDC.address,
+            callOptionId: 0,
+            putOptionId: 0
+          
+          }
+        ]],
+        contract: "PKKTHodlBoosterOption",
         libraries: {
-            StructureData: libraryAddress,
-        }
-    });
+          OptionLifecycle: optionLifecycle.address,
+        } 
+      }); 
 
-    const pkktHodlBoosterOption = await ethers.getContractAt(
-        optionType,
-        PKKTHodlBoosterOption.address
-    );
-    console.log(`Deployed ${optionName} at: ${pkktHodlBoosterOption.address}`);
-
-    // await optionVault.addOption(pkktHodlBoosterOption.address);
-    // console.log(`Added ${optionName} to Option Vault at: ${optionVault.address}`);
-
-    return pkktHodlBoosterOption;
+   
 }
+ 
 
 export default main;
