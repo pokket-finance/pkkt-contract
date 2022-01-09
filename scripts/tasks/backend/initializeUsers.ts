@@ -18,38 +18,25 @@ const main = async (taskArgs, { ethers, deployments,
     const [, , alice, bob, , carol] = await ethers.getSigners();
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
     const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption",
+    const optionVault = await getDeployedContractHelper(
+        "PKKTHodlBoosterOption",
         ethers,
         deployments
     ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
+     ;
     const users = [alice, bob, carol];
     for (let user of users) {
         
         //console.log(`${user.address} `);
         await usdc.transfer(user.address, BigNumber.from(1000000).mul(USDC_MULTIPLIER));
         await usdc.connect(user as Signer).approve(
-            ethHodlBoosterPutOption.address,
+            optionVault.address,
             BigNumber.from(1000000).mul(USDC_MULTIPLIER)
-        );
-        await usdc.connect(user as Signer).approve(
-            wbtcHodlBoosterPutOption.address,
-            BigNumber.from(1000000).mul(USDC_MULTIPLIER)
-        );
+        ); 
         
         await wbtc.transfer(user.address, BigNumber.from(100).mul(WBTC_MULTIPLIER));
         await wbtc.connect(user as Signer).approve(
-            wbtcHodlBoosterCallOption.address,
+            optionVault.address,
             BigNumber.from(100).mul(WBTC_MULTIPLIER)
         );
         
