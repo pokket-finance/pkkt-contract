@@ -154,7 +154,7 @@ library OptionLifecycle {
             state.autoRollDepositAssetPremiumAmount =
                 maturedDepositAssetPremiumAmount.sub(
                 state.releasedDepositAssetPremiumAmount);
-            state.autoRollCounterPartyAssetAmountWithPremium =
+            state.autoRollDepositAssetAmountWithPremium =
                 state.autoRollDepositAssetAmount.add(
                 state.autoRollDepositAssetPremiumAmount);
         }
