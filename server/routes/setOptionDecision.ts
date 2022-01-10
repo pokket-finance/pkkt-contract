@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
+import * as dotenv from "dotenv"
+dotenv.config();
 
 import {
     ETH_DECIMALS,
@@ -19,6 +21,7 @@ import {
     canShowMoneyMovement
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
+import axios from "axios";
 
 export async function getSetOptionDecision(req: Request, res: Response) {
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
@@ -61,6 +64,13 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        // TODO remove once smart contract bug is fixes
+        // TODO for now simulate strike prices
+        const tempEthCallStrikePrice = "4500";
+        const tempEthPutStrikePrice = "3900";
+        const tempWbtcCallStrikePrice = "50000";
+        const tempWbtcPutStrikePrice = "38000";
+
         exerciseCallEthData = await getExerciseDecisionData(
             1,
             round,
@@ -71,6 +81,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exerciseCallEthData.callStrikePrice = tempEthCallStrikePrice;
+
         exercisePutEthData = await getExerciseDecisionData(
             2,
             round,
@@ -81,6 +93,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exercisePutEthData.putStrikePrice = tempEthPutStrikePrice;
+
         notExerciseWbtcData = await getExerciseDecisionData(
             3,
             round,
@@ -91,6 +105,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+    
         exerciseCallWbtcData = await getExerciseDecisionData(
             4,
             round,
@@ -101,6 +116,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exerciseCallWbtcData.callStrikePrice = tempWbtcCallStrikePrice;
+
         exercisePutWbtcData = await getExerciseDecisionData(
             5,
             round,
@@ -111,7 +128,12 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exercisePutWbtcData.putStrikePrice = tempWbtcPutStrikePrice;
     }
+
+    const priceData = await getPrices();
+    const ethereumPrice = priceData.ethereum.usd;
+    const wbtcPrice = priceData["wrapped-bitcoin"].usd;
 
     const initiateSettlementResubmit = settlementResubmit(req.app);
     res.render(
@@ -127,9 +149,17 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             round,
             initiateSettlementResubmit,
             success: req.params.success,
-            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round)),
+            ethereumPrice,
+            wbtcPrice
         }
     );
+}
+
+async function getPrices() {
+    const pricesUrl = "https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin%2Cethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false";
+    const priceData = await axios.get(pricesUrl);
+    return priceData.data;
 }
 
 export async function postSetOptionDecision(req: Request, res: Response) {
