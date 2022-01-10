@@ -125,7 +125,7 @@
                 <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
             <% } %>
             <% if (success !== undefined) { %>
-                <% if (success) { %>
+                <% if (success === ":true") { %>
                     <p>Exercise Decisions Set!</p>
                 <% } else { %>
                     <p>Error in Setting Exercise Decisions!</p>

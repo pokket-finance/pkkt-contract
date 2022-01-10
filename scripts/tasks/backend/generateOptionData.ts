@@ -84,12 +84,6 @@ async function main({ command }, { ethers, deployments }) {
     else if (command == 4) {
         await deposits();
     }
-    // empty settle
-    else if (command == 5 ) {
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        await deposits();
-        await optionVault.connect(settler as Signer).settle([]);
-    }
     // Right before trader sends money back
     else if (command == 99) {
         /* open round 1*/

@@ -3,30 +3,26 @@ import { Signer } from "ethers";
 
 import {
     getSettler,
-    getOptionContracts,
     areOptionParamsSet,
     canSettle,
-    settlementResubmit
+    settlementResubmit,
+    getDeployedContractHelper
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
     WBTC_PRICE_PRECISION,
     RATIO_MULTIPLIER
 } from "../../constants/constants";
+import { PKKTHodlBoosterOption } from "../../typechain";
+import { packOptionParameter } from "../../test/utilities/optionPair";
 
 export async function getSetEpoch (req: Request, res: Response) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
     const settler = await getSettler()
     const round = await optionVault.currentRound();
     let areOptionParametersSet = await areOptionParamsSet(round);
-    const underSettlement = await canSettle(optionVault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption]);
+    const underSettlement = await canSettle(optionVault);
     if (underSettlement) {
         areOptionParametersSet = true;
     }
@@ -51,13 +47,7 @@ export async function getSetEpoch (req: Request, res: Response) {
 };
 
 export async function postSetEpoch(req: Request, res: Response) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const ethCallPremium = parseFloat(req.body.ethCallPremium);
     const ethPutPremium = parseFloat(req.body.ethPutPremium);
     const wbtcCallPremium = parseFloat(req.body.wbtcCallPremium);
@@ -67,31 +57,12 @@ export async function postSetEpoch(req: Request, res: Response) {
     const wbtcCallStrikePrice = req.body.wbtcCallStrike * (10 ** WBTC_PRICE_PRECISION);
     const wbtcPutStrikePrice = req.body.wbtcPutStrike * (10 ** WBTC_PRICE_PRECISION);
     let optionParameters = [
-        {
-            pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethCallStrikePrice,
-            premiumRate: ethCallPremium * RATIO_MULTIPLIER,
-            option: ethHodlBoosterCallOption.address
-        },
-        {
-            pricePrecision: ETH_PRICE_PRECISION,
-            strikePrice: ethPutStrikePrice,
-            premiumRate: ethPutPremium * RATIO_MULTIPLIER,
-            option: ethHodlBoosterPutOption.address
-        },
-        {
-            pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: wbtcCallStrikePrice,
-            premiumRate: wbtcCallPremium * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterCallOption.address
-        },
-        {
-            pricePrecision: WBTC_PRICE_PRECISION,
-            strikePrice: wbtcPutStrikePrice,
-            premiumRate: wbtcPutPremium * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterPutOption.address
-        }
+        packOptionParameter(ethCallStrikePrice, ethCallPremium * RATIO_MULTIPLIER),
+        packOptionParameter(ethPutStrikePrice, ethPutPremium * RATIO_MULTIPLIER),
+        packOptionParameter(wbtcCallStrikePrice, wbtcCallPremium * RATIO_MULTIPLIER),
+        packOptionParameter(wbtcPutStrikePrice, wbtcPutPremium * RATIO_MULTIPLIER)
     ];
+    console.log(optionParameters)
     const settler = await getSettler();
     try {
         await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);

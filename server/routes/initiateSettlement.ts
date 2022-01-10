@@ -2,7 +2,7 @@ import { Signer } from "ethers";
 import { Request, Response } from "express";
 import { appendFile } from "fs";
 import { ethers } from "hardhat";
-import { OptionVault } from "../../typechain";
+import { PKKTHodlBoosterOption } from "../../typechain";
 import { getDeployedContractHelper, getSettler, settlementResubmit } from "../utilities/utilities";
 
 // GET /initiateSettlement route
@@ -29,7 +29,7 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
 export async function setManualInitiateSettlement(req: Request, res: Response) {
     const manualGasPriceGwei = req.body.manualGasPrice;
     const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "gwei");
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
     console.log(manualGasPriceWei.toString());
     try {

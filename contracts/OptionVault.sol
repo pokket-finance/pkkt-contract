@@ -383,9 +383,9 @@ abstract contract OptionVault is
     ) external override {
         _checkRole(StructureData.SETTLER_ROLE, msg.sender);
         uint256 count = _parameters.length; 
-        require(!underSettlement);
-        require(currentRound > 1);
-        require(count == optionPairCount*2);
+        require(!underSettlement, "!undersettlement");
+        require(currentRound > 1, "current round is not greater than 1");
+        require(count == optionPairCount*2, "Count != option pair count * 2");
         for (uint8 i = 0; i < count; i++) {
             uint256 parameter = _parameters[i];
             StructureData.OptionState storage optionState = optionData[i+1].optionStates[currentRound - 1];

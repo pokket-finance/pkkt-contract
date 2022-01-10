@@ -6,24 +6,21 @@ import {
     ETH_DECIMALS,
     USDC_DECIMALS,
     WBTC_DECIMALS,
-    OptionExecution
+    OptionExecution,
+    ETH_USDC_OPTION_ID,
+    WBTC_USDC_OPTION_ID
 } from "../../constants/constants";
 import {
-    getOptionContracts,
     getSettler,
     canSettle,
     settlementResubmit,
-    setSettlementParameters
+    setSettlementParameters,
+    getDeployedContractHelper
 } from "../utilities/utilities"
+import { PKKTHodlBoosterOption } from "../../typechain";
 
 export async function getSetOptionDecision(req: Request, res: Response) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
     const settler = await getSettler()
 
@@ -46,77 +43,69 @@ export async function getSetOptionDecision(req: Request, res: Response) {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(
-        optionVault,
-        settler,
-        round,
-        [
-            ethHodlBoosterPutOption,
-            ethHodlBoosterCallOption,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption
-        ]
-    );
+    const canSettleVault = await canSettle(optionVault);
 
-    if (canSettleVault && round.gt(2)) {
+    if (canSettleVault && round > 2) {
         const strikePriceDecimals = 4;
 
+        let ethOptionPair = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
+        let wbtcOptionPair = await optionVault.optionPairs(WBTC_USDC_OPTION_ID);
         notExerciseEthData = await getExerciseDecisionData(
             0,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
         exerciseCallEthData = await getExerciseDecisionData(
             1,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
         exercisePutEthData = await getExerciseDecisionData(
             2,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
         notExerciseWbtcData = await getExerciseDecisionData(
             3,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
         exerciseCallWbtcData = await getExerciseDecisionData(
             4,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
         exercisePutWbtcData = await getExerciseDecisionData(
             5,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
@@ -190,8 +179,8 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
-async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
-        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+async function getExerciseDecisionData(index, round, vault: PKKTHodlBoosterOption, settler, optionPair, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
+        let accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
@@ -237,13 +226,13 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
             putOptionAssetDecimals
         )
 
-        let maturedCallOptionState = await callOption.optionStates(accounting.callOptionResult.round.sub(1));
+        let maturedCallOptionState = await vault.getOptionStateByRound(optionPair.callOptionId, round - 1);
         let callStrikePrice = ethers.utils.formatUnits(
             maturedCallOptionState.strikePrice,
             strikePriceDecimals
         )
 
-        let maturedPutOptionState = await putOption.optionStates(accounting.putOptionResult.round.sub(1));
+        let maturedPutOptionState = await vault.getOptionStateByRound(optionPair.putOptionId, round - 1);
         let putStrikePrice = ethers.utils.formatUnits(
             maturedPutOptionState.strikePrice,
             strikePriceDecimals
