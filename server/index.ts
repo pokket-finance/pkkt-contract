@@ -75,7 +75,7 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 //             // Let the trader know and allow them
 //             // to resubmit the transaction with a higher gas price
 //             await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
-//             console.log(`Server initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
+//             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
 //             app.set("initiateSettlementResubmit", true);
 //             app.set("settlerNonce", await settler.getTransactionCount());
 //         }

@@ -1,5 +1,6 @@
 import { Signer } from "ethers";
 import { Request, Response } from "express";
+import { appendFile } from "fs";
 import { ethers } from "hardhat";
 import { OptionVault } from "../../typechain";
 import { getDeployedContractHelper, getSettler, settlementResubmit } from "../utilities/utilities";
@@ -27,9 +28,15 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
 // SET /initiateSettlement route
 export async function setManualInitiateSettlement(req: Request, res: Response) {
     const manualGasPriceGwei = req.body.manualGasPrice;
-    const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "wei");
+    const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "gwei");
     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
     const settler = await getSettler();
-
-    await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
+    console.log(manualGasPriceWei.toString());
+    try {
+        await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
+    } catch (err) {
+        console.error(err);
+    }
+        req.app.set("initiateSettlementResubmit", false);
+    res.redirect("/show/epoch");
 }

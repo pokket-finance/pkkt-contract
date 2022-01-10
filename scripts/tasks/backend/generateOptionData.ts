@@ -124,7 +124,7 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).settle([]);
     }
     // Right before trader sends money back
-    else if (command == 6) {
+    else if (command == 99) {
         /* open round 1*/
         await optionVault.connect(settler as Signer).initiateSettlement();  
 
@@ -134,6 +134,8 @@ async function main({ command }, { ethers, deployments }) {
         await ethHodlBoosterPutOption.connect(bob as Signer).deposit(BigNumber.from(4000).mul(USDC_MULTIPLIER));
         await ethHodlBoosterPutOption.connect(carol as Signer).deposit(BigNumber.from(2000).mul(USDC_MULTIPLIER));
         await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDC_MULTIPLIER));
+    }
+    else if (command == 100) {
         
         /* open round 2*/
         await optionVault.connect(settler as Signer).initiateSettlement();
@@ -144,89 +146,89 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).settle([]);  
     }
     else if (command == 7) {
-        await optionVault.connect(settler as Signer).setOptionParameters([
-            {
-              strikePrice:ethPrice*1.05,
-              pricePrecision:ETH_PRICE_PRECISION,
-              premiumRate: 0.025 * RATIO_MULTIPLIER,
-              option: ethHodlBoosterCallOption.address
-            },  
-            {
-              strikePrice:ethPrice*0.95,
-              pricePrecision:ETH_PRICE_PRECISION,
-              premiumRate: 0.025 * RATIO_MULTIPLIER,
-              option: ethHodlBoosterPutOption.address
-            },
-            {
-              strikePrice:btcPrice*1.05,
-              pricePrecision:WBTC_PRICE_PRECISION,
-              premiumRate: 0.025 * RATIO_MULTIPLIER,
-              option: wbtcHodlBoosterCallOption.address
-            }, 
-            {
-              strikePrice:btcPrice * 0.95,
-              pricePrecision:WBTC_PRICE_PRECISION,
-              premiumRate: 0.025 * RATIO_MULTIPLIER,
-              option: wbtcHodlBoosterPutOption.address
-            },
-        ]);
+        // await optionVault.connect(settler as Signer).setOptionParameters([
+        //     {
+        //       strikePrice:ethPrice*1.05,
+        //       pricePrecision:ETH_PRICE_PRECISION,
+        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
+        //       option: ethHodlBoosterCallOption.address
+        //     },  
+        //     {
+        //       strikePrice:ethPrice*0.95,
+        //       pricePrecision:ETH_PRICE_PRECISION,
+        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
+        //       option: ethHodlBoosterPutOption.address
+        //     },
+        //     {
+        //       strikePrice:btcPrice*1.05,
+        //       pricePrecision:WBTC_PRICE_PRECISION,
+        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
+        //       option: wbtcHodlBoosterCallOption.address
+        //     }, 
+        //     {
+        //       strikePrice:btcPrice * 0.95,
+        //       pricePrecision:WBTC_PRICE_PRECISION,
+        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
+        //       option: wbtcHodlBoosterPutOption.address
+        //     },
+        // ]);
         /* open round 3*/
         await optionVault.connect(settler as Signer).initiateSettlement();   
         await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
         await wbtcHodlBoosterPutOption.connect(bob as Signer).maxInitiateWithdraw();  //51250.0 usdt with premium 
         await wbtcHodlBoosterCallOption.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
-        await optionVault.connect(settler as Signer).settle([{
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        }, 
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        }]);
+        // await optionVault.connect(settler as Signer).settle([{
+        //     callOption: ethHodlBoosterCallOption.address,
+        //     putOption: ethHodlBoosterPutOption.address,
+        //     execute: OptionExecution.NoExecution
+        // }, 
+        // {
+        //     callOption: wbtcHodlBoosterCallOption.address,
+        //     putOption: wbtcHodlBoosterPutOption.address,
+        //     execute: OptionExecution.NoExecution
+        // }]);
     }
     else if (command == 8) {
-        await optionVault.connect(settler as Signer).setOptionParameters([
-            {
-              strikePrice:ethPrice*1.04,
-              pricePrecision:ETH_PRICE_PRECISION,
-              premiumRate: 0.02 * RATIO_MULTIPLIER,
-              option: ethHodlBoosterCallOption.address
-            },  
-            {
-              strikePrice:ethPrice*0.96,
-              pricePrecision:ETH_PRICE_PRECISION,
-              premiumRate: 0.02 * RATIO_MULTIPLIER,
-              option: ethHodlBoosterPutOption.address
-            },
-            {
-              strikePrice:btcPrice*1.04,
-              pricePrecision:WBTC_PRICE_PRECISION,
-              premiumRate: 0.02 * RATIO_MULTIPLIER,
-              option: wbtcHodlBoosterCallOption.address
-            }, 
-            {
-              strikePrice:btcPrice * 0.96,
-              pricePrecision:WBTC_PRICE_PRECISION,
-              premiumRate: 0.02 * RATIO_MULTIPLIER,
-              option: wbtcHodlBoosterPutOption.address
-            },
-        ]);
+        // await optionVault.connect(settler as Signer).setOptionParameters([
+        //     {
+        //       strikePrice:ethPrice*1.04,
+        //       pricePrecision:ETH_PRICE_PRECISION,
+        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
+        //       option: ethHodlBoosterCallOption.address
+        //     },  
+        //     {
+        //       strikePrice:ethPrice*0.96,
+        //       pricePrecision:ETH_PRICE_PRECISION,
+        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
+        //       option: ethHodlBoosterPutOption.address
+        //     },
+        //     {
+        //       strikePrice:btcPrice*1.04,
+        //       pricePrecision:WBTC_PRICE_PRECISION,
+        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
+        //       option: wbtcHodlBoosterCallOption.address
+        //     }, 
+        //     {
+        //       strikePrice:btcPrice * 0.96,
+        //       pricePrecision:WBTC_PRICE_PRECISION,
+        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
+        //       option: wbtcHodlBoosterPutOption.address
+        //     },
+        // ]);
             
         /* open round 4*/
         await optionVault.connect(settler as Signer).initiateSettlement();   
 
-        await optionVault.connect(settler as Signer).settle([{
-        callOption: ethHodlBoosterCallOption.address,
-        putOption: ethHodlBoosterPutOption.address,
-        execute: OptionExecution.ExecuteCall
-        }, 
-        {
-        callOption: wbtcHodlBoosterCallOption.address,
-        putOption: wbtcHodlBoosterPutOption.address,
-        execute: OptionExecution.NoExecution
-        }]);
+        // await optionVault.connect(settler as Signer).settle([{
+        // callOption: ethHodlBoosterCallOption.address,
+        // putOption: ethHodlBoosterPutOption.address,
+        // execute: OptionExecution.ExecuteCall
+        // }, 
+        // {
+        // callOption: wbtcHodlBoosterCallOption.address,
+        // putOption: wbtcHodlBoosterPutOption.address,
+        // execute: OptionExecution.NoExecution
+        // }]);
     } else if (command == 9) {
         await optionVault.connect(settler as Signer).initiateSettlement();   
         await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
