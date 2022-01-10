@@ -1,7 +1,9 @@
  <!--Navbar-->
  <ul id="navbar">
     <li><a href="/set/decision" class="decisionNav">Decision Data</a></li>
-    <li><a href="/moneyMovement" class="moneyMovementNav">Money Movement</a></li>
+    <% if (showMoneyMovement) { %>
+        <li><a href="/moneyMovement" class="moneyMovementNav">Money Movement</a></li>
+    <% } %>
     <li><a href="/set/epoch" class="setEpochNav">Set Epoch</a></li>
     <li><a href="/show/epoch" class="showEpochNav">View Epoch</a></li>
     <% if (initiateSettlementResubmit) { %>

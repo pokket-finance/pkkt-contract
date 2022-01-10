@@ -107,6 +107,10 @@ type OptionPairExecutionAccountingResult = {
     return await vault.underSettlement();
 }
 
+export async function canShowMoneyMovement(vault: PKKTHodlBoosterOption, round): Promise<boolean> {
+    return !(await canSettle(vault)) && round > 2;
+}
+
 /**
  * Checks if the option parameters are set for the given round.
  * @param round round to check
@@ -120,10 +124,6 @@ export async function areOptionParamsSet(round: number): Promise<boolean> {
 
     const optionStates = await getOptionStateData(vault, round);
     for (let optionState of optionStates) {
-        console.log(!optionState.strikePrice.isZero());
-        console.log(optionState.strikePrice.toString());
-        console.log(optionState.premiumRate !== 0);
-        console.log(optionState.premiumRate);
         if (!optionState.strikePrice.isZero() || optionState.premiumRate !== 0) {
             return true;
         }

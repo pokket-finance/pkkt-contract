@@ -15,7 +15,8 @@ import {
     canSettle,
     settlementResubmit,
     setSettlementParameters,
-    getDeployedContractHelper
+    getDeployedContractHelper,
+    canShowMoneyMovement
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
 
@@ -125,7 +126,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             canSettleVault,
             round,
             initiateSettlementResubmit,
-            success: req.params.success
+            success: req.params.success,
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );
 }

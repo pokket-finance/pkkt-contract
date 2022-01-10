@@ -8,6 +8,8 @@ import {
 } from "../../constants/constants";
 import { PKKTHodlBoosterOption } from "../../typechain";
 import {
+    canSettle,
+    canShowMoneyMovement,
     getDeployedContractHelper,
     getOptionStateData,
     settlementResubmit
@@ -55,7 +57,8 @@ export async function showEpoch(req: Request, res: Response) {
             predictedEthOption: predictedEthOption,
             wbtcOption,
             predictedWbtcOption: predictedWbtcOption,
-            initiateSettlementResubmit
+            initiateSettlementResubmit,
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );
 }

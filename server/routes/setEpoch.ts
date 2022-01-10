@@ -6,7 +6,8 @@ import {
     areOptionParamsSet,
     canSettle,
     settlementResubmit,
-    getDeployedContractHelper
+    getDeployedContractHelper,
+    canShowMoneyMovement
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -41,7 +42,8 @@ export async function getSetEpoch (req: Request, res: Response) {
             predictedEthOption,
             predictedWbtcOption,
             initiateSettlementResubmit,
-            success
+            success,
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );
 };

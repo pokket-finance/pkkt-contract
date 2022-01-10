@@ -16,7 +16,8 @@ import {
     getTrader,
     settlementResubmit,
     canSettle,
-    areOptionParamsSet
+    areOptionParamsSet,
+    canShowMoneyMovement,
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -88,12 +89,13 @@ export async function getMoneyMovement(req: Request, res: Response) {
     const initiateSettlementResubmit = settlementResubmit(req.app);
 
     const success = req.params.success;
+    let canSettleVault = await canSettle(vault);
     let canWithdraw;
+    const round = await vault.currentRound();
     if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
         canWithdraw = false;
     }
     else {
-        const round = await vault.currentRound();
         const canSettleVault = (await canSettle(vault)) && round > 2;
         const areOptionParametersSet = await areOptionParamsSet(round);
         canWithdraw = !canSettleVault && !areOptionParametersSet;
@@ -112,7 +114,8 @@ export async function getMoneyMovement(req: Request, res: Response) {
             initiateSettlementResubmit,
             success,
             vaultAddress: vault.address,
-            canWithdraw
+            canWithdraw,
+            showMoneyMovement: (await canShowMoneyMovement(vault, round))
         }
     );
 }
