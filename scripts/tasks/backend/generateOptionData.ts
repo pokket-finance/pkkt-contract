@@ -2,8 +2,7 @@ import { BigNumber, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import {
-    ERC20Mock,
-    OptionVault,
+    ERC20Mock, 
     PKKTHodlBoosterOption,
 } from "../../../typechain";
 
@@ -17,63 +16,33 @@ import {
     OptionExecution,
     NULL_ADDRESS
 } from "../../../constants/constants";
-import { getDeployedContractHelper } from "./utilities";
+import { getDeployedContractHelper,packOptionParameter } from "./utilities";
+
 
 async function main({ command }, { ethers, deployments }) {
     console.log("Generating option data...");
+    const ETHCALLOPTION = 1;
+    const ETHPUTOPTION= 2;
+    const WBTCCALLOPTION = 3;
+    const WBTCPUTOPTION = 4;
     const [deployer, settler, alice, bob, trader, carol] = await ethers.getSigners();
     const [
         usdc,
         wbtc,
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
+        optionVault 
     ] = await getDeployedContracts(ethers, deployments);
     const users = [alice]
 
     const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
     const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
 
-    let settleParams = [
-        {
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        },
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: OptionExecution.NoExecution
-        }
+    let settleParams = [OptionExecution.NoExecution, OptionExecution.NoExecution
     ];
 
-    let commitParams = [
-        {
-            strikePrice: ethPrice*1.05,
-            pricePrecision: ETH_PRICE_PRECISION,
-            premiumRate: 0.025 * RATIO_MULTIPLIER,
-            option: ethHodlBoosterCallOption.address
-          },  
-          {
-            strikePrice: ethPrice*0.95,
-            pricePrecision: ETH_PRICE_PRECISION,
-            premiumRate: 0.025 * RATIO_MULTIPLIER,
-            option: ethHodlBoosterPutOption.address
-          },
-          {
-            strikePrice: btcPrice*1.05,
-            pricePrecision: WBTC_PRICE_PRECISION,
-            premiumRate: 0.025 * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterCallOption.address
-          }, 
-          {
-            strikePrice: btcPrice * 0.95,
-            pricePrecision: WBTC_PRICE_PRECISION,
-            premiumRate: 0.025 * RATIO_MULTIPLIER,
-            option: wbtcHodlBoosterPutOption.address
-          },
+    let commitParams = [packOptionParameter(ethPrice*1.05, 0.025 * RATIO_MULTIPLIER),
+        packOptionParameter(ethPrice*0.95, 0.025 * RATIO_MULTIPLIER),
+        packOptionParameter(btcPrice*1.05, 0.025 * RATIO_MULTIPLIER),
+        packOptionParameter(btcPrice*0.95, 0.025 * RATIO_MULTIPLIER),
     ];
 
     // Set Option Parameters
@@ -87,8 +56,7 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).initiateSettlement();
 
         await deposits();
-
-        await optionVault.connect(settler as Signer).settle([]);
+ 
     }
     // initiate settlement
     else if (command == 2) {
@@ -106,8 +74,7 @@ async function main({ command }, { ethers, deployments }) {
         await optionVault.connect(settler as Signer).initiateSettlement();
 
         await deposits();
-
-        await optionVault.connect(settler as Signer).settle([]);
+ 
         await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
 
         // round 3
@@ -128,125 +95,82 @@ async function main({ command }, { ethers, deployments }) {
         /* open round 1*/
         await optionVault.connect(settler as Signer).initiateSettlement();  
 
-        await ethHodlBoosterCallOption.connect(alice as Signer).depositETH({ value: BigNumber.from(5).mul(ETH_MULTIPLIER)});
-        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(BigNumber.from(2).mul(WBTC_MULTIPLIER));
-        await wbtcHodlBoosterCallOption.connect(carol as Signer).deposit(BigNumber.from(1).mul(WBTC_MULTIPLIER));
-        await ethHodlBoosterPutOption.connect(bob as Signer).deposit(BigNumber.from(4000).mul(USDC_MULTIPLIER));
-        await ethHodlBoosterPutOption.connect(carol as Signer).deposit(BigNumber.from(2000).mul(USDC_MULTIPLIER));
-        await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(BigNumber.from(50000).mul(USDC_MULTIPLIER));
-    }
-    else if (command == 100) {
+        await optionVault.connect(alice as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(5).mul(ETH_MULTIPLIER)});
+        await optionVault.connect(alice as Signer).deposit(WBTCCALLOPTION, BigNumber.from(2).mul(WBTC_MULTIPLIER));
+        await optionVault.connect(carol as Signer).deposit(WBTCCALLOPTION,BigNumber.from(1).mul(WBTC_MULTIPLIER));
+        await optionVault.connect(bob as Signer).deposit(ETHPUTOPTION, BigNumber.from(4000).mul(USDC_MULTIPLIER));
+        await optionVault.connect(carol as Signer).deposit(ETHPUTOPTION, BigNumber.from(2000).mul(USDC_MULTIPLIER));
+        await optionVault.connect(bob as Signer).deposit(WBTCPUTOPTION, BigNumber.from(50000).mul(USDC_MULTIPLIER));
         
         /* open round 2*/
         await optionVault.connect(settler as Signer).initiateSettlement();
 
-        await ethHodlBoosterCallOption.connect(bob as Signer).depositETH({ value: BigNumber.from(1).mul(ETH_MULTIPLIER)});
-        await wbtcHodlBoosterPutOption.connect(alice as Signer).deposit(BigNumber.from(100000).mul(USDC_MULTIPLIER));
-        await wbtcHodlBoosterPutOption.connect(carol as Signer).deposit(BigNumber.from(50000).mul(USDC_MULTIPLIER));
+        await optionVault.connect(bob as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(1).mul(ETH_MULTIPLIER)});
+        await optionVault.connect(alice as Signer).deposit(WBTCPUTOPTION,BigNumber.from(100000).mul(USDC_MULTIPLIER));
+        await optionVault.connect(carol as Signer).deposit(WBTCPUTOPTION, BigNumber.from(50000).mul(USDC_MULTIPLIER));
         await optionVault.connect(settler as Signer).settle([]);  
     }
     else if (command == 7) {
-        // await optionVault.connect(settler as Signer).setOptionParameters([
-        //     {
-        //       strikePrice:ethPrice*1.05,
-        //       pricePrecision:ETH_PRICE_PRECISION,
-        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
-        //       option: ethHodlBoosterCallOption.address
-        //     },  
-        //     {
-        //       strikePrice:ethPrice*0.95,
-        //       pricePrecision:ETH_PRICE_PRECISION,
-        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
-        //       option: ethHodlBoosterPutOption.address
-        //     },
-        //     {
-        //       strikePrice:btcPrice*1.05,
-        //       pricePrecision:WBTC_PRICE_PRECISION,
-        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
-        //       option: wbtcHodlBoosterCallOption.address
-        //     }, 
-        //     {
-        //       strikePrice:btcPrice * 0.95,
-        //       pricePrecision:WBTC_PRICE_PRECISION,
-        //       premiumRate: 0.025 * RATIO_MULTIPLIER,
-        //       option: wbtcHodlBoosterPutOption.address
-        //     },
-        // ]);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
         /* open round 3*/
         await optionVault.connect(settler as Signer).initiateSettlement();   
-        await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
-        await wbtcHodlBoosterPutOption.connect(bob as Signer).maxInitiateWithdraw();  //51250.0 usdt with premium 
-        await wbtcHodlBoosterCallOption.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
-        // await optionVault.connect(settler as Signer).settle([{
-        //     callOption: ethHodlBoosterCallOption.address,
-        //     putOption: ethHodlBoosterPutOption.address,
-        //     execute: OptionExecution.NoExecution
-        // }, 
-        // {
-        //     callOption: wbtcHodlBoosterCallOption.address,
-        //     putOption: wbtcHodlBoosterPutOption.address,
-        //     execute: OptionExecution.NoExecution
-        // }]);
+        var balance = await optionVault.connect(alice as Signer).getAccountBalance(ETHCALLOPTION);
+        var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(alice as Signer).initiateWithraw(ETHCALLOPTION, diff); //5.125 eth with premium
+        
+        balance = await optionVault.connect(bob as Signer).getAccountBalance(WBTCPUTOPTION);
+        diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(bob as Signer).initiateWithraw(WBTCPUTOPTION, diff);  //51250.0 usdt with premium 
+        
+        
+        balance = await optionVault.connect(carol as Signer).getAccountBalance(WBTCCALLOPTION);
+        diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(carol as Signer).initiateWithraw(WBTCCALLOPTION, carol); //1.025 wbtc with premium
+        
+        await optionVault.connect(settler as Signer).settle([settleParams]);
     }
     else if (command == 8) {
-        // await optionVault.connect(settler as Signer).setOptionParameters([
-        //     {
-        //       strikePrice:ethPrice*1.04,
-        //       pricePrecision:ETH_PRICE_PRECISION,
-        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
-        //       option: ethHodlBoosterCallOption.address
-        //     },  
-        //     {
-        //       strikePrice:ethPrice*0.96,
-        //       pricePrecision:ETH_PRICE_PRECISION,
-        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
-        //       option: ethHodlBoosterPutOption.address
-        //     },
-        //     {
-        //       strikePrice:btcPrice*1.04,
-        //       pricePrecision:WBTC_PRICE_PRECISION,
-        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
-        //       option: wbtcHodlBoosterCallOption.address
-        //     }, 
-        //     {
-        //       strikePrice:btcPrice * 0.96,
-        //       pricePrecision:WBTC_PRICE_PRECISION,
-        //       premiumRate: 0.02 * RATIO_MULTIPLIER,
-        //       option: wbtcHodlBoosterPutOption.address
-        //     },
-        // ]);
+        await optionVault.connect(settler as Signer).setOptionParameters([
+            packOptionParameter(ethPrice*1.04, 0.02 * RATIO_MULTIPLIER),
+            packOptionParameter(ethPrice*0.96, 0.02 * RATIO_MULTIPLIER),
+            packOptionParameter(btcPrice*1.04, 0.02 * RATIO_MULTIPLIER),
+            packOptionParameter(btcPrice*0.96, 0.02 * RATIO_MULTIPLIER),]);
             
         /* open round 4*/
         await optionVault.connect(settler as Signer).initiateSettlement();   
 
-        // await optionVault.connect(settler as Signer).settle([{
-        // callOption: ethHodlBoosterCallOption.address,
-        // putOption: ethHodlBoosterPutOption.address,
-        // execute: OptionExecution.ExecuteCall
-        // }, 
-        // {
-        // callOption: wbtcHodlBoosterCallOption.address,
-        // putOption: wbtcHodlBoosterPutOption.address,
-        // execute: OptionExecution.NoExecution
-        // }]);
+        await optionVault.connect(settler as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.NoExecution]);
     } else if (command == 9) {
         await optionVault.connect(settler as Signer).initiateSettlement();   
-        await ethHodlBoosterCallOption.connect(alice as Signer).maxInitiateWithdraw(); //5.125 eth with premium
-        await wbtcHodlBoosterPutOption.connect(bob as Signer).maxInitiateWithdraw();  //51250.0 usdt with premium 
-        await wbtcHodlBoosterCallOption.connect(carol as Signer).maxInitiateWithdraw(); //1.025 wbtc with premium
+        var balance = await optionVault.connect(alice as Signer).getAccountBalance(ETHCALLOPTION);
+        var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(alice as Signer).initiateWithraw(ETHCALLOPTION, diff); //5.125 eth with premium
+        
+        balance = await optionVault.connect(bob as Signer).getAccountBalance(WBTCPUTOPTION);
+        diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(bob as Signer).initiateWithraw(WBTCPUTOPTION, diff);  //51250.0 usdt with premium 
+        
+        
+        balance = await optionVault.connect(carol as Signer).getAccountBalance(WBTCCALLOPTION);
+        diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
+        await optionVault.connect(carol as Signer).initiateWithraw(WBTCCALLOPTION, carol); //1.025 wbtc with premium
     }
 
     async function deposits() {
-        await ethHodlBoosterCallOption.connect(alice as Signer).depositETH(
+        await optionVault.connect(alice as Signer).depositETH(
+            ETHCALLOPTION,
             { value: BigNumber.from(5).mul(ETH_MULTIPLIER) }
         );
-        await ethHodlBoosterPutOption.connect(alice as Signer).deposit(
+        await optionVault.connect(alice as Signer).deposit(
+            ETHPUTOPTION,
             BigNumber.from(6000).mul(USDC_MULTIPLIER)
         );
-        await wbtcHodlBoosterCallOption.connect(alice as Signer).deposit(
+        await optionVault.connect(alice as Signer).deposit(
+            WBTCCALLOPTION,
             BigNumber.from(3).mul(WBTC_MULTIPLIER)
         );
-        await wbtcHodlBoosterPutOption.connect(bob as Signer).deposit(
+        await optionVault.connect(bob as Signer).deposit(
+            WBTCPUTOPTION,
             BigNumber.from(50000).mul(USDC_MULTIPLIER)
         );
     }
@@ -254,44 +178,21 @@ async function main({ command }, { ethers, deployments }) {
 
 const getDeployedContracts = async (ethers, deployments): Promise<[
     ERC20Mock,
-    ERC20Mock,
-    OptionVault,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption
+    ERC20Mock, 
+    PKKTHodlBoosterOption, 
 ]> => {
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
-    const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
-    const optionVault = await getDeployedContractHelper("OptionVault", ethers, deployments) as OptionVault;
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption",
+    const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock; 
+    const optionVault = await getDeployedContractHelper(
+        "PKKTHodlBoosterOption",
         ethers,
         deployments
     ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption",
-        ethers,
-        deployments
-    ) as PKKTHodlBoosterOption;
+    
     return [
         usdc,
         wbtc,
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
+        optionVault 
     ];
 }
 

@@ -4,18 +4,16 @@ import {StructureData} from "../libraries/StructureData.sol";
 
 interface ISettlementAggregator {
          
-    function addOptionPair(StructureData.OptionPairDefinition memory _pair) external;
-    function removeOptionPair(StructureData.OptionPairDefinition memory _pair) external;
-
-    function currentRound() external view returns(uint256);
+    function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) external; 
+    function currentRound() external view returns(uint16);
     //rollToNext + dryRunSettlement
     //todo: specifying quota
     function initiateSettlement() external; 
 
     //closePrevious + calculate cash flow 
-    function settle(StructureData.OptionPairExecution[] memory _execution) external;
+    function settle(StructureData.OptionExecution[] memory _execution) external;
 
-    function setOptionParameters(StructureData.OptionParameters[] memory _paramters) external;
+    function setOptionParameters(uint256[] memory _paramters) external;
 
     function withdrawAsset(address _trader, address _asset) external;
 
