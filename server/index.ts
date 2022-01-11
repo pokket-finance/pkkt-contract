@@ -20,7 +20,7 @@ import {
 } from "../constants/constants";
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 import { showEpoch } from "./routes/showEpoch";
 import { getManualInitiateSettlement, setManualInitiateSettlement } from "./routes/initiateSettlement";

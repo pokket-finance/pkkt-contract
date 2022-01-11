@@ -646,10 +646,11 @@ describe.only("PKKT Hodl Booster", async function () {
 
       async function renderExecutionPlan(index: number, p: Table){
 
-        var accounting = await vault.connect(settler as Signer).executionAccountingResult(index); 
+        var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);  
         var currentRound = await vault.currentRound();
-        var pair = optionPairs[index/3]; 
-        if (!pair){ 
+        const pairId = Math.floor(index/3);
+        var pair = optionPairs[pairId]; 
+        if (!pair){   
           return;
         } 
         var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.depositAssetAmountDecimals);
