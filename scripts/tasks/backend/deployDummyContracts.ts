@@ -110,7 +110,7 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
           OptionLifecycle: optionLifecycle.address,
         } 
       }); 
-
+    console.log("Depoloyed PKKTHodlBoosterOption at " + optionVault.address);
    
 }
  

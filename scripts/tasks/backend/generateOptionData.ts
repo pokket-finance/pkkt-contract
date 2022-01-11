@@ -155,6 +155,14 @@ async function main({ command }, { ethers, deployments }) {
         diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
         await optionVault.connect(carol as Signer).initiateWithraw(WBTCCALLOPTION, carol); //1.025 wbtc with premium
     }
+    else if (command == 10){
+        
+        await optionVault.connect(settler as Signer).initiateSettlement();
+    }
+    else if (command == 11){
+        await optionVault.connect(settler as Signer).settle(settleParams);
+        await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
+    }
 
     async function deposits() {
         await optionVault.connect(alice as Signer).depositETH(
