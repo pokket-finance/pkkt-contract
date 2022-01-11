@@ -654,8 +654,8 @@ describe.only("PKKT Hodl Booster", async function () {
         } 
         var newDepositAssetAmount = ethers.utils.formatUnits(accounting.callOptionResult.depositAmount, pair.depositAssetAmountDecimals);
         var newCounterPartyAssetAmount = ethers.utils.formatUnits(accounting.putOptionResult.depositAmount, pair.counterPartyAssetAmountDecimals);
-        var maturedCallOptionState = await vault.getOptionStateByRound(pair.callOptionId, currentRound - 1);
-        var maturedPutOptionState = await vault.getOptionStateByRound(pair.putOptionId, currentRound- 1);
+        var maturedCallOptionState = await vault.getOptionStateByRound(pair.callOptionId, currentRound - 2);
+        var maturedPutOptionState = await vault.getOptionStateByRound(pair.putOptionId, currentRound- 2);
         var callStrikePrice = ethers.utils.formatUnits(maturedCallOptionState.strikePrice, StrikePriceDecimals);
         var putStrikePrice = ethers.utils.formatUnits(maturedPutOptionState.strikePrice, StrikePriceDecimals);
  

@@ -258,13 +258,13 @@ async function getExerciseDecisionData(index, round, vault: PKKTHodlBoosterOptio
             putOptionAssetDecimals
         )
 
-        let maturedCallOptionState = await vault.getOptionStateByRound(optionPair.callOptionId, round - 1);
+        let maturedCallOptionState = await vault.getOptionStateByRound(optionPair.callOptionId, round - 2);
         let callStrikePrice = ethers.utils.formatUnits(
             maturedCallOptionState.strikePrice,
             strikePriceDecimals
         )
 
-        let maturedPutOptionState = await vault.getOptionStateByRound(optionPair.putOptionId, round - 1);
+        let maturedPutOptionState = await vault.getOptionStateByRound(optionPair.putOptionId, round - 2);
         let putStrikePrice = ethers.utils.formatUnits(
             maturedPutOptionState.strikePrice,
             strikePriceDecimals
