@@ -6,7 +6,8 @@
         <link rel="stylesheet" href="/table.css">
         <link rel="stylesheet" href="/button.css">
         <link rel="stylesheet" href="/successText.css">
-        <script type="text/javascript" src="/navBar.js"></script>
+        <script src="/navBar.js"></script>
+        <script src="/optionDecision.js"></script>
     </head>
     <body>
         <%- include("partials/navbar") %>
@@ -14,7 +15,7 @@
             <div class="row">
                 <table class="styled-table">
                     <tr>
-                        <th>ETH/USDC</th>
+                        <th name="ethContainer" data-eth-price="<%= ethereumPrice %>">ETH/USDC</th>
                     </tr>
                     <tr>
                         <th>Decision</th>
@@ -28,7 +29,7 @@
                         <th>Put Strike Price</th>
                         <th>Selection</th>
                     </tr>
-                    <tr>
+                    <tr class="noExerciseEth">
                         <td>No Exercise</td>
                         <td><%= notExerciseEthData.depositDebt %></td>
                         <td><%= notExerciseEthData.counterPartyDebt %></td>
@@ -40,7 +41,7 @@
                         <td><%= notExerciseEthData.putStrikePrice %></td>
                         <td><input type="radio" name="ethOption" value="noExercise" /></td>
                     </tr>
-                    <tr>
+                    <tr class="exerciseCallEth">
                         <td>Exercise Call</td>
                         <td><%= exerciseCallEthData.depositDebt %></td>
                         <td><%= exerciseCallEthData.counterPartyDebt %></td>
@@ -48,11 +49,11 @@
                         <td><%= exerciseCallEthData.counterPartyAssetWithdrawal %></td>
                         <td><%= exerciseCallEthData.newDepositAssetAmount %></td>
                         <td><%= exerciseCallEthData.newCounterPartyAssetAmount %></td>
-                        <td><%= exerciseCallEthData.callStrikePrice %></td>
+                        <td class="ethCallStrikePrice"><%= exerciseCallEthData.callStrikePrice %></td>
                         <td><%= exerciseCallEthData.putStrikePrice %></td>
                         <td><input type="radio" name="ethOption" value="exerciseCall" /></td>
                     </tr>
-                    <tr>
+                    <tr class="exercisePutEth">
                         <td>Exercise Put</td>
                         <td><%= exercisePutEthData.depositDebt %></td>
                         <td><%= exercisePutEthData.counterPartyDebt %></td>
@@ -61,7 +62,7 @@
                         <td><%= exercisePutEthData.newDepositAssetAmount %></td>
                         <td><%= exercisePutEthData.newCounterPartyAssetAmount %></td>
                         <td><%= exercisePutEthData.callStrikePrice %></td>
-                        <td><%= exercisePutEthData.putStrikePrice %></td>
+                        <td class="ethPutStrikePrice"><%= exercisePutEthData.putStrikePrice %></td>
                         <td><input type="radio" name="ethOption" value="exercisePut" /></td>
                     </tr>
                 </table>
@@ -69,7 +70,7 @@
             <div class="row">
                 <table class="styled-table">
                     <tr>
-                        <th>WBTC/USDC</th>
+                        <th name="wbtcContainer" data-wbtc-price="<%= wbtcPrice %>">WBTC/USDC</th>
                     </tr>
                     <tr>
                         <th>Decision</th>
@@ -83,7 +84,7 @@
                         <th>Put Strike Price</th>
                         <th>Selection</th>
                     </tr>
-                    <tr>
+                    <tr class="noExerciseWbtc">
                         <td>No Exercise</td>
                         <td><%= notExerciseWbtcData.depositDebt %></td>
                         <td><%= notExerciseWbtcData.counterPartyDebt %></td>
@@ -95,7 +96,7 @@
                         <td><%= notExerciseWbtcData.putStrikePrice %></td>
                         <td><input type="radio" name="wbtcOption" value="noExercise" /></td>
                     </tr>
-                    <tr>
+                    <tr class="exerciseCallWbtc">
                         <td>Exercise Call</td>
                         <td><%= exerciseCallWbtcData.depositDebt %></td>
                         <td><%= exerciseCallWbtcData.counterPartyDebt %></td>
@@ -103,11 +104,11 @@
                         <td><%= exerciseCallWbtcData.counterPartyAssetWithdrawal %></td>
                         <td><%= exerciseCallWbtcData.newDepositAssetAmount %></td>
                         <td><%= exerciseCallWbtcData.newCounterPartyAssetAmount %></td>
-                        <td><%= exerciseCallWbtcData.callStrikePrice %></td>
+                        <td class="wbtcCallStrikePrice"><%= exerciseCallWbtcData.callStrikePrice %></td>
                         <td><%= exerciseCallWbtcData.putStrikePrice %></td>
                         <td><input type="radio" name="wbtcOption" value="exerciseCall" /></td>
                     </tr>
-                    <tr>
+                    <tr class="exercisePutWbtc">
                         <td>Exercise Put</td>
                         <td><%= exercisePutWbtcData.depositDebt %></td>
                         <td><%= exercisePutWbtcData.counterPartyDebt %></td>
@@ -116,7 +117,7 @@
                         <td><%= exercisePutWbtcData.newDepositAssetAmount %></td>
                         <td><%= exercisePutWbtcData.newCounterPartyAssetAmount %></td>
                         <td><%= exercisePutWbtcData.callStrikePrice %></td>
-                        <td><%= exercisePutWbtcData.putStrikePrice %></td>
+                        <td class="wbtcPutStrikePrice"><%= exercisePutWbtcData.putStrikePrice %></td>
                         <td><input type="radio" name="wbtcOption" value="exercisePut" /></td>
                     </tr>
                 </table>
@@ -125,7 +126,7 @@
                 <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
             <% } %>
             <% if (success !== undefined) { %>
-                <% if (success) { %>
+                <% if (success === ":true") { %>
                     <p>Exercise Decisions Set!</p>
                 <% } else { %>
                     <p>Error in Setting Exercise Decisions!</p>

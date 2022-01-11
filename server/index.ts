@@ -8,13 +8,12 @@ dotenv.config();
 
 import {
     canSettle,
-    getOptionContracts,
     getDeployedContractHelper,
     setSettlementParameters,
     getSettler,
 } from "./utilities/utilities";
 import {
-    OptionVault
+    PKKTHodlBoosterOption
 } from "../typechain";
 import {
     OptionExecution,
@@ -67,7 +66,7 @@ const MAX_GAS_PRICE = 1.6;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
 // cron.schedule('* * * * *', async () => {
-//     const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+//     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 //     const settler = await getSettler();
 //     try {
 //         const gasPriceWei = await ethers.provider.getGasPrice();
@@ -75,7 +74,7 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 //             // Let the trader know and allow them
 //             // to resubmit the transaction with a higher gas price
 //             await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
-//             console.log(`Server initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
+//             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
 //             app.set("initiateSettlementResubmit", true);
 //             app.set("settlerNonce", await settler.getTransactionCount());
 //         }
@@ -93,26 +92,10 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 // // Force a No exercise decision for the vaults
 // // if the trader does not manually exercise 
 // cron.schedule("* * * * *", async () => {
-//     const [
-//         optionVault,
-//         ethHodlBoosterCallOption,
-//         ethHodlBoosterPutOption,
-//         wbtcHodlBoosterCallOption,
-//         wbtcHodlBoosterPutOption
-//     ] = await getOptionContracts();
+//     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 //     const settler = await getSettler();
 //     const round = await optionVault.currentRound();
-//     const canSettleVault = await canSettle(
-//         optionVault,
-//         settler,
-//         round,
-//         [
-//             ethHodlBoosterPutOption,
-//             ethHodlBoosterCallOption,
-//             wbtcHodlBoosterCallOption,
-//             wbtcHodlBoosterPutOption
-//         ]
-//     );
+//     const canSettleVault = await canSettle(optionVault);
 //     // Force Settlement
 //     if (canSettleVault) {
 //         await setSettlementParameters(OptionExecution.NoExecution, OptionExecution.NoExecution);

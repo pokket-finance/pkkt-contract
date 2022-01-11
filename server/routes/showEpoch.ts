@@ -6,33 +6,34 @@ import {
     RATIO_MULTIPLIER,
     WBTC_PRICE_PRECISION
 } from "../../constants/constants";
+import { PKKTHodlBoosterOption } from "../../typechain";
 import {
-    getOptionContracts, settlementResubmit
+    canSettle,
+    canShowMoneyMovement,
+    getDeployedContractHelper,
+    getOptionStateData,
+    settlementResubmit
 } from "../utilities/utilities";
 
 // /show/epoch route
 export async function showEpoch(req: Request, res: Response) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption
     let round = await optionVault.currentRound();
 
-    let optionRound = round.sub(1);
-    if (round.isZero()) {
-        optionRound = BigNumber.from(0);
+    let optionRound = round - 1;
+    if (round === 0) {
+        optionRound = 0;
     }
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app, "predictedWbtcOption");
 
     // Get contract option data to display
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(optionRound);
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(optionRound);
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(optionRound);
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(optionRound);
+    const [
+        ethCallOptionState,
+        ethPutOptionState,
+        wbtcCallOptionState,
+        wbtcPutOptionState] = await getOptionStateData(optionVault, round);
     const ethOption = {
         callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
         putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
@@ -56,7 +57,8 @@ export async function showEpoch(req: Request, res: Response) {
             predictedEthOption: predictedEthOption,
             wbtcOption,
             predictedWbtcOption: predictedWbtcOption,
-            initiateSettlementResubmit
+            initiateSettlementResubmit,
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );
 }

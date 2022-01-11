@@ -9,6 +9,8 @@ export enum OptionExecution{
     ExecuteCall,
     ExecutePut
 };
+export const ETH_USDC_OPTION_ID = 0;
+export const WBTC_USDC_OPTION_ID = 1;
 export const WEI = BigNumber.from(10).pow(18);
 export const GWEI = BigNumber.from(10).pow(9);
 export const SETTLEMENTPERIOD = 1;

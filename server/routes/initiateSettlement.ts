@@ -1,8 +1,9 @@
 import { Signer } from "ethers";
 import { Request, Response } from "express";
+import { appendFile } from "fs";
 import { ethers } from "hardhat";
-import { OptionVault } from "../../typechain";
-import { getDeployedContractHelper, getSettler, settlementResubmit } from "../utilities/utilities";
+import { PKKTHodlBoosterOption } from "../../typechain";
+import { canSettle, canShowMoneyMovement, getDeployedContractHelper, getSettler, settlementResubmit } from "../utilities/utilities";
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {
@@ -21,15 +22,31 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
 
     const gasPrice = await ethers.provider.getGasPrice();
     const gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei");
-    res.render("initiateSettlement", { transactionMined, initiateSettlementResubmit, currentGasPrice: gasPriceGwei });
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const round = await vault.currentRound();
+    res.render(
+        "initiateSettlement",
+        {
+            transactionMined,
+            initiateSettlementResubmit,
+            currentGasPrice: gasPriceGwei,
+            showMoneyMovement: (await canShowMoneyMovement(vault, round))
+        }
+    );
 }
 
 // SET /initiateSettlement route
 export async function setManualInitiateSettlement(req: Request, res: Response) {
     const manualGasPriceGwei = req.body.manualGasPrice;
-    const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "wei");
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "gwei");
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
-
-    await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
+    console.log(manualGasPriceWei.toString());
+    try {
+        await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
+    } catch (err) {
+        console.error(err);
+    }
+        req.app.set("initiateSettlementResubmit", false);
+    res.redirect("/show/epoch");
 }

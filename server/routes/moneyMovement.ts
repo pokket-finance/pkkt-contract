@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
 
-import { OptionVault, ERC20Mock } from "../../typechain";
+import { PKKTHodlBoosterOption, ERC20Mock } from "../../typechain";
 import {
     ETH_DECIMALS,
     NULL_ADDRESS,
@@ -16,13 +16,13 @@ import {
     getTrader,
     settlementResubmit,
     canSettle,
-    getOptionContracts,
-    areOptionParamsSet
+    areOptionParamsSet,
+    canShowMoneyMovement,
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 export async function getMoneyMovement(req: Request, res: Response) {
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     let usdc = await getDeployedContractHelper("USDC");
     let wbtc = await getDeployedContractHelper("WBTC");
     const settler = await getSettler()
@@ -89,20 +89,14 @@ export async function getMoneyMovement(req: Request, res: Response) {
     const initiateSettlementResubmit = settlementResubmit(req.app);
 
     const success = req.params.success;
+    let canSettleVault = await canSettle(vault);
     let canWithdraw;
+    const round = await vault.currentRound();
     if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
         canWithdraw = false;
     }
     else {
-        const round = await vault.currentRound();
-        const [
-            ,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption
-        ] = await getOptionContracts();
-        const canSettleVault = (await canSettle(vault, settler, round, [ethHodlBoosterCallOption, ethHodlBoosterPutOption, wbtcHodlBoosterCallOption, wbtcHodlBoosterPutOption])) && round.gt(2);
+        const canSettleVault = (await canSettle(vault)) && round > 2;
         const areOptionParametersSet = await areOptionParamsSet(round);
         canWithdraw = !canSettleVault && !areOptionParametersSet;
     }
@@ -120,13 +114,14 @@ export async function getMoneyMovement(req: Request, res: Response) {
             initiateSettlementResubmit,
             success,
             vaultAddress: vault.address,
-            canWithdraw
+            canWithdraw,
+            showMoneyMovement: (await canShowMoneyMovement(vault, round))
         }
     );
 }
 
 export async function postMoneyMovement(req: Request, res: Response) {
-    const vault = await getDeployedContractHelper("OptionVault") as OptionVault;
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
     const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
 

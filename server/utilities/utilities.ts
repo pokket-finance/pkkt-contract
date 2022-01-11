@@ -1,30 +1,19 @@
 import { BigNumber, Contract, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts, deployments } from "hardhat";
-import { OptionExecution, NULL_ADDRESS } from "../../constants/constants";
+import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
 
 import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
 
-type OptionState = {
-        round: BigNumber;
-        totalAmount: BigNumber;
-        strikePrice: BigNumber;
-        premiumRate: number;
-        pricePrecision: number;
-        executed: boolean;
-        callOrPut: boolean;
-}
-
-/**
- * Returns the current option state of the given hodl booster contract
- * @param hodlBoosterOption booster option we want to retrieve state from
- * @returns option state
- */
-export async function getOptionState(hodlBoosterOption: PKKTHodlBoosterOption): Promise<OptionState> {
-    let round = await hodlBoosterOption.currentRound();
-    // We subtract 1 from round because we want the matured round
-    return await hodlBoosterOption.optionStates(round.sub(1));
-}
+// type OptionState = {
+//         round: BigNumber;
+//         totalAmount: BigNumber;
+//         strikePrice: BigNumber;
+//         premiumRate: number;
+//         pricePrecision: number;
+//         executed: boolean;
+//         callOrPut: boolean;
+// }
 
 /**
  * Retrieves the contract from deployments
@@ -35,16 +24,6 @@ export async function getOptionState(hodlBoosterOption: PKKTHodlBoosterOption): 
 export async function getDeployedContractHelper(name: string): Promise<Contract> {
     const Contract = await deployments.get(name);
     return await ethers.getContractAt(Contract.abi, Contract.address);
-}
-
-/**
- * Prints an option's state
- * @param optionState option state to print
- */
-export function printOptionState(optionState: OptionState) {
-    for(const [key, value] of Object.entries(optionState)) {
-        console.log(`${key}: ${value}`);
-    }
 }
 
 /**
@@ -83,66 +62,17 @@ export async function getTVLOptionData(options, vault) {
  * can only exercise one or none of the options as they are European
  */
 export async function setSettlementParameters(ethDecision: OptionExecution, wbtcDecision: OptionExecution) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
-    const [, settler] = await ethers.getSigners();
+    const settler = await getSettler();
 
-    const settleParameters = [
-        {
-            callOption: ethHodlBoosterCallOption.address,
-            putOption: ethHodlBoosterPutOption.address,
-            execute: ethDecision
-        },
-        {
-            callOption: wbtcHodlBoosterCallOption.address,
-            putOption: wbtcHodlBoosterPutOption.address,
-            execute: wbtcDecision
-        }
-    ];
+    const settleParameters = [ ethDecision, wbtcDecision];
+
     try {
         await optionVault.connect(settler as Signer).settle(settleParameters);
     } catch (err) {
         console.error(err);
     }
-}
-
-/**
- * Gets the deployed option contracts
- * @returns the option vault contract along with the 4 option types
- */
-export async function getOptionContracts(): Promise<[
-    OptionVault,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption,
-    PKKTHodlBoosterOption
-]> {
-    const optionVault = await getDeployedContractHelper("OptionVault") as OptionVault;
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    return [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ];
 }
 
 type SettlementAccountingResult = {
@@ -173,14 +103,12 @@ type OptionPairExecutionAccountingResult = {
  * @param round checks if the option parameters are set
  * @returns whether or not we can settle the vault
  */
- export async function canSettle(vault, settler, round, options: PKKTHodlBoosterOption[]): Promise<boolean> {
-    for(let option of options) {
-        let underSettlement = await option.underSettlement();
-        if (!underSettlement) {
-            return false;
-        }
-    }
-    return true;
+ export async function canSettle(vault: PKKTHodlBoosterOption): Promise<boolean> {
+    return await vault.underSettlement();
+}
+
+export async function canShowMoneyMovement(vault: PKKTHodlBoosterOption, round): Promise<boolean> {
+    return !(await canSettle(vault)) && round > 2;
 }
 
 /**
@@ -188,35 +116,46 @@ type OptionPairExecutionAccountingResult = {
  * @param round round to check
  * @returns whether or not the option parameters are set
  */
-export async function areOptionParamsSet(round: BigNumber): Promise<boolean> {
-    if (round.isZero()) {
+export async function areOptionParamsSet(round: number): Promise<boolean> {
+    if (round === 0) {
         return false;
     }
-    const ethHodlBoosterCallOption = await getDeployedContractHelper(
-        "ETHHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const ethHodlBoosterPutOption = await getDeployedContractHelper(
-        "ETHHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterCallOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterCallOption"
-    ) as PKKTHodlBoosterOption;
-    const wbtcHodlBoosterPutOption = await getDeployedContractHelper(
-        "WBTCHodlBoosterPutOption"
-    ) as PKKTHodlBoosterOption;
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
-    const ethCallOptionState = await ethHodlBoosterCallOption.optionStates(round.sub(1));
-    const ethPutOptionState = await ethHodlBoosterPutOption.optionStates(round.sub(1));
-    const wbtcCallOptionState = await wbtcHodlBoosterCallOption.optionStates(round.sub(1));
-    const wbtcPutOptionState = await wbtcHodlBoosterPutOption.optionStates(round.sub(1));
-
-    const optionStates = [ethCallOptionState, ethPutOptionState, wbtcCallOptionState, wbtcPutOptionState];
+    const optionStates = await getOptionStateData(vault, round);
     for (let optionState of optionStates) {
         if (!optionState.strikePrice.isZero() || optionState.premiumRate !== 0) {
             return true;
         }
     }
     return false;
+}
+
+export async function getOptionStateData(vault: PKKTHodlBoosterOption, round: number) {
+    let ethOption = await vault.optionPairs(ETH_USDC_OPTION_ID);
+    let wbtcOption = await vault.optionPairs(WBTC_USDC_OPTION_ID);
+    const ethCallOptionState = await vault.getOptionStateByRound(
+        ethOption.callOptionId,
+        round - 1
+    );
+    const ethPutOptionState = await vault.getOptionStateByRound(
+        ethOption.putOptionId,
+        round - 1
+    );
+    const wbtcCallOptionState = await vault.getOptionStateByRound(
+        wbtcOption.callOptionId,
+        round - 1
+    );
+    const wbtcPutOptionState = await vault.getOptionStateByRound(
+        wbtcOption.putOptionId,
+        round - 1
+    );
+    return [
+        ethCallOptionState,
+        ethPutOptionState,
+        wbtcCallOptionState,
+        wbtcPutOptionState
+    ]
 }
 
 /**

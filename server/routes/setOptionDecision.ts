@@ -1,29 +1,30 @@
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
+import * as dotenv from "dotenv"
+dotenv.config();
 
 import {
     ETH_DECIMALS,
     USDC_DECIMALS,
     WBTC_DECIMALS,
-    OptionExecution
+    OptionExecution,
+    ETH_USDC_OPTION_ID,
+    WBTC_USDC_OPTION_ID
 } from "../../constants/constants";
 import {
-    getOptionContracts,
     getSettler,
     canSettle,
     settlementResubmit,
-    setSettlementParameters
+    setSettlementParameters,
+    getDeployedContractHelper,
+    canShowMoneyMovement
 } from "../utilities/utilities"
+import { PKKTHodlBoosterOption } from "../../typechain";
+import axios from "axios";
 
 export async function getSetOptionDecision(req: Request, res: Response) {
-    const [
-        optionVault,
-        ethHodlBoosterCallOption,
-        ethHodlBoosterPutOption,
-        wbtcHodlBoosterCallOption,
-        wbtcHodlBoosterPutOption
-    ] = await getOptionContracts();
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
     const settler = await getSettler()
 
@@ -46,82 +47,93 @@ export async function getSetOptionDecision(req: Request, res: Response) {
     let exerciseCallWbtcData = tempParams;
     let exercisePutWbtcData = tempParams;
 
-    const canSettleVault = await canSettle(
-        optionVault,
-        settler,
-        round,
-        [
-            ethHodlBoosterPutOption,
-            ethHodlBoosterCallOption,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption
-        ]
-    );
+    const canSettleVault = await canSettle(optionVault);
 
-    if (canSettleVault && round.gt(2)) {
+    if (canSettleVault && round > 2) {
         const strikePriceDecimals = 4;
 
+        let ethOptionPair = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
+        let wbtcOptionPair = await optionVault.optionPairs(WBTC_USDC_OPTION_ID);
         notExerciseEthData = await getExerciseDecisionData(
             0,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        // TODO remove once smart contract bug is fixes
+        // TODO for now simulate strike prices
+        const tempEthCallStrikePrice = "4500";
+        const tempEthPutStrikePrice = "3900";
+        const tempWbtcCallStrikePrice = "50000";
+        const tempWbtcPutStrikePrice = "38000";
+
         exerciseCallEthData = await getExerciseDecisionData(
             1,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exerciseCallEthData.callStrikePrice = tempEthCallStrikePrice;
+
         exercisePutEthData = await getExerciseDecisionData(
             2,
+            round,
             optionVault,
             settler,
-            ethHodlBoosterCallOption,
-            ethHodlBoosterPutOption,
+            ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exercisePutEthData.putStrikePrice = tempEthPutStrikePrice;
+
         notExerciseWbtcData = await getExerciseDecisionData(
             3,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+    
         exerciseCallWbtcData = await getExerciseDecisionData(
             4,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exerciseCallWbtcData.callStrikePrice = tempWbtcCallStrikePrice;
+
         exercisePutWbtcData = await getExerciseDecisionData(
             5,
+            round,
             optionVault,
             settler,
-            wbtcHodlBoosterCallOption,
-            wbtcHodlBoosterPutOption,
+            wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
             strikePriceDecimals
         );
+        exercisePutWbtcData.putStrikePrice = tempWbtcPutStrikePrice;
     }
+
+    const priceData = await getPrices();
+    const ethereumPrice = priceData.ethereum.usd;
+    const wbtcPrice = priceData["wrapped-bitcoin"].usd;
 
     const initiateSettlementResubmit = settlementResubmit(req.app);
     res.render(
@@ -136,9 +148,18 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             canSettleVault,
             round,
             initiateSettlementResubmit,
-            success: req.params.success
+            success: req.params.success,
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round)),
+            ethereumPrice,
+            wbtcPrice
         }
     );
+}
+
+async function getPrices() {
+    const pricesUrl = "https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin%2Cethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false";
+    const priceData = await axios.get(pricesUrl);
+    return priceData.data;
 }
 
 export async function postSetOptionDecision(req: Request, res: Response) {
@@ -190,8 +211,8 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
-async function getExerciseDecisionData(index, vault, settler, callOption, putOption, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
-        let accounting: OptionPairExecutionAccountingResult = await vault.connect(settler as Signer).executionAccountingResult(index);
+async function getExerciseDecisionData(index, round, vault: PKKTHodlBoosterOption, settler, optionPair, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
+        let accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
@@ -237,13 +258,13 @@ async function getExerciseDecisionData(index, vault, settler, callOption, putOpt
             putOptionAssetDecimals
         )
 
-        let maturedCallOptionState = await callOption.optionStates(accounting.callOptionResult.round.sub(1));
+        let maturedCallOptionState = await vault.getOptionStateByRound(optionPair.callOptionId, round - 1);
         let callStrikePrice = ethers.utils.formatUnits(
             maturedCallOptionState.strikePrice,
             strikePriceDecimals
         )
 
-        let maturedPutOptionState = await putOption.optionStates(accounting.putOptionResult.round.sub(1));
+        let maturedPutOptionState = await vault.getOptionStateByRound(optionPair.putOptionId, round - 1);
         let putStrikePrice = ethers.utils.formatUnits(
             maturedPutOptionState.strikePrice,
             strikePriceDecimals
