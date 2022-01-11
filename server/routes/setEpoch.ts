@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Signer } from "ethers";
+import { ethers } from "hardhat";
 
 import {
     getSettler,
@@ -32,9 +33,23 @@ export async function getSetEpoch (req: Request, res: Response) {
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
 
-    //const initiateSettlementResubmit = settlementResubmit(req.app);
+    let setEpochGasEstimate;
+    try {
+        setEpochGasEstimate = await optionVault.connect(settler as Signer).estimateGas.setOptionParameters([
+            packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
+            packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
+            packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
+            packOptionParameter(0, 0.02 * RATIO_MULTIPLIER)
+        ]);
+    } catch (err) {
+        console.error(err);
+    }
 
     const success = req.params.success;
+
+    const gasPrice = await ethers.provider.getGasPrice();
+    const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
+    const gasPriceGwei = parseFloat(gasPriceGweiStr);
 
     res.render(
         "setEpoch",
@@ -45,6 +60,9 @@ export async function getSetEpoch (req: Request, res: Response) {
             predictedWbtcOption,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
+            setEpochGasEstimate,
+            minimumGasPrice: "N/A",
+            recommendedGasPrice: gasPriceGwei, 
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );
@@ -66,10 +84,10 @@ export async function postSetEpoch(req: Request, res: Response) {
         packOptionParameter(wbtcCallStrikePrice, wbtcCallPremium * RATIO_MULTIPLIER),
         packOptionParameter(wbtcPutStrikePrice, wbtcPutPremium * RATIO_MULTIPLIER)
     ];
-    console.log(optionParameters)
     const settler = await getSettler();
     try {
-        await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+        let tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+        req.app.set("setEpochTx", tx);
         res.redirect("/set/epoch:true");
     } catch (err) {
         console.error(err);
