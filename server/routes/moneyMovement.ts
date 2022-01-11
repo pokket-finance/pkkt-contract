@@ -18,6 +18,8 @@ import {
     canSettle,
     areOptionParamsSet,
     canShowMoneyMovement,
+    isTransactionMined,
+    canShowInitiateSettlement,
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -86,7 +88,7 @@ export async function getMoneyMovement(req: Request, res: Response) {
     const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
 
-    const initiateSettlementResubmit = settlementResubmit(req.app);
+    // const initiateSettlementResubmit = settlementResubmit(req.app);
 
     const success = req.params.success;
     let canSettleVault = await canSettle(vault);
@@ -111,7 +113,7 @@ export async function getMoneyMovement(req: Request, res: Response) {
             ethGasEstimate,
             wbtcGasEstimate,
             usdcGasEstimate,
-            initiateSettlementResubmit,
+            showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
             vaultAddress: vault.address,
             canWithdraw,

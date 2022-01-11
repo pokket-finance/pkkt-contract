@@ -184,6 +184,14 @@ export function settlementResubmit(app): boolean {
     return initiateSettlementResubmit;
 }
 
+export async function canShowInitiateSettlement(app): Promise<boolean> {
+    let tx = app.get("initiateSettlementTx");
+    if (tx === undefined){
+        return false;
+    }
+    return !(await isTransactionMined(tx));
+}
+
 /**
  * Gets the money movement data for the given asset
  * @param vault to get the settlement cash flow result
@@ -214,4 +222,15 @@ export async function getMoneyMovementData(vault: OptionVault, settler: SignerWi
             assetDecimals
         )
     };
+}
+
+export async function isTransactionMined(tx): Promise<boolean> {
+    const txReceipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    if(txReceipt){
+        if(txReceipt.blockNumber){
+            //console.log(JSON.stringify(txReceipt, null, 4));
+            return true;
+        }
+    }
+    return false;
 }

@@ -9,7 +9,7 @@
     </head>
     <body>
         <%- include("partials/navbar") %>
-        <% if (initiateSettlementResubmit && !transactionMined) { %>
+        <% if (!transactionMined) { %>
             <form action="/initiateSettlement" method="post" enctype="application/x-www-form-urlencoded">
                 <div class="row">
                     <table class="styled-table">

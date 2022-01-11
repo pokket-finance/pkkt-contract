@@ -7,7 +7,9 @@ import {
     canSettle,
     settlementResubmit,
     getDeployedContractHelper,
-    canShowMoneyMovement
+    canShowMoneyMovement,
+    isTransactionMined,
+    canShowInitiateSettlement
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -30,7 +32,7 @@ export async function getSetEpoch (req: Request, res: Response) {
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
 
-    const initiateSettlementResubmit = settlementResubmit(req.app);
+    //const initiateSettlementResubmit = settlementResubmit(req.app);
 
     const success = req.params.success;
 
@@ -41,7 +43,7 @@ export async function getSetEpoch (req: Request, res: Response) {
             areOptionParametersSet,
             predictedEthOption,
             predictedWbtcOption,
-            initiateSettlementResubmit,
+            showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }

@@ -12,7 +12,9 @@ import {
     canShowMoneyMovement,
     getDeployedContractHelper,
     getOptionStateData,
-    settlementResubmit
+    settlementResubmit,
+    isTransactionMined,
+    canShowInitiateSettlement
 } from "../utilities/utilities";
 
 // /show/epoch route
@@ -47,7 +49,7 @@ export async function showEpoch(req: Request, res: Response) {
         putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
     }
 
-    const initiateSettlementResubmit = settlementResubmit(req.app);
+    //const initiateSettlementResubmit = settlementResubmit(req.app);
 
     res.render(
         "showEpoch",
@@ -57,7 +59,7 @@ export async function showEpoch(req: Request, res: Response) {
             predictedEthOption: predictedEthOption,
             wbtcOption,
             predictedWbtcOption: predictedWbtcOption,
-            initiateSettlementResubmit,
+            showInitiateSettlement: await canShowInitiateSettlement(req.app),
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
     );

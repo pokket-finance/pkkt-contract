@@ -18,7 +18,9 @@ import {
     settlementResubmit,
     setSettlementParameters,
     getDeployedContractHelper,
-    canShowMoneyMovement
+    canShowMoneyMovement,
+    isTransactionMined,
+    canShowInitiateSettlement
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
 import axios from "axios";
@@ -49,7 +51,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
 
     const canSettleVault = await canSettle(optionVault);
 
-    if (canSettleVault && round > 1) {
+    if (canSettleVault && round > 2) {
         const strikePriceDecimals = 4;
 
         let ethOptionPair = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
@@ -135,7 +137,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
     const ethereumPrice = priceData.ethereum.usd;
     const wbtcPrice = priceData["wrapped-bitcoin"].usd;
 
-    const initiateSettlementResubmit = settlementResubmit(req.app);
+    //const initiateSettlementResubmit = settlementResubmit(req.app);
     res.render(
         "exerciseDecision",
         {
@@ -147,7 +149,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             exercisePutWbtcData,
             canSettleVault,
             round,
-            initiateSettlementResubmit,
+            showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success: req.params.success,
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round)),
             ethereumPrice,

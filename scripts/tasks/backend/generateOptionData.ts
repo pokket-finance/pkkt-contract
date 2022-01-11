@@ -122,23 +122,7 @@ async function main({ command }, { ethers, deployments }) {
     }
     // Right before trader sends money back
     else if (command == 99) {
-        /* open round 1*/
-        await optionVault.connect(settler as Signer).initiateSettlement();  
-
-        await optionVault.connect(alice as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(5).mul(ETH_MULTIPLIER)});
-        await optionVault.connect(alice as Signer).deposit(WBTCCALLOPTION, BigNumber.from(2).mul(WBTC_MULTIPLIER));
-        await optionVault.connect(carol as Signer).deposit(WBTCCALLOPTION,BigNumber.from(1).mul(WBTC_MULTIPLIER));
-        await optionVault.connect(bob as Signer).deposit(ETHPUTOPTION, BigNumber.from(4000).mul(USDC_MULTIPLIER));
-        await optionVault.connect(carol as Signer).deposit(ETHPUTOPTION, BigNumber.from(2000).mul(USDC_MULTIPLIER));
-        await optionVault.connect(bob as Signer).deposit(WBTCPUTOPTION, BigNumber.from(50000).mul(USDC_MULTIPLIER));
-        
-        /* open round 2*/
-        await optionVault.connect(settler as Signer).initiateSettlement();
-
-        await optionVault.connect(bob as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(1).mul(ETH_MULTIPLIER)});
-        await optionVault.connect(alice as Signer).deposit(WBTCPUTOPTION,BigNumber.from(100000).mul(USDC_MULTIPLIER));
-        await optionVault.connect(carol as Signer).deposit(WBTCPUTOPTION, BigNumber.from(50000).mul(USDC_MULTIPLIER));
-        await optionVault.connect(settler as Signer).settle([]);  
+       await ethers.provider.send("evm_mine");
     }
     else if (command == 7) {
         await optionVault.connect(settler as Signer).setOptionParameters(commitParams);
