@@ -49,7 +49,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
 
     const canSettleVault = await canSettle(optionVault);
 
-    if (canSettleVault && round > 2) {
+    if (canSettleVault && round > 1) {
         const strikePriceDecimals = 4;
 
         let ethOptionPair = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
@@ -66,10 +66,10 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         );
         // TODO remove once smart contract bug is fixes
         // TODO for now simulate strike prices
-        const tempEthCallStrikePrice = "4500";
-        const tempEthPutStrikePrice = "3900";
-        const tempWbtcCallStrikePrice = "50000";
-        const tempWbtcPutStrikePrice = "38000";
+        // const tempEthCallStrikePrice = "4500";
+        // const tempEthPutStrikePrice = "3900";
+        // const tempWbtcCallStrikePrice = "50000";
+        // const tempWbtcPutStrikePrice = "38000";
 
         exerciseCallEthData = await getExerciseDecisionData(
             1,
@@ -81,7 +81,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
-        exerciseCallEthData.callStrikePrice = tempEthCallStrikePrice;
+        //exerciseCallEthData.callStrikePrice = tempEthCallStrikePrice;
 
         exercisePutEthData = await getExerciseDecisionData(
             2,
@@ -93,7 +93,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
-        exercisePutEthData.putStrikePrice = tempEthPutStrikePrice;
+        //exercisePutEthData.putStrikePrice = tempEthPutStrikePrice;
 
         notExerciseWbtcData = await getExerciseDecisionData(
             3,
@@ -116,7 +116,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
-        exerciseCallWbtcData.callStrikePrice = tempWbtcCallStrikePrice;
+        //exerciseCallWbtcData.callStrikePrice = tempWbtcCallStrikePrice;
 
         exercisePutWbtcData = await getExerciseDecisionData(
             5,
@@ -128,7 +128,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             USDC_DECIMALS,
             strikePriceDecimals
         );
-        exercisePutWbtcData.putStrikePrice = tempWbtcPutStrikePrice;
+        //exercisePutWbtcData.putStrikePrice = tempWbtcPutStrikePrice;
     }
 
     const priceData = await getPrices();
