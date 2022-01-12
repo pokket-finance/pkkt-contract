@@ -42,7 +42,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
         ethGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, NULL_ADDRESS);
     } catch (err) {
         console.error("No Residule Eth");
-        ethData.leftover = "0";
+        if (parseFloat(ethData.leftover) > 0) {
+            ethData.leftover = "0";
+        }
         if (parseFloat(ethData.required) > 0) {
             ethData.required = "0";
         }
@@ -60,7 +62,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
         wbtcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, wbtc.address);
     } catch (err) {
         console.error("No residule wbtc")
-        wbtcData.leftover = "0";
+        if (parseFloat(wbtcData.leftover) > 0) {
+            wbtcData.leftover = "0";
+        }
         if (parseFloat(wbtcData.required) > 0) {
             wbtcData.required = "0";
         }
@@ -78,7 +82,9 @@ export async function getMoneyMovement(req: Request, res: Response) {
         usdcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, usdc.address);
     } catch (err) {
         console.error("No residule usdc");
-        usdcData.leftover = "0";
+        if (parseFloat(usdcData.leftover) > 0) {
+            usdcData.leftover = "0";
+        }
         if (parseFloat(usdcData.required) > 0){
             usdcData.required = "0";
         }
