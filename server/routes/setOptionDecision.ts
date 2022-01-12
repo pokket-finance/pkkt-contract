@@ -202,7 +202,6 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     if (tx !== undefined) {
         transactionMined = await isTransactionMined(tx);
     }
-
     const settler = await getSettler();
     const settlerWallet = getSettlerWallet();
     try {

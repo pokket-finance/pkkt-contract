@@ -11,7 +11,10 @@ import {
     canShowMoneyMovement,
     isTransactionMined,
     canShowInitiateSettlement,
-    getPrices
+    getPrices,
+    getTransactionInformation,
+    getSettlerWallet,
+    resendTransaction
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -54,20 +57,7 @@ export async function getSetEpoch (req: Request, res: Response) {
 
     const success = req.params.success;
     const tx = req.app.get("setEpochTx");
-    let transactionMined = true;
-    if (tx) {
-        transactionMined = await isTransactionMined(tx);
-    }
-    let minimumGasPriceWei;
-    let minimumGasPrice;
-    if (!transactionMined) {
-        minimumGasPriceWei = tx.gasPrice;
-        let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
-        minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
-    }
-    const gasPrice = await ethers.provider.getGasPrice();
-    const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
-    const gasPriceGwei = parseFloat(gasPriceGweiStr);
+    const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
 
     // Get vault balances
     // const ethOption = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
@@ -135,18 +125,19 @@ export async function postSetEpoch(req: Request, res: Response) {
         return;
     }
     let tx = req.app.get("setEpochTx");
-    let transactionMined: any = true;
+    let transactionMined = true;
+    if (tx !== undefined) {
+        transactionMined = await isTransactionMined(tx);
+    }
     try {
-        if (tx !== undefined) {
-            transactionMined = await isTransactionMined(tx);
-        }
         if (!transactionMined) {
-            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { nonce: tx.nonce, gasPrice: manualGasPriceWei });
+            let txResponse = await resendTransaction(tx, manualGasPriceWei);
+            req.app.set("setEpochTx", txResponse);
         }
         else {
             tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
+            req.app.set("setEpochTx", tx);
         }
-        req.app.set("setEpochTx", tx);
         res.redirect("/set/epoch:true");
     } catch (err) {
         console.error(err);

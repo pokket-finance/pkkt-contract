@@ -261,3 +261,36 @@ export async function getPrices() {
     const priceData = await axios.get(pricesUrl);
     return priceData.data;
 }
+
+export async function getTransactionInformation(tx) {
+    let transactionMined = true;
+    if (tx) {
+        transactionMined = await isTransactionMined(tx);
+    }
+    let minimumGasPriceWei;
+    let minimumGasPrice;
+    if (!transactionMined) {
+        minimumGasPriceWei = tx.gasPrice;
+        let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
+        minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
+    }
+    const gasPrice = await ethers.provider.getGasPrice();
+    const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
+    const gasPriceGwei = parseFloat(gasPriceGweiStr);
+    return { minimumGasPrice, gasPriceGwei, transactionMined };
+}
+
+export async function resendTransaction(tx, manualGasPriceWei) {
+    const settlerWallet = getSettlerWallet();
+    let unsignedTx = {
+        gasPrice: manualGasPriceWei,
+        gasLimit: tx.gasLimit,
+        to: tx.to,
+        value: tx.value,
+        nonce: tx.nonce,
+        data: tx.data,
+        chainId: tx.chainId
+    }
+    const signedTx = await settlerWallet.signTransaction(unsignedTx);
+    return await ethers.provider.sendTransaction(signedTx);
+}
