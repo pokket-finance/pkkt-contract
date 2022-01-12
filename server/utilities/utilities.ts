@@ -1,4 +1,4 @@
-import { BigNumber, Contract, Signer } from "ethers";
+import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts, deployments } from "hardhat";
 import axios from "axios";
@@ -167,6 +167,12 @@ export async function getOptionStateData(vault: PKKTHodlBoosterOption, round: nu
 export async function getSettler(): Promise<SignerWithAddress> {
     const { settler } = await getNamedAccounts();
     return await ethers.getSigner(settler);
+}
+
+export function getSettlerWallet(): Wallet {
+    // TODO abstract this for the settler
+    const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+    return new ethers.Wallet(privateKey);
 }
 
 /**

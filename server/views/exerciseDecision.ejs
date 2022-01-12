@@ -8,6 +8,7 @@
         <link rel="stylesheet" href="/successText.css">
         <script src="/navBar.js"></script>
         <script src="/optionDecision.js"></script>
+        <script src="/setGasPrice.js"></script>
     </head>
     <body>
         <%- include("partials/navbar") %>
@@ -127,10 +128,12 @@
                         <td><input type="radio" name="wbtcOption" value="exercisePut" /></td>
                     </tr>
                 </table>
+                <% if (canSettleVault && round > 2) { %>
+                    <%- include("partials/setGasPrice") %>
+                    <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
+                <% } %>
             </div>
-            <% if (canSettleVault && round > 2) { %>
-                <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
-            <% } %>
+     
             <% if (success !== undefined) { %>
                 <% if (success === ":true") { %>
                     <p>Exercise Decisions Set!</p>

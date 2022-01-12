@@ -15,6 +15,7 @@
         <script src="/navBar.js"></script>
         <script src="/retainFormData.js"></script>
         <script src="/setEpoch.js"></script>
+        <script src="/setGasPrice.js"></script>
     </head>
     <body>
         <%- include("partials/navbar") %>
@@ -92,26 +93,7 @@
                         </tr>
                     </table>
                     <% if (round - 1 > 0) { %>
-                        <table class="styled-table">
-                            <tr>
-                                <td>Recommended Gas Price (Gwei)</td>
-                                <td><%= recommendedGasPrice %></td>
-                            </tr>
-                            <% if (!transactionMined) { %>
-                                <tr>
-                                    <td>Minimum Gas Price (Gwei)</td>
-                                    <td><%= minimumGasPrice %></td>
-                                </tr>
-                            <% } %>
-                            <tr>
-                                <td>Set Gas Price (Gwei)</td>
-                                <td><input type="text" name="manualGasPrice" data-gas-estimate="<%= setEpochGasEstimate %>" value="<%= minimumGasPrice %>" /></td>
-                            </tr>
-                            <tr>
-                                <td>Cost to Withdraw (ETH)</td>
-                                <td class="transactionCost">0</td>
-                            </tr>
-                        </table>
+                        <%- include("partials/setGasPrice") %>
                         <input type="submit" class="button" name="launchEpoch" value="Set Epoch Option Data" />
                     <% } %>
                 </div>

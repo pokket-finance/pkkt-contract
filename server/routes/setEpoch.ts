@@ -50,7 +50,6 @@ export async function getSetEpoch (req: Request, res: Response) {
         req.app.set("setEpochGasEstimate", setEpochGasEstimate)
     } catch (err) {
         setEpochGasEstimate = req.app.get("setEpochGasEstimate");
-        console.error(err);
     }
 
     const success = req.params.success;
@@ -60,14 +59,14 @@ export async function getSetEpoch (req: Request, res: Response) {
         transactionMined = await isTransactionMined(tx);
     }
     let minimumGasPriceWei;
-    let minimumGasPrice
+    let minimumGasPrice;
     if (!transactionMined) {
         minimumGasPriceWei = tx.gasPrice;
-        let gasPriceStr = await ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
+        let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
         minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
     }
     const gasPrice = await ethers.provider.getGasPrice();
-    const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
+    const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
 
     // Get vault balances
@@ -98,7 +97,7 @@ export async function getSetEpoch (req: Request, res: Response) {
             predictedWbtcOption,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
-            setEpochGasEstimate,
+            gasEstimate: setEpochGasEstimate,
             minimumGasPrice,
             transactionMined,
             recommendedGasPrice: gasPriceGwei, 
