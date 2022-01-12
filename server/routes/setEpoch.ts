@@ -103,6 +103,7 @@ export async function postSetEpoch(req: Request, res: Response) {
     let round = await optionVault.currentRound();
     if (await areOptionParamsSet(round)) {
         res.redirect("/set/epoch:true");
+        return;
     }
     let tx = req.app.get("setEpochTx");
     let transactionMined: any = true;
@@ -111,10 +112,10 @@ export async function postSetEpoch(req: Request, res: Response) {
             transactionMined = await isTransactionMined(tx);
         }
         if (!transactionMined) {
-            console.log("here");
-            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei, nonce: tx.nonce });
+            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { nonce: tx.nonce, gasPrice: manualGasPriceWei });
         }
         else {
+            console.log(manualGasPriceWei);
             tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
         }
         req.app.set("setEpochTx", tx);
