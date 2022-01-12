@@ -28,6 +28,7 @@ import { getSetEpoch, postSetEpoch, postSetPredictedEpoch } from "./routes/setEp
 import { getMoneyMovement, postMoneyMovement } from "./routes/moneyMovement";
 import { getSetOptionDecision, postSetOptionDecision } from "./routes/setOptionDecision";
 import { getPredictedData, getPredictedEthData, getPredictedWbtcData } from "./routes/predictedData";
+import { getTraderBalance } from "./routes/traderBalance";
 
 module.exports = app;
 
@@ -64,6 +65,8 @@ app.get("/predicted/data", getPredictedData);
 app.get("/predicted/data/eth", getPredictedEthData);
 
 app.get("/predicted/data/wbtc", getPredictedWbtcData);
+
+app.get("/trader/balance", getTraderBalance);
 
 // CRON JOBS
 

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>TraderPerspective</title>
+        <link rel="stylesheet" href="/navbar.css">
+        <link rel="stylesheet" href="/table.css">
+        <script type="text/javascript" src="/navBar.js"></script>
+    </head>
+    <body>
+        <%- include("partials/navbar") %>
+        <div style="margin: auto; width: 50%;">
+            <table class="styled-table">
+                <tr>
+                    <th>Balances for: <%= traderAddress %></th>
+                </tr>
+                <tr>
+                    <td>ETH</td>
+                    <td><%= ethBalance %></td>
+                </tr>
+                <tr>
+                    <td>WBTC</td>
+                    <td><%= wbtcBalance %></td>
+                </tr>
+                <tr>
+                    <td>USDC</td>
+                    <td><%= usdcBalance %></td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

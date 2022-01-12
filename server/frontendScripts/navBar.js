@@ -25,6 +25,10 @@ window.addEventListener("load", () => {
         let intiateSettlementNav = document.getElementsByClassName("initiateSettlementNav")[0];
         intiateSettlementNav.classList.add("active");
     }
+    else if (path === "/trader/balance") {
+        let traderBalanceNav = document.getElementsByClassName("traderBalanceNav")[0];
+        traderBalanceNav.classList.add("active");
+    }
     else {
     
     }
