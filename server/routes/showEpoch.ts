@@ -14,8 +14,10 @@ import {
     getOptionStateData,
     settlementResubmit,
     isTransactionMined,
-    canShowInitiateSettlement
+    canShowInitiateSettlement,
+    getPredictedOptionData
 } from "../utilities/utilities";
+import { getPredictedEthData } from "./predictedData";
 
 // /show/epoch route
 export async function showEpoch(req: Request, res: Response) {
@@ -29,7 +31,7 @@ export async function showEpoch(req: Request, res: Response) {
     }
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app, "predictedWbtcOption");
-
+    
     // Get contract option data to display
     const [
         ethCallOptionState,
@@ -65,15 +67,3 @@ export async function showEpoch(req: Request, res: Response) {
     );
 }
 
-function getPredictedOptionData(app, dataName: string) {
-    let predictedOptionData = app.get(dataName);
-    if (predictedOptionData === undefined) {
-        predictedOptionData = {
-            callStrike: 0,
-            putStrike: 0,
-            callPremium: 0,
-            putPremium: 0
-        }
-    }
-    return predictedOptionData;
-}

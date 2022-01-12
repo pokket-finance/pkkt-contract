@@ -234,3 +234,16 @@ export async function isTransactionMined(tx): Promise<boolean> {
     }
     return false;
 }
+
+export function getPredictedOptionData(app, dataName: string) {
+    let predictedOptionData = app.get(dataName);
+    if (predictedOptionData === undefined) {
+        predictedOptionData = {
+            callStrike: 0,
+            putStrike: 0,
+            callPremium: 0,
+            putPremium: 0
+        }
+    }
+    return predictedOptionData;
+}

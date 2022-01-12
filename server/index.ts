@@ -27,6 +27,7 @@ import { getManualInitiateSettlement, setManualInitiateSettlement } from "./rout
 import { getSetEpoch, postSetEpoch, postSetPredictedEpoch } from "./routes/setEpoch";
 import { getMoneyMovement, postMoneyMovement } from "./routes/moneyMovement";
 import { getSetOptionDecision, postSetOptionDecision } from "./routes/setOptionDecision";
+import { getPredictedData, getPredictedEthData, getPredictedWbtcData } from "./routes/predictedData";
 
 module.exports = app;
 
@@ -57,6 +58,12 @@ app.post("/moneyMovement", postMoneyMovement);
 app.get("/initiateSettlement", getManualInitiateSettlement);
 
 app.post("/initiateSettlement", setManualInitiateSettlement);
+
+app.get("/predicted/data", getPredictedData);
+
+app.get("/predicted/data/eth", getPredictedEthData);
+
+app.get("/predicted/data/wbtc", getPredictedWbtcData);
 
 // CRON JOBS
 
