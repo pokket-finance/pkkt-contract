@@ -102,20 +102,35 @@ const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwe
 //     }
 // });
 
-// // Force a No exercise decision for the vaults
-// // if the trader does not manually exercise 
-// cron.schedule("* * * * *", async () => {
-//     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-//     const settler = await getSettler();
-//     const round = await optionVault.currentRound();
-//     const canSettleVault = await canSettle(optionVault);
-//     // Force Settlement
-//     if (canSettleVault) {
-//         await setSettlementParameters(OptionExecution.NoExecution, OptionExecution.NoExecution);
-//     }
-// }, {
-//     timezone: "Asia/Shanghai"
-// });
+// Force a No exercise decision for the vaults
+// if the trader does not manually exercise
+const DECISION_MAX_GAS_PRICE = 100;
+const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
+cron.schedule("* * * * *", async () => {
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const settler = await getSettler();
+    const round = await optionVault.currentRound();
+    const canSettleVault = await canSettle(optionVault);
+    // Force Settlement
+    let tx;
+    let settleDecision = app.get("settleDecisions");
+    if (settleDecision === undefined) {
+        settleDecision = {};
+        settleDecision.decisions = [OptionExecution.NoExecution, OptionExecution.NoExecution];
+        settleDecision.manualGasPrice = await ethers.provider.getGasPrice();
+    }
+    if (canSettleVault) {
+        const gasPriceWei = await ethers.provider.getGasPrice();
+        if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
+            settleDecision.manualGasPrice = DECISION_MAX_GAS_PRICE_WEI;
+        }
+        console.log(settleDecision.decisions);
+        tx = await optionVault.connect(settler as Signer).settle(settleDecision.decisions, { gasPrice: settleDecision.manualGasPrice });
+        app.set("settleTx", tx);
+    }
+}, {
+    timezone: "Asia/Shanghai"
+});
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

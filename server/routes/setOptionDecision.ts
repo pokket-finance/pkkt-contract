@@ -22,7 +22,9 @@ import {
     isTransactionMined,
     canShowInitiateSettlement,
     getPrices,
-    getSettlerWallet
+    getSettlerWallet,
+    resendTransaction,
+    getTransactionInformation
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
 
@@ -144,26 +146,13 @@ export async function getSetOptionDecision(req: Request, res: Response) {
     }
 
     const tx = req.app.get("settleTx");
-    let transactionMined = true;
-    if (tx) {
-        transactionMined = await isTransactionMined(tx);
-    }
-    let minimumGasPriceWei;
-    let minimumGasPrice;
-    if (!transactionMined) {
-        minimumGasPriceWei = tx.gasPrice;
-        let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
-        minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
-    }
-    const gasPrice = await ethers.provider.getGasPrice();
-    const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
-    const gasPriceGwei = parseFloat(gasPriceGweiStr);
+
+    const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
 
     const priceData = await getPrices();
     const ethereumPrice = priceData.ethereum.usd;
     const wbtcPrice = priceData["wrapped-bitcoin"].usd;
 
-    //const initiateSettlementResubmit = settlementResubmit(req.app);
     res.render(
         "exerciseDecision",
         {
@@ -203,28 +192,18 @@ export async function postSetOptionDecision(req: Request, res: Response) {
         transactionMined = await isTransactionMined(tx);
     }
     const settler = await getSettler();
-    const settlerWallet = getSettlerWallet();
     try {
         if (!transactionMined) {
-            let unsignedTx = {
-                gasPrice: maunalGasPriceWei,
-                gasLimit: tx.gasLimit,
-                to: tx.to,
-                value: tx.value,
-                nonce: tx.nonce,
-                data: tx.data,
-                chainId: tx.chainId
-            }
-            const signedTx = await settlerWallet.signTransaction(unsignedTx);
-            let txResponse = await ethers.provider.sendTransaction(signedTx);
+            let txResponse = await await resendTransaction(tx, maunalGasPriceWei);
             req.app.set("settleTx", txResponse);
         }
         else {
-            tx = await vault.connect(settler as Signer).settle(
-                [ethDecision, wbtcDecision],
-                { gasPrice: maunalGasPriceWei }
-            );
-            req.app.set("settleTx", tx);
+            // tx = await vault.connect(settler as Signer).settle(
+            //     [ethDecision, wbtcDecision],
+            //     { gasPrice: maunalGasPriceWei }
+            // );
+            req.app.set("settleDecisions", { decisions: [ethDecision, wbtcDecision], maunalGasPriceWei });
+            // req.app.set("settleTx", tx);
         }
         res.redirect("/set/decision:true");
     } catch (err) {
