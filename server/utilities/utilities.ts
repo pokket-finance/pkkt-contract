@@ -1,6 +1,8 @@
 import { BigNumber, Contract, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts, deployments } from "hardhat";
+import axios from "axios";
+
 import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
 
 import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
@@ -246,4 +248,10 @@ export function getPredictedOptionData(app, dataName: string) {
         }
     }
     return predictedOptionData;
+}
+
+export async function getPrices() {
+    const pricesUrl = "https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin%2Cethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false";
+    const priceData = await axios.get(pricesUrl);
+    return priceData.data;
 }

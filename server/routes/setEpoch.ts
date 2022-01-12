@@ -10,12 +10,18 @@ import {
     getDeployedContractHelper,
     canShowMoneyMovement,
     isTransactionMined,
-    canShowInitiateSettlement
+    canShowInitiateSettlement,
+    getPrices
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
     WBTC_PRICE_PRECISION,
-    RATIO_MULTIPLIER
+    RATIO_MULTIPLIER,
+    ETH_USDC_OPTION_ID,
+    WBTC_USDC_OPTION_ID,
+    ETH_DECIMALS,
+    WBTC_DECIMALS,
+    USDC_DECIMALS
 } from "../../constants/constants";
 import { PKKTHodlBoosterOption } from "../../typechain";
 import { packOptionParameter } from "../../test/utilities/optionPair";
@@ -64,6 +70,25 @@ export async function getSetEpoch (req: Request, res: Response) {
     const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
 
+    // Get vault balances
+    // const ethOption = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
+    // const wbtcOption = await optionVault.optionPairs(WBTC_USDC_OPTION_ID);
+
+    let ethBalance: any = await ethers.provider.getBalance(optionVault.address);
+    ethBalance = ethers.utils.formatUnits(ethBalance, ETH_DECIMALS);
+
+    const wbtc = await getDeployedContractHelper("WBTC");
+    let wbtcBalance: any = await wbtc.balanceOf(optionVault.address);
+    wbtcBalance = ethers.utils.formatUnits(wbtcBalance, WBTC_DECIMALS);
+
+    const usdc = await getDeployedContractHelper("USDC");
+    let usdcBalance: any = await usdc.balanceOf(usdc.address);
+    usdcBalance = ethers.utils.formatUnits(usdcBalance, USDC_DECIMALS);
+
+    const priceData = await getPrices();
+    const ethPrice = priceData.ethereum.usd;
+    const wbtcPrice = priceData["wrapped-bitcoin"].usd;
+
     res.render(
         "setEpoch",
         {
@@ -77,7 +102,12 @@ export async function getSetEpoch (req: Request, res: Response) {
             minimumGasPrice,
             transactionMined,
             recommendedGasPrice: gasPriceGwei, 
-            showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
+            showMoneyMovement: (await canShowMoneyMovement(optionVault, round)),
+            ethBalance,
+            wbtcBalance,
+            usdcBalance,
+            ethPrice,
+            wbtcPrice
         }
     );
 };

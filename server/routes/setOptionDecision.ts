@@ -20,10 +20,10 @@ import {
     getDeployedContractHelper,
     canShowMoneyMovement,
     isTransactionMined,
-    canShowInitiateSettlement
+    canShowInitiateSettlement,
+    getPrices
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
-import axios from "axios";
 
 export async function getSetOptionDecision(req: Request, res: Response) {
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
@@ -156,12 +156,6 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             wbtcPrice
         }
     );
-}
-
-async function getPrices() {
-    const pricesUrl = "https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin%2Cethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false";
-    const priceData = await axios.get(pricesUrl);
-    return priceData.data;
 }
 
 export async function postSetOptionDecision(req: Request, res: Response) {

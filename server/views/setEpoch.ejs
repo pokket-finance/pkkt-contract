@@ -18,6 +18,33 @@
     </head>
     <body>
         <%- include("partials/navbar") %>
+        <table class="styled-table">
+            <tr>
+                <th>Vault</th>
+                <th>USD</th>
+                <th>Absolute</th>
+            </tr>
+            <tr>
+                <td>ETH-USDC</td>
+                <td class="ethValue">todo calc</td>
+                <td class="ethBalance" data-eth-price="<%= ethPrice %>"><%= ethBalance %></td>
+            </tr>
+            <tr>
+                <td>USDC-ETH</td>
+                <td><%= usdcBalance %></td>
+                <td>N/A</td>
+            </tr>
+            <tr>
+                <td>WBTC-USDC</td>
+                <td class="wbtcValue">todo calc</td>
+                <td class="wbtcBalance" data-wbtc-price="<%= wbtcPrice %>"><%= wbtcBalance %></td>
+            </tr>
+            <tr>
+                <td>USDC-WBTC</td>
+                <td><%= usdcBalance %></td>
+                <td>N/A</td>
+            </tr>
+        </table>
 
         <% if (!areOptionParametersSet) { %>
             <form action="/set/epoch" method="post", enctype="application/x-www-form-urlencoded">
