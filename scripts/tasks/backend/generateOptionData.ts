@@ -49,6 +49,16 @@ async function main({ command }, { ethers, deployments }) {
     if (command == 1) {
         // round 1
         await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        // await optionVault.connect(settler as Signer).initiateSettlement();
+        // let tx;
+        // try {
+        //     tx = await optionVault.connect(settler as Signer).initiateSettlement();
+        // } catch (err) {
+        //     const txReceipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        //     //console.log(JSON.stringify(tx, null, 4));
+        //     console.log(JSON.stringify(txReceipt, null, 4));
+        // }
     }
     // initiate settlement
     else if (command == 2) {
