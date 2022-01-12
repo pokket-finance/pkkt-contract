@@ -49,16 +49,20 @@ async function main({ command }, { ethers, deployments }) {
     if (command == 1) {
         // round 1
         await optionVault.connect(settler as Signer).initiateSettlement();
+        await deposits();
         await optionVault.connect(settler as Signer).initiateSettlement();
-        // await optionVault.connect(settler as Signer).initiateSettlement();
-        // let tx;
-        // try {
-        //     tx = await optionVault.connect(settler as Signer).initiateSettlement();
-        // } catch (err) {
-        //     const txReceipt = await ethers.provider.getTransactionReceipt(tx.hash);
-        //     //console.log(JSON.stringify(tx, null, 4));
-        //     console.log(JSON.stringify(txReceipt, null, 4));
-        // }
+        const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
+        const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
+        //set the strikeprice and premium of user deposits collected in round 1
+        await optionVault.connect(settler as Signer).setOptionParameters([
+        packOptionParameter(ethPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
+        packOptionParameter(ethPrice*0.95, 0.025 * RATIO_MULTIPLIER), 
+        packOptionParameter(btcPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
+        packOptionParameter(btcPrice* 0.95, 0.025 * RATIO_MULTIPLIER)
+        ]);
+
+        /* open round 3*/
+        await optionVault.connect(settler as Signer).initiateSettlement();
     }
     // initiate settlement
     else if (command == 2) {
@@ -107,6 +111,8 @@ async function main({ command }, { ethers, deployments }) {
             balance3.lockedDepositAssetAmount
                 .sub(balance3.toTerminateDepositAssetAmount)
         );
+
+        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
     }
     // set settlement parameters
     else if (command == 3) {
@@ -118,7 +124,17 @@ async function main({ command }, { ethers, deployments }) {
         ]);
             
         /* open round 4*/
-        await optionVault.connect(settler as Signer).initiateSettlement();   
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.NoExecution])
+        await optionVault.connect(settler as Signer).setOptionParameters([
+
+            packOptionParameter(ethPrice*1.03, 0.01 * RATIO_MULTIPLIER), 
+            packOptionParameter(ethPrice*0.97, 0.01 * RATIO_MULTIPLIER), 
+            packOptionParameter(btcPrice*1.03, 0.01 * RATIO_MULTIPLIER), 
+            packOptionParameter(btcPrice* 0.97, 0.01 * RATIO_MULTIPLIER)
+            ]); 
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution])
     }
     // Deposits
     else if (command == 4) {

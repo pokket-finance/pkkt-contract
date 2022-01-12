@@ -40,8 +40,8 @@ const main = async ({ fresh, init, initbackend }, { network, ethers, deployments
         await generateOptionData({ command: initbackend }, { ethers, deployments });
     }
     // For testing stalled transactions
-    await network.provider.send("evm_setAutomine", [false]);
-    await network.provider.send("evm_setIntervalMining", [0]);
+    // await network.provider.send("evm_setAutomine", [false]);
+    // await network.provider.send("evm_setIntervalMining", [0]);
 }
 
 // Remove the given directory
