@@ -41,12 +41,25 @@ export async function getSetEpoch (req: Request, res: Response) {
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER)
         ]);
+        req.app.set("setEpochGasEstimate", setEpochGasEstimate)
     } catch (err) {
+        setEpochGasEstimate = req.app.get("setEpochGasEstimate");
         console.error(err);
     }
 
     const success = req.params.success;
-
+    const tx = req.app.get("setEpochTx");
+    let transactionMined = true;
+    if (tx) {
+        transactionMined = await isTransactionMined(tx);
+    }
+    let minimumGasPriceWei;
+    let minimumGasPrice
+    if (!transactionMined) {
+        minimumGasPriceWei = tx.gasPrice;
+        let gasPriceStr = await ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
+        minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
+    }
     const gasPrice = await ethers.provider.getGasPrice();
     const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
@@ -61,7 +74,8 @@ export async function getSetEpoch (req: Request, res: Response) {
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
             setEpochGasEstimate,
-            minimumGasPrice: "N/A",
+            minimumGasPrice,
+            transactionMined,
             recommendedGasPrice: gasPriceGwei, 
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round))
         }
@@ -84,9 +98,25 @@ export async function postSetEpoch(req: Request, res: Response) {
         packOptionParameter(wbtcCallStrikePrice, wbtcCallPremium * RATIO_MULTIPLIER),
         packOptionParameter(wbtcPutStrikePrice, wbtcPutPremium * RATIO_MULTIPLIER)
     ];
+    const manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
     const settler = await getSettler();
+    let round = await optionVault.currentRound();
+    if (await areOptionParamsSet(round)) {
+        res.redirect("/set/epoch:true");
+    }
+    let tx = req.app.get("setEpochTx");
+    let transactionMined: any = true;
     try {
-        let tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters);
+        if (tx !== undefined) {
+            transactionMined = await isTransactionMined(tx);
+        }
+        if (!transactionMined) {
+            console.log("here");
+            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei, nonce: tx.nonce });
+        }
+        else {
+            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
+        }
         req.app.set("setEpochTx", tx);
         res.redirect("/set/epoch:true");
     } catch (err) {

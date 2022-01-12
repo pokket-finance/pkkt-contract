@@ -70,10 +70,12 @@
                                 <td>Recommended Gas Price (Gwei)</td>
                                 <td><%= recommendedGasPrice %></td>
                             </tr>
-                            <tr>
-                                <td>Minimum Gas Price (Gwei)</td>
-                                <td><%= minimumGasPrice %></td>
-                            </tr>
+                            <% if (!transactionMined) { %>
+                                <tr>
+                                    <td>Minimum Gas Price (Gwei)</td>
+                                    <td><%= minimumGasPrice %></td>
+                                </tr>
+                            <% } %>
                             <tr>
                                 <td>Set Gas Price (Gwei)</td>
                                 <td><input type="text" name="manualGasPrice" data-gas-estimate="<%= setEpochGasEstimate %>" value="<%= minimumGasPrice %>" /></td>

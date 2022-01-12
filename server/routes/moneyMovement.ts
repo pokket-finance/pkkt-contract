@@ -130,6 +130,7 @@ export async function postMoneyMovement(req: Request, res: Response) {
     const trader = await getTrader();
     const settler = await getSettler();
 
+    // TODO acually use gasprice for these function calls
     try {
         if (req.body.withdrawEth !== undefined) {
             await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
