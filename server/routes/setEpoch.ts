@@ -115,7 +115,6 @@ export async function postSetEpoch(req: Request, res: Response) {
             tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { nonce: tx.nonce, gasPrice: manualGasPriceWei });
         }
         else {
-            console.log(manualGasPriceWei);
             tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
         }
         req.app.set("setEpochTx", tx);
