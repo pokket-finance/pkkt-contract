@@ -10,12 +10,12 @@ window.addEventListener("load", () => {
     updateLeftover(".usdcLeftover", ".usdcSelectionData");
 
     // initiate the click event listeners
-    initiateClickListener("input[name='withdrawEth']");
-    initiateClickListener("input[name='withdrawWbtc']");
-    initiateClickListener("input[name='withdrawUsdc']");
+    //initiateClickListener("input[name='withdrawAssets']");
+    // initiateClickListener("input[name='withdrawWbtc']");
+    // initiateClickListener("input[name='withdrawUsdc']");
 
-    let manualGasPrice = document.querySelector("input[name='manualGasPrice']");
-    manualGasPrice.addEventListener("input", calculateTransaction);
+    // let manualGasPrice = document.querySelector("input[name='manualGasPrice']");
+    // manualGasPrice.addEventListener("input", calculateTransaction);
 });
 
 /**

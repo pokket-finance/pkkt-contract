@@ -174,9 +174,10 @@ export async function getSettlerWallet(): Promise<Wallet> {
     // TODO abstract this for the settler
     var network = await ethers.provider.getNetwork();
     
-    const privateKey =  network.name == "ropsten" ? 
-    "0x" + process.env.ROPSTEN_SETTLER_PRIVATE_KEY:
-    "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
+    // const privateKey =  network.name == "ropsten" ? 
+    // "0x" + process.env.ROPSTEN_SETTLER_PRIVATE_KEY:
+    // "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
+    const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
     return new ethers.Wallet(privateKey);
 }
 

@@ -20,6 +20,8 @@ import {
     canShowMoneyMovement,
     isTransactionMined,
     canShowInitiateSettlement,
+    getTransactionInformation,
+    resendTransaction,
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -37,18 +39,6 @@ export async function getMoneyMovement(req: Request, res: Response) {
         required: "0"
     };
     ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
-    let ethGasEstimate;
-    try {
-        ethGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, NULL_ADDRESS);
-    } catch (err) {
-        console.error("No Residule Eth");
-        if (parseFloat(ethData.leftover) > 0) {
-            ethData.leftover = "0";
-        }
-        if (parseFloat(ethData.required) > 0) {
-            ethData.required = "0";
-        }
-    }
 
     let wbtcData = {
         queuedLiquidity: "0",
@@ -57,18 +47,6 @@ export async function getMoneyMovement(req: Request, res: Response) {
         required: "0"
     };
     wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
-    let wbtcGasEstimate;
-    try {
-        wbtcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, wbtc.address);
-    } catch (err) {
-        console.error("No residule wbtc")
-        if (parseFloat(wbtcData.leftover) > 0) {
-            wbtcData.leftover = "0";
-        }
-        if (parseFloat(wbtcData.required) > 0) {
-            wbtcData.required = "0";
-        }
-    }
 
     let usdcData = { 
         queuedLiquidity: "0",
@@ -77,37 +55,56 @@ export async function getMoneyMovement(req: Request, res: Response) {
         required: "0"
     };
     usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
-    let usdcGasEstimate;
+
+    let tx = req.app.get("withdrawTx");
+    const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
+    let withdrawGasEstimate;
     try {
-        usdcGasEstimate = await vault.connect(settler as Signer).estimateGas.withdrawAsset(trader.address, usdc.address);
-    } catch (err) {
-        console.error("No residule usdc");
-        if (parseFloat(usdcData.leftover) > 0) {
-            usdcData.leftover = "0";
-        }
-        if (parseFloat(usdcData.required) > 0){
-            usdcData.required = "0";
+        withdrawGasEstimate = await await vault.connect(settler as Signer)
+            .estimateGas.batchWithdrawAssets(trader.address, [wbtc.address, NULL_ADDRESS, usdc.address]);
+        req.app.set("withdrawGasEstimate", withdrawGasEstimate);
+    } catch {
+        withdrawGasEstimate = req.app.get("withdrawGasEstimate");
+        // Even though we withdraw the accounting result has not changed
+        // Therefore we need to update the values for the frontend
+        if (transactionMined) {
+            if (parseFloat(usdcData.leftover) > 0) {
+                usdcData.leftover = "0";
+            }
+            if (parseFloat(usdcData.required) > 0){
+                usdcData.required = "0";
+            }
+            if (parseFloat(wbtcData.leftover) > 0) {
+                wbtcData.leftover = "0";
+            }
+            if (parseFloat(wbtcData.required) > 0) {
+                wbtcData.required = "0";
+            }
+            if (parseFloat(ethData.leftover) > 0) {
+                ethData.leftover = "0";
+            }
+            if (parseFloat(ethData.required) > 0) {
+                ethData.required = "0";
+            }
         }
     }
 
-    const gasPrice = await ethers.provider.getGasPrice();
-    const gasPriceGweiStr = await ethers.utils.formatUnits(gasPrice, "gwei");
-    const gasPriceGwei = parseFloat(gasPriceGweiStr);
+    
 
-    // const initiateSettlementResubmit = settlementResubmit(req.app);
+
 
     const success = req.params.success;
     let canSettleVault = await canSettle(vault);
-    let canWithdraw;
     const round = await vault.currentRound();
-    if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
-        canWithdraw = false;
-    }
-    else {
-        const canSettleVault = (await canSettle(vault)) && round > 2;
-        const areOptionParametersSet = await areOptionParamsSet(round);
-        canWithdraw = !canSettleVault && !areOptionParametersSet;
-    }
+    let canWithdraw = await canWithdrawAssets(ethData, wbtcData, usdcData, vault, round);
+    // if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
+    //     canWithdraw = false;
+    // }
+    // else {
+    //     const canSettleVault = (await canSettle(vault)) && round > 2;
+    //     const areOptionParametersSet = await areOptionParamsSet(round);
+    //     canWithdraw = !canSettleVault && !areOptionParametersSet;
+    // }
 
     res.render(
         "moneyMovement",
@@ -116,16 +113,25 @@ export async function getMoneyMovement(req: Request, res: Response) {
             ethData,
             wbtcData,
             usdcData,
-            ethGasEstimate,
-            wbtcGasEstimate,
-            usdcGasEstimate,
+            gasEstimate: withdrawGasEstimate,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
             vaultAddress: vault.address,
             canWithdraw,
-            showMoneyMovement: (await canShowMoneyMovement(vault, round))
+            showMoneyMovement: (await canShowMoneyMovement(vault, round)),
+            transactionMined,
+            minimumGasPrice
         }
     );
+}
+
+async function canWithdrawAssets(ethData, wbtcData, usdcData, vault, round): Promise<boolean> {
+    if (parseFloat(ethData.leftover) <= 0 && parseFloat(wbtcData.leftover) <= 0 && parseFloat(usdcData.leftover) <= 0) {
+        return false;
+    }
+    const canSettleVault = (await canSettle(vault)) && round > 2;
+    const areOptionParametersSet = await areOptionParamsSet(round);
+    return !canSettleVault && !areOptionParametersSet;
 }
 
 export async function postMoneyMovement(req: Request, res: Response) {
@@ -135,22 +141,36 @@ export async function postMoneyMovement(req: Request, res: Response) {
 
     const trader = await getTrader();
     const settler = await getSettler();
+    const manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
 
-    // TODO acually use gasprice for these function calls
+    let tx = req.app.get("withdrawTx");
+    let transactionMined = true;
+    if (tx !== undefined) {
+        transactionMined = await isTransactionMined(tx);
+    }
+
     try {
-        if (req.body.withdrawEth !== undefined) {
-            await vault.connect(settler as Signer).withdrawAsset(trader.address, NULL_ADDRESS);
-        }
-        if (req.body.withdrawWbtc !== undefined) {
-            await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
-        }
-        if (req.body.withdrawUsdc !== undefined) {
-            await vault.connect(settler as Signer).withdrawAsset(trader.address, usdc.address);
+        if (req.body.withdrawAssets !== undefined) {
+            if (!transactionMined) {
+                let txResponse = await resendTransaction(tx, manualGasPriceWei);
+                req.app.set("withdrawTx", txResponse);
+            }
+            else {
+                tx =  await vault.connect(settler as Signer).batchWithdrawAssets(
+                    trader.address,
+                    [
+                        wbtc.address,
+                        NULL_ADDRESS,
+                        usdc.address
+                    ],
+                    { gasPrice: manualGasPriceWei }
+                );
+                req.app.set("withdrawTx", tx);
+            }
         }
         res.redirect("/moneyMovement:true");
     } catch (err) {
         console.error(err);
         res.redirect("/moneyMovement:false")
     }
-
 }

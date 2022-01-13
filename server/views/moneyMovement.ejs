@@ -8,6 +8,7 @@
         <link rel="stylesheet" href="/successText.css">
         <script src="/navbar.js"></script>
         <script src="/moneyMovement.js"></script>
+        <script src="/setGasPrice.js"></script>
     </head>
 
     <body>
@@ -24,7 +25,7 @@
                         <th>Actual Withdrawal Request</th>
                         <th>Residule(+)/Deficit(-)</th>
                         <th>Movable(+)/Required(-)</th>
-                        <th>Selection</th>
+                        <th>Withdraw Assets</th>
                     </tr>
                     <tr>
                         <td>ETH</td>
@@ -32,7 +33,7 @@
                         <td><%= ethData.withdrawalRequest %></td>
                         <td class="ethLeftover" data-vault-address="<%= vaultAddress %>"><%= ethData.leftover %></td>
                         <td class="ethRequired" data-vault-address="<%= vaultAddress %>"><%= ethData.required %></td>
-                        <td class="ethSelectionData"><input type="checkbox" name="withdrawEth" value="<%= ethGasEstimate %>" /></td>
+                        <td rowspan="3" class="selectionData"><input type="checkbox" name="withdrawAssets" value="<%= gasEstimate %>" /></td>
                     </tr>
                     <tr>
                         <td>WBTC</td>
@@ -40,7 +41,6 @@
                         <td><%= wbtcData.withdrawalRequest %></td>
                         <td class="wbtcLeftover" data-vault-address="<%= vaultAddress %>"><%= wbtcData.leftover %></td>
                         <td class="wbtcRequired" data-vault-address="<%= vaultAddress %>"><%= wbtcData.required %></td>
-                        <td class="wbtcSelectionData"><input type="checkbox" name="withdrawWbtc" value="<%= wbtcGasEstimate %>" /></td>
                     </tr>
                     <tr>
                         <td>USDC</td>
@@ -48,25 +48,14 @@
                         <td><%= usdcData.withdrawalRequest %></td>
                         <td class="usdcLeftover" data-vault-address="<%= vaultAddress %>"><%= usdcData.leftover %></td>
                         <td class="usdcRequired" data-vault-address="<%= vaultAddress %>"><%= usdcData.required %></td>
-                        <td class="usdcSelectionData"><input type="checkbox" name="withdrawUsdc" value="<%= usdcGasEstimate %>" /></td>
-                    </tr>
-                    <tr>
-                        <td>Recommended Gas Price (Gwei)</td>
-                        <td><%= recommendedGasPrice %></td>
-                    </tr>
-                    <tr>
-                        <td>Set Gas Price (Gwei)</td>
-                        <td><input type="text" name="manualGasPrice" value="<%= recommendedGasPrice %>" /></td>
-                    </tr>
-                    <tr>
-                        <td>Cost to Withdraw (ETH)</td>
-                        <td class="transactionCost">0</td>
                     </tr>
                 </table>
+                <% if (canWithdraw) { %>
+                    <%- include("partials/setGasPrice") %>
+                    <input type="submit" class="button" value="Withdraw Assets" />
+                <% } %>
             </div>
-            <% if (canWithdraw) { %>
-                <input type="submit" class="button" value="Withdraw Assets" />
-            <% } %>
+
             <% if (success !== undefined) { %>
                 <% if (success === ":true") { %>
                     <p>Withdraw Successful!</p>
