@@ -78,6 +78,7 @@ app.get("*", showEpoch);
 
 // The maximum gas price we are willing to use
 // Denominated in GWEI
+/*
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
@@ -164,7 +165,7 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
         }
     }
 });
-
+*/
 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";

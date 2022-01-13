@@ -16,7 +16,8 @@ import {
     getTransactionInformation,
     getSettlerWallet,
     resendTransaction,
-    transporter
+    transporter,
+    getMoneyMovementData
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -26,7 +27,8 @@ import {
     WBTC_USDC_OPTION_ID,
     ETH_DECIMALS,
     WBTC_DECIMALS,
-    USDC_DECIMALS
+    USDC_DECIMALS,
+    NULL_ADDRESS
 } from "../../constants/constants";
 import { PKKTHodlBoosterOption } from "../../typechain";
 import { packOptionParameter } from "../../test/utilities/optionPair";
@@ -65,16 +67,22 @@ export async function getSetEpoch (req: Request, res: Response) {
     // const ethOption = await optionVault.optionPairs(ETH_USDC_OPTION_ID);
     // const wbtcOption = await optionVault.optionPairs(WBTC_USDC_OPTION_ID);
 
-    let ethBalance: any = await ethers.provider.getBalance(optionVault.address);
-    ethBalance = ethers.utils.formatUnits(ethBalance, ETH_DECIMALS);
+    // let ethBalance: any = await ethers.provider.getBalance(optionVault.address);
+    // ethBalance = ethers.utils.formatUnits(ethBalance, ETH_DECIMALS);
+
+    // const wbtc = await getDeployedContractHelper("WBTC");
+    // let wbtcBalance: any = await wbtc.balanceOf(optionVault.address);
+    // wbtcBalance = ethers.utils.formatUnits(wbtcBalance, WBTC_DECIMALS);
+
+    // const usdc = await getDeployedContractHelper("USDC");
+    // let usdcBalance: any = await usdc.balanceOf(usdc.address);
+    // usdcBalance = ethers.utils.formatUnits(usdcBalance, USDC_DECIMALS);
 
     const wbtc = await getDeployedContractHelper("WBTC");
-    let wbtcBalance: any = await wbtc.balanceOf(optionVault.address);
-    wbtcBalance = ethers.utils.formatUnits(wbtcBalance, WBTC_DECIMALS);
-
     const usdc = await getDeployedContractHelper("USDC");
-    let usdcBalance: any = await usdc.balanceOf(usdc.address);
-    usdcBalance = ethers.utils.formatUnits(usdcBalance, USDC_DECIMALS);
+    let ethData = await getMoneyMovementData(optionVault, settler, ETH_DECIMALS, NULL_ADDRESS);
+    let wbtcData = await getMoneyMovementData(optionVault, settler, WBTC_DECIMALS, wbtc.address);
+    let usdcData = await getMoneyMovementData(optionVault, settler, USDC_DECIMALS, usdc.address);
 
     const priceData = await getPrices();
     const ethPrice = priceData.ethereum.usd;
@@ -94,9 +102,9 @@ export async function getSetEpoch (req: Request, res: Response) {
             transactionMined,
             recommendedGasPrice: gasPriceGwei, 
             showMoneyMovement: (await canShowMoneyMovement(optionVault, round)),
-            ethBalance,
-            wbtcBalance,
-            usdcBalance,
+            ethBalance: ethData.required,
+            wbtcBalance: wbtcData.required,
+            usdcBalance: usdcData.required,
             ethPrice,
             wbtcPrice
         }

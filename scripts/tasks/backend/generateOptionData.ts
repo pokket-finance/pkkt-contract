@@ -48,22 +48,22 @@ async function main({ command }, { ethers, deployments }) {
     // Set Option Parameters
     if (command == 1) {
         // round 1
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        await deposits();
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
-        const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
-        //set the strikeprice and premium of user deposits collected in round 1
-        await optionVault.connect(settler as Signer).setOptionParameters([
-        packOptionParameter(ethPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
-        packOptionParameter(ethPrice*0.95, 0.025 * RATIO_MULTIPLIER), 
-        packOptionParameter(btcPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
-        packOptionParameter(btcPrice* 0.95, 0.025 * RATIO_MULTIPLIER)
-        ]);
+        //await optionVault.connect(settler as Signer).initiateSettlement();
+        //await deposits();
+       // await optionVault.connect(settler as Signer).initiateSettlement();
+        // const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
+        // const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
+        // //set the strikeprice and premium of user deposits collected in round 1
+        // await optionVault.connect(settler as Signer).setOptionParameters([
+        // packOptionParameter(ethPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
+        // packOptionParameter(ethPrice*0.95, 0.025 * RATIO_MULTIPLIER), 
+        // packOptionParameter(btcPrice*1.05, 0.025 * RATIO_MULTIPLIER), 
+        // packOptionParameter(btcPrice* 0.95, 0.025 * RATIO_MULTIPLIER)
+        // ]);
 
-        /* open round 3*/
-        await optionVault.connect(settler as Signer).initiateSettlement();
-        //await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+        // /* open round 3*/
+        // await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
     }
     // initiate settlement
     else if (command == 2) {
