@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
+import nodemailer from "nodemailer";
 import * as dotenv from "dotenv"
 dotenv.config();
 
@@ -24,7 +25,8 @@ import {
     getPrices,
     getSettlerWallet,
     resendTransaction,
-    getTransactionInformation
+    getTransactionInformation,
+    transporter
 } from "../utilities/utilities"
 import { PKKTHodlBoosterOption } from "../../typechain";
 
@@ -201,6 +203,17 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     try {
         if (!transactionMined) {
             let txResponse = await resendTransaction(tx, manualGasPriceWei);
+            // TODO remove listeners for previous unmined tx that get speed up
+            ethers.provider.once(txResponse.hash, async (transaction) => {
+                let info = await transporter.sendMail({
+                    from: '"SERVER" test@account',
+                    to: "matt.auer@pokket.com",
+                    subject: "Exercise Decision Confirmation",
+                    text: "The ExerciseDecision transaction has been confirmed on the blockchain"
+                });
+                console.log("Message send: %s", info.messageId);
+                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            });
             req.app.set("settleTx", txResponse);
             req.app.set("settleOverride", true);
         }

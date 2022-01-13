@@ -1,8 +1,21 @@
 import { Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
+import nodemailer from "nodemailer";
+
 import { PKKTHodlBoosterOption } from "../../typechain";
-import { canSettle, canShowInitiateSettlement, canShowMoneyMovement, getDeployedContractHelper, getSettler, getTransactionInformation, isTransactionMined, resendTransaction, settlementResubmit } from "../utilities/utilities";
+import {
+    canSettle,
+    canShowInitiateSettlement,
+    canShowMoneyMovement,
+    getDeployedContractHelper,
+    getSettler,
+    getTransactionInformation,
+    isTransactionMined,
+    resendTransaction,
+    settlementResubmit,
+    transporter
+} from "../utilities/utilities";
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {
@@ -23,9 +36,11 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
         initiateSettlementGasEstimate = req.app.get("initiateSettlementGasEstimate");
     }
 
+    const success = req.params.success;
     res.render(
         "initiateSettlement",
         {
+            success,
             transactionMined,
             minimumGasPrice,
             recommendedGasPrice: gasPriceGwei,
@@ -40,8 +55,7 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
 export async function setManualInitiateSettlement(req: Request, res: Response) {
     // first check to see if tx was mined before the trader refreshes their page
     if (!(await canShowInitiateSettlement(req.app))) {
-        console.log("bpoo");
-        res.redirect("/show/epoch");
+        res.redirect("/initateSettlement:true");
         return;
     }
     const manualGasPriceGwei = req.body.manualGasPrice;
@@ -58,11 +72,20 @@ export async function setManualInitiateSettlement(req: Request, res: Response) {
             let txResponse = await resendTransaction(tx, manualGasPriceWei);
             req.app.set("initiateSettlementTx", txResponse);
             req.app.set("initiateSettlementResubmit", false);
+            ethers.provider.once(txResponse.hash, async (transaction) => {
+                let info = await transporter.sendMail({
+                    from: '"SERVER" test@account',
+                    to: "matt.auer@pokket.com",
+                    subject: "Set Epoch Confirmation",
+                    text: "The Set Epoch transaction has been confirmed on the blockchain"
+                });
+                console.log("Message send: %s", info.messageId);
+                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            });
         }
-        // let tx = await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
-        // req.app.set("initiateSettlementTx", tx);
+        res.redirect("/initiateSettlement:true");
     } catch (err) {
         console.error(err);
+        res.redirect("/initiateSettlement:false");
     }
-    res.redirect("/show/epoch");
 }

@@ -63,7 +63,7 @@ async function main({ command }, { ethers, deployments }) {
 
         /* open round 3*/
         await optionVault.connect(settler as Signer).initiateSettlement();
-        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+        //await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
     }
     // initiate settlement
     else if (command == 2) {

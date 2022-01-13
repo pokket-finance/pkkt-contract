@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Signer } from "ethers";
 import { ethers } from "hardhat";
+import nodemailer from "nodemailer";
 
 import {
     getSettler,
@@ -14,7 +15,8 @@ import {
     getPrices,
     getTransactionInformation,
     getSettlerWallet,
-    resendTransaction
+    resendTransaction,
+    transporter
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -131,13 +133,22 @@ export async function postSetEpoch(req: Request, res: Response) {
     }
     try {
         if (!transactionMined) {
-            let txResponse = await resendTransaction(tx, manualGasPriceWei);
-            req.app.set("setEpochTx", txResponse);
+            tx = await resendTransaction(tx, manualGasPriceWei);
         }
         else {
             tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
-            req.app.set("setEpochTx", tx);
         }
+        ethers.provider.once(tx.hash, async (transaction) => {
+            let info = await transporter.sendMail({
+                from: '"SERVER" test@account',
+                to: "matt.auer@pokket.com",
+                subject: "Set Epoch Confirmation",
+                text: "The Set Epoch transaction has been confirmed on the blockchain"
+            });
+            console.log("Message send: %s", info.messageId);
+            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+        });
+        req.app.set("setEpochTx", tx);
         res.redirect("/set/epoch:true");
     } catch (err) {
         console.error(err);

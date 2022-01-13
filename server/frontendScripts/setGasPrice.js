@@ -9,7 +9,7 @@ window.addEventListener("load", () => {
     console.log(successElement);
     if (successElement) {
         if (successElement.dataset.success === ":true") {
-            alert("Transaction Submitted");
+            alert("Transaction Submitted and Pending Check Email for Confirmation");
         }
         else {
             alert("Transaction Failed");

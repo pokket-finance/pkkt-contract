@@ -2,6 +2,7 @@ import { BigNumber, Contract, Signer, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts, deployments } from "hardhat";
 import axios from "axios";
+import nodemailer from "nodemailer";
 
 import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
 
@@ -17,6 +18,24 @@ import * as dotenv from "dotenv";
 //         executed: boolean;
 //         callOrPut: boolean;
 // }
+export let transporter;
+// TODO initialize emailer with actual email server
+export async function initializeEmailer() {
+    let testAccount = await nodemailer.createTestAccount();
+
+    // object used for sending emails
+    transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+            user: testAccount.user,
+            pass: testAccount.pass
+        }
+    });
+}
+
+
 
 /**
  * Retrieves the contract from deployments

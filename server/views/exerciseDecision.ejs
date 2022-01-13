@@ -137,11 +137,7 @@
             </div>
      
             <% if (success !== undefined) { %>
-                <% if (success === ":true") { %>
-                    <p>Exercise Decisions Set!</p>
-                <% } else { %>
-                    <p>Error in Setting Exercise Decisions!</p>
-                <% } %>
+                <div class="message" data-success="<%= success %>"></div>
             <% } %>
         </form>
     </body>

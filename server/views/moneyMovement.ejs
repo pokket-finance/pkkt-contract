@@ -57,11 +57,7 @@
             </div>
 
             <% if (success !== undefined) { %>
-                <% if (success === ":true") { %>
-                    <p>Withdraw Successful!</p>
-                <% } else { %>
-                    <p>Error in Withdraw!</p>
-                <% } %>
+                <div class="message" data-success="<%= success %>"></div>
             <% } %>
         </form>
     </body>

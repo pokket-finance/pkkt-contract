@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
+import nodemailer from "nodemailer";
 
 import { PKKTHodlBoosterOption, ERC20Mock } from "../../typechain";
 import {
@@ -22,6 +23,7 @@ import {
     canShowInitiateSettlement,
     getTransactionInformation,
     resendTransaction,
+    transporter,
 } from "../utilities/utilities";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -152,8 +154,7 @@ export async function postMoneyMovement(req: Request, res: Response) {
     try {
         if (req.body.withdrawAssets !== undefined) {
             if (!transactionMined) {
-                let txResponse = await resendTransaction(tx, manualGasPriceWei);
-                req.app.set("withdrawTx", txResponse);
+                tx = await resendTransaction(tx, manualGasPriceWei);
             }
             else {
                 tx =  await vault.connect(settler as Signer).batchWithdrawAssets(
@@ -165,10 +166,20 @@ export async function postMoneyMovement(req: Request, res: Response) {
                     ],
                     { gasPrice: manualGasPriceWei }
                 );
-                req.app.set("withdrawTx", tx);
             }
+            ethers.provider.once(tx.hash,async (transaction) => {
+                let info = await transporter.sendMail({
+                    from: "'SERVER' test@account",
+                    to: "matt.auer@pokket.com",
+                    subject: "Withdraw Assets Confirmation",
+                    text: "The Withdraw Assets Transaction has been confirmed."
+                });
+                console.log("Message send: %s", info.messageId);
+                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            })
+            req.app.set("withdrawTx", tx);
+            res.redirect("/moneyMovement:true");
         }
-        res.redirect("/moneyMovement:true");
     } catch (err) {
         console.error(err);
         res.redirect("/moneyMovement:false")
