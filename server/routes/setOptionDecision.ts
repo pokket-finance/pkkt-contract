@@ -153,6 +153,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
     const ethereumPrice = priceData.ethereum.usd;
     const wbtcPrice = priceData["wrapped-bitcoin"].usd;
 
+    const canSetGasPrice = tx === undefined ? false : !transactionMined;
+
     res.render(
         "exerciseDecision",
         {
@@ -172,7 +174,8 @@ export async function getSetOptionDecision(req: Request, res: Response) {
             gasEstimate: settleGasEstimate,
             minimumGasPrice,
             recommendedGasPrice: gasPriceGwei,
-            transactionMined
+            transactionMined,
+            canSetGasPrice
         }
     );
 }
@@ -180,7 +183,10 @@ export async function getSetOptionDecision(req: Request, res: Response) {
 export async function postSetOptionDecision(req: Request, res: Response) {
     const ethDecision = getExecutionStatus(req.body.ethOption);
     const wbtcDecision = getExecutionStatus(req.body.wbtcOption);
-    const maunalGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
+    let manualGasPriceWei;
+    if (req.body.manualGasPrice) {
+        manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
+    }
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     if (!(await canSettle(vault))) {
         res.redirect("/set/decision");
@@ -194,16 +200,12 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     const settler = await getSettler();
     try {
         if (!transactionMined) {
-            let txResponse = await await resendTransaction(tx, maunalGasPriceWei);
+            let txResponse = await await resendTransaction(tx, manualGasPriceWei);
             req.app.set("settleTx", txResponse);
+            req.app.set("settleOverride", true);
         }
         else {
-            // tx = await vault.connect(settler as Signer).settle(
-            //     [ethDecision, wbtcDecision],
-            //     { gasPrice: maunalGasPriceWei }
-            // );
-            req.app.set("settleDecisions", { decisions: [ethDecision, wbtcDecision], maunalGasPriceWei });
-            // req.app.set("settleTx", tx);
+            req.app.set("settleDecisions", [ethDecision, wbtcDecision]);
         }
         res.redirect("/set/decision:true");
     } catch (err) {

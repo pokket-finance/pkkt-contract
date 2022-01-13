@@ -129,7 +129,9 @@
                     </tr>
                 </table>
                 <% if (canSettleVault && round > 2) { %>
-                    <%- include("partials/setGasPrice") %>
+                    <% if (canSetGasPrice) { %>
+                        <%- include("partials/setGasPrice") %>
+                    <% } %>
                     <input type="submit" class="button" name="exerciseDescision" value="Execute Decision" />
                 <% } %>
             </div>
