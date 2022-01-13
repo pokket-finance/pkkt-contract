@@ -75,32 +75,32 @@ app.get("/trader/balance", getTraderBalance);
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
-// cron.schedule('* * * * *', async () => {
-//     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-//     const settler = await getSettler();
-//     try {
-//         const gasPriceWei = await ethers.provider.getGasPrice();
-//         let tx;
-//         if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
-//             // Let the trader know and allow them
-//             // to resubmit the transaction with a higher gas price
-//             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
-//             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
-//             app.set("initiateSettlementResubmit", true);
-//             app.set("initiateSettlementTx", tx);
-//             app.set("settlerNonce", await settler.getTransactionCount());
-//         }
-//         else {
-//             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: gasPriceWei });
-//             console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
-//             app.set("initiateSettlementResubmit", false);
-//             app.set("initiateSettlementTx", tx);
-//             app.set("settlerNonce", await settler.getTransactionCount());
-//         }
-//     } catch (err) {
-//         console.error(err);
-//     }
-// });
+cron.schedule('* * * * *', async () => {
+    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const settler = await getSettler();
+    try {
+        const gasPriceWei = await ethers.provider.getGasPrice();
+        let tx;
+        if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
+            // Let the trader know and allow them
+            // to resubmit the transaction with a higher gas price
+            tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
+            console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
+            app.set("initiateSettlementResubmit", true);
+            app.set("initiateSettlementTx", tx);
+            app.set("settlerNonce", await settler.getTransactionCount());
+        }
+        else {
+            tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: gasPriceWei });
+            console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
+            app.set("initiateSettlementResubmit", false);
+            app.set("initiateSettlementTx", tx);
+            app.set("settlerNonce", await settler.getTransactionCount());
+        }
+    } catch (err) {
+        console.error(err);
+    }
+});
 
 // Force a No exercise decision for the vaults
 // if the trader does not manually exercise
@@ -116,17 +116,25 @@ cron.schedule("* * * * *", async () => {
     let settleDecision = app.get("settleDecisions");
     if (settleDecision === undefined) {
         settleDecision = {};
-        settleDecision.decisions = [OptionExecution.NoExecution, OptionExecution.NoExecution];
-        settleDecision.manualGasPrice = await ethers.provider.getGasPrice();
+        settleDecision = [OptionExecution.NoExecution, OptionExecution.NoExecution];
     }
-    if (canSettleVault) {
-        const gasPriceWei = await ethers.provider.getGasPrice();
+    let settleOverride = app.get("settleOverride");
+    if (settleOverride === undefined) {
+        settleOverride = false;
+    }
+    if (canSettleVault && !settleOverride) {
+        let gasPriceWei = await ethers.provider.getGasPrice();
         if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
-            settleDecision.manualGasPrice = DECISION_MAX_GAS_PRICE_WEI;
+            gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
         }
-        console.log(settleDecision.decisions);
-        tx = await optionVault.connect(settler as Signer).settle(settleDecision.decisions, { gasPrice: settleDecision.manualGasPrice });
-        app.set("settleTx", tx);
+        console.log(settleDecision);
+        try {
+            tx = await optionVault.connect(settler as Signer).settle(settleDecision, { gasPrice: gasPriceWei });
+            app.set("settleOverride", false);
+            app.set("settleTx", tx);
+        } catch (err) {
+            console.error(err);
+        }
     }
 }, {
     timezone: "Asia/Shanghai"

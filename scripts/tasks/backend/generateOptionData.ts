@@ -63,10 +63,12 @@ async function main({ command }, { ethers, deployments }) {
 
         /* open round 3*/
         await optionVault.connect(settler as Signer).initiateSettlement();
+        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
     }
     // initiate settlement
     else if (command == 2) {
         await optionVault.connect(settler as Signer).initiateSettlement();
+        
         // await deposits();
 
         await optionVault.connect(alice as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(5).mul(ETH_MULTIPLIER)});

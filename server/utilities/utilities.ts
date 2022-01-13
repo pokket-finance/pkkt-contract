@@ -268,7 +268,7 @@ export async function getTransactionInformation(tx) {
         transactionMined = await isTransactionMined(tx);
     }
     let minimumGasPriceWei;
-    let minimumGasPrice;
+    let minimumGasPrice = 0;
     if (!transactionMined) {
         minimumGasPriceWei = tx.gasPrice;
         let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
