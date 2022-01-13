@@ -2,34 +2,34 @@ import { Signer } from "ethers";
 import { Request, Response } from "express";
 import { ethers } from "hardhat";
 import { PKKTHodlBoosterOption } from "../../typechain";
-import { canSettle, canShowInitiateSettlement, canShowMoneyMovement, getDeployedContractHelper, getSettler, isTransactionMined, settlementResubmit } from "../utilities/utilities";
+import { canSettle, canShowInitiateSettlement, canShowMoneyMovement, getDeployedContractHelper, getSettler, getTransactionInformation, isTransactionMined, resendTransaction, settlementResubmit } from "../utilities/utilities";
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {
     // Checks if the initiate settlement has been mined 
     const settler = await getSettler();
     let tx = req.app.get("initiateSettlementTx");
-    let transactionMined = await isTransactionMined(tx);
-    // let curSettlerNonce = await settler.getTransactionCount();
-    // let prevSettlerNonce = req.app.get("settlerNonce");
-    // if (prevSettlerNonce === undefined) {
-    //     prevSettlerNonce = curSettlerNonce;
-    // }
-    // //console.log(`cur none: ${curSettlerNonce} prev nonee ${prevSettlerNonce}`);
-    // const transactionMined = (curSettlerNonce === prevSettlerNonce);
+    const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
 
-    // Checks if the initiateSettlement needs to be resubmited by trader
-    //let initiateSettlementResubmit = settlementResubmit(req.app);
-
-    const gasPrice = await ethers.provider.getGasPrice();
-    const gasPriceGwei = ethers.utils.formatUnits(gasPrice, "gwei");
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const round = await vault.currentRound();
+
+    let initiateSettlementGasEstimate;
+    try {
+        initiateSettlementGasEstimate = await vault.connect(settler as Signer)
+            .estimateGas.initiateSettlement();
+        req.app.set("initiateSettlementGasEstimate", initiateSettlementGasEstimate);
+    } catch (err) {
+        initiateSettlementGasEstimate = req.app.get("initiateSettlementGasEstimate");
+    }
+
     res.render(
         "initiateSettlement",
         {
             transactionMined,
-            currentGasPrice: gasPriceGwei,
+            minimumGasPrice,
+            recommendedGasPrice: gasPriceGwei,
+            gasEstimate: initiateSettlementGasEstimate,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             showMoneyMovement: (await canShowMoneyMovement(vault, round))
         }
@@ -40,6 +40,7 @@ export async function getManualInitiateSettlement(req: Request, res: Response) {
 export async function setManualInitiateSettlement(req: Request, res: Response) {
     // first check to see if tx was mined before the trader refreshes their page
     if (!(await canShowInitiateSettlement(req.app))) {
+        console.log("bpoo");
         res.redirect("/show/epoch");
         return;
     }
@@ -47,13 +48,21 @@ export async function setManualInitiateSettlement(req: Request, res: Response) {
     const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "gwei");
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
-    console.log(manualGasPriceWei.toString());
+    let tx = req.app.get("initiateSettlementTx");
+    let transactionMined = true;
+    if (tx !== undefined) {
+        transactionMined = await isTransactionMined(tx);
+    }
     try {
-        let tx = await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
-        req.app.set("initiateSettlementTx", tx);
+        if (!transactionMined) {
+            let txResponse = await resendTransaction(tx, manualGasPriceWei);
+            req.app.set("initiateSettlementTx", txResponse);
+            req.app.set("initiateSettlementResubmit", false);
+        }
+        // let tx = await vault.connect(settler as Signer).initiateSettlement({ nonce: req.app.get("settlerNonce"), gasPrice: manualGasPriceWei });
+        // req.app.set("initiateSettlementTx", tx);
     } catch (err) {
         console.error(err);
     }
-    req.app.set("initiateSettlementResubmit", false);
     res.redirect("/show/epoch");
 }

@@ -5,27 +5,14 @@
         <link rel="stylesheet" href="/navbar.css">
         <link rel="stylesheet" href="/table.css">
         <link rel="stylesheet" href="/button.css">
-        <script type="text/javascript" scr="/navBar.js"></script>
+        <script scr="/navBar.js"></script>
+        <script src="/setGasPrice.js"></script>
     </head>
     <body>
         <%- include("partials/navbar") %>
         <% if (!transactionMined) { %>
             <form action="/initiateSettlement" method="post" enctype="application/x-www-form-urlencoded">
-                <div class="row">
-                    <table class="styled-table">
-                        <tr>
-                            <th>Manual Initiate Settlement</th>
-                        </tr>
-                        <tr>
-                            <td>Current Average Gas Price (Gwei)</td>
-                            <td><%= currentGasPrice %></td>
-                        </tr>
-                        <tr>
-                            <td>Set Gas Price (Gwei)</td>
-                            <td><input type="text" name="manualGasPrice" /></td>
-                        </tr>
-                    </table>
-                </div>
+                <%- include("partials/setGasPrice") %>
                 <input type="submit" class="button" name="manualInitiateSettlement" value="Initiate Settlement" />
             </form>
         <% } else { %>

@@ -200,7 +200,7 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     const settler = await getSettler();
     try {
         if (!transactionMined) {
-            let txResponse = await await resendTransaction(tx, manualGasPriceWei);
+            let txResponse = await resendTransaction(tx, manualGasPriceWei);
             req.app.set("settleTx", txResponse);
             req.app.set("settleOverride", true);
         }

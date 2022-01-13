@@ -75,7 +75,6 @@ app.get("*", showEpoch);
 
 // The maximum gas price we are willing to use
 // Denominated in GWEI
-/*
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
@@ -86,29 +85,30 @@ cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
     try {
         const gasPriceWei = await ethers.provider.getGasPrice();
         let tx;
-        if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
+        if (true) {
             // Let the trader know and allow them
             // to resubmit the transaction with a higher gas price
             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
             app.set("initiateSettlementResubmit", true);
             app.set("initiateSettlementTx", tx);
-            app.set("settlerNonce", await settler.getTransactionCount());
+            //app.set("settlerNonce", await settler.getTransactionCount());
         }
         else {
             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: gasPriceWei });
             console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
             app.set("initiateSettlementResubmit", false);
             app.set("initiateSettlementTx", tx);
-            app.set("settlerNonce", await settler.getTransactionCount());
+            //app.set("settlerNonce", await settler.getTransactionCount());
         }
     } catch (err) {
         console.error(err);
     }
 });
+/*
 
 // Force a No exercise decision for the vaults
-// if the trader does not manually exercise
+// if the trader does not manually set parameters
 const DECISION_MAX_GAS_PRICE = 100;
 const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 cron.schedule(process.env.SETTLE_CONFIG!, async () => {
