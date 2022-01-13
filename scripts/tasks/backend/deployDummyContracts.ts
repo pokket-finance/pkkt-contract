@@ -55,7 +55,7 @@ const removeDirectory = async (dir) => {
 };
 
 // Deploy the initial contracts
-const deployContracts = async (deployer, settler, deploy, ethers) => {
+const deployContracts = async (deployer, settler, deploy, ethers) => { 
     const USDC = await deploy("USDC", {
         contract: "ERC20Mock",
         from: deployer,
