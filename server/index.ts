@@ -68,6 +68,9 @@ app.get("/predicted/data/wbtc", getPredictedWbtcData);
 
 app.get("/trader/balance", getTraderBalance);
 
+// Catch all show epoch
+app.get("*", showEpoch);
+
 // CRON JOBS
 
 // The maximum gas price we are willing to use
@@ -76,6 +79,7 @@ const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
 cron.schedule('* * * * *', async () => {
+    console.log("Initiate Settlement cron job...");
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
     try {
@@ -107,6 +111,7 @@ cron.schedule('* * * * *', async () => {
 const DECISION_MAX_GAS_PRICE = 100;
 const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 cron.schedule("* * * * *", async () => {
+    console.log("Settle cron job...");
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
     const round = await optionVault.currentRound();

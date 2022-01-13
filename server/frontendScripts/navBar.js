@@ -30,6 +30,7 @@ window.addEventListener("load", () => {
         traderBalanceNav.classList.add("active");
     }
     else {
-    
+        let showEpochNav = document.getElementsByClassName("showEpochNav")[0];
+        showEpochNav.classList.add("active");
     }
 });
