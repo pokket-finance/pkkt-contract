@@ -12,18 +12,25 @@ import {
 import { getDeployedContractHelper } from "./utilities";
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 
-const main = async ({ target }, { ethers, deployments}) => {
+const main = async ({ target }, { network, ethers, deployments}) => {
     // The first two signers are the deployer and settler so we ignore them
     const [deployer] = await ethers.getSigners();
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
     const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
     await usdc.transfer(target, BigNumber.from(1000000).mul(USDC_MULTIPLIER)); 
+    console.log("Send 1000000 usdc to " + target);
     await wbtc.transfer(target, BigNumber.from(10).mul(WBTC_MULTIPLIER));
-    
-    await deployer.sendTransaction({
-        to: target,
-        value: ethers.utils.parseEther("100.0")
-    }) ;
+    console.log("Send 10 wbtc to " + target);
+     
+     if (network.name === "hardhat")
+     {
+        await deployer.sendTransaction({
+            to: target,
+            value: ethers.utils.parseEther("100.0")
+        }) ;
+        console.log("Send 100 eth to " + target);
+     }
+
      
 }
 

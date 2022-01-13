@@ -45,7 +45,7 @@ const main = async ({
         ],
     });
     
-    console.log(`Deployed USDC at ${WBTC.address} on ${network.name}`);
+    console.log(`Deployed WBTC at ${WBTC.address} on ${network.name}`);
     wbtcAddress = WBTC.address;
 
  }
