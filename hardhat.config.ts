@@ -40,7 +40,7 @@ dotenv.config();
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+      accounts:[`0x${process.env.MAINNET_DEPLOYER_PRIVATE_KEY}`,`0x${process.env.MAINNET_SETTLER_PRIVATE_KEY}`],
     },
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,

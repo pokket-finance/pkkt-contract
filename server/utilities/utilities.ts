@@ -6,7 +6,8 @@ import axios from "axios";
 import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
 
 import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
-
+import * as dotenv from "dotenv";  
+  
 // type OptionState = {
 //         round: BigNumber;
 //         totalAmount: BigNumber;
@@ -171,7 +172,7 @@ export async function getSettler(): Promise<SignerWithAddress> {
 
 export function getSettlerWallet(): Wallet {
     // TODO abstract this for the settler
-    const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+    const privateKey = "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
     return new ethers.Wallet(privateKey);
 }
 
