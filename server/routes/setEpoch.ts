@@ -29,7 +29,7 @@ import {
 import { PKKTHodlBoosterOption } from "../../typechain";
 import { packOptionParameter } from "../../test/utilities/optionPair";
 
-export async function getSetEpoch (req: Request, res: Response) {
+export async function getSetEpoch (req: Request, res: Response) { 
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
     const settler = await getSettler()
@@ -43,13 +43,13 @@ export async function getSetEpoch (req: Request, res: Response) {
     let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
 
     let setEpochGasEstimate;
-    try {
+    try { 
         setEpochGasEstimate = await optionVault.connect(settler as Signer).estimateGas.setOptionParameters([
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER)
-        ]);
+        ]); 
         req.app.set("setEpochGasEstimate", setEpochGasEstimate)
     } catch (err) {
         setEpochGasEstimate = req.app.get("setEpochGasEstimate");

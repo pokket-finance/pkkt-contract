@@ -9,6 +9,10 @@ const main = async ({
   deployments,
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
+  if (process.env.ONLY_HODLBOOSTER){
+      console.log("skip Deploying PKKTToken");
+      return;
+  }
   const { deploy } = deployments;
   console.log("01 - Deploying PKKTFarm on", network.name);
 

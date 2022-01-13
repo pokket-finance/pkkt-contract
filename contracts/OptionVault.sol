@@ -404,6 +404,18 @@ abstract contract OptionVault is
         assetSubData.leftOverAmount = 0;
     }
 
+    function batchWithdrawAssets(address _trader, address[] memory _assets) external override {
+        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        uint256 count = _assets.length;
+        for(uint256 i = 0; i < count; i++) {
+            StructureData.AssetData storage assetSubData = assetData[_assets[i]];
+            require(assetSubData.leftOverAmount > 0); 
+            uint128 balance = uint128(assetSubData.leftOverAmount);
+            OptionLifecycle.withdraw(_trader, uint256(balance), _assets[i]);
+            assetSubData.traderWithdrawn = balance;
+            assetSubData.leftOverAmount = 0;
+        }  
+    }
     function balanceEnough(address _asset) public view override returns (bool) {
         StructureData.AssetData storage assetSubData = assetData[_asset];
         int128 balance = assetSubData.leftOverAmount;

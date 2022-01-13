@@ -2,6 +2,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { PKKTTOKEN_BYTECODE } from "../../constants/constants";
 import PKKTTOKEN_ABI from "../../constants/abis/PKKTToken.json";
 import * as dotenv from "dotenv";  
+import { env } from "process";
 dotenv.config();  
 
 const main = async ({
@@ -9,6 +10,10 @@ const main = async ({
   deployments,
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
+  if (process.env.ONLY_HODLBOOSTER){
+      console.log("skip Deploying PKKTToken");
+      return;
+  }
   const { deploy } = deployments;
   console.log("00 - Deploying PKKTToken on", network.name);
 
