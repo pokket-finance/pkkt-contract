@@ -32,23 +32,39 @@ export async function showEpoch(req: Request, res: Response) {
     let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
     let predictedWbtcOption = getPredictedOptionData(req.app, "predictedWbtcOption");
     
-    // Get contract option data to display
-    const [
-        ethCallOptionState,
-        ethPutOptionState,
-        wbtcCallOptionState,
-        wbtcPutOptionState] = await getOptionStateData(optionVault, round);
-    const ethOption = {
-        callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-        putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
-        callPremium: ethCallOptionState.premiumRate / RATIO_MULTIPLIER,
-        putPremium: ethPutOptionState.premiumRate / RATIO_MULTIPLIER
+    let ethOption = {
+        callStrike: BigNumber.from(0),
+        putStrike: BigNumber.from(0),
+        callPremium: 0,
+        putPremium: 0
+    };
+    let wbtcOption = {
+        callStrike: BigNumber.from(0),
+        putStrike: BigNumber.from(0),
+        callPremium: 0,
+        putPremium: 0
     }
-    const wbtcOption = {
-        callStrike: wbtcCallOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-        putStrike: wbtcPutOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
-        callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
-        putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
+    try {
+        // Get contract option data to display
+        const [
+            ethCallOptionState,
+            ethPutOptionState,
+            wbtcCallOptionState,
+            wbtcPutOptionState] = await getOptionStateData(optionVault, round);
+        ethOption = {
+            callStrike: ethCallOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
+            putStrike: ethPutOptionState.strikePrice.div(10 ** ETH_PRICE_PRECISION),
+            callPremium: ethCallOptionState.premiumRate / RATIO_MULTIPLIER,
+            putPremium: ethPutOptionState.premiumRate / RATIO_MULTIPLIER
+        }
+        wbtcOption = {
+            callStrike: wbtcCallOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
+            putStrike: wbtcPutOptionState.strikePrice.div(10 ** WBTC_PRICE_PRECISION),
+            callPremium: wbtcCallOptionState.premiumRate / RATIO_MULTIPLIER,
+            putPremium: wbtcPutOptionState.premiumRate / RATIO_MULTIPLIER
+        }
+    } catch (err) {
+        console.error(err);
     }
 
     //const initiateSettlementResubmit = settlementResubmit(req.app);

@@ -78,8 +78,7 @@ app.get("*", showEpoch);
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
-/*
-cron.schedule('* * * * *', async () => {
+cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
     console.log("Initiate Settlement cron job...");
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
@@ -111,7 +110,7 @@ cron.schedule('* * * * *', async () => {
 // if the trader does not manually exercise
 const DECISION_MAX_GAS_PRICE = 100;
 const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
-cron.schedule("* * * * *", async () => {
+cron.schedule(process.env.SETTLE_CONFIG!, async () => {
     console.log("Settle cron job...");
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
     const settler = await getSettler();
@@ -136,16 +135,15 @@ cron.schedule("* * * * *", async () => {
         console.log(settleDecision);
         try {
             tx = await optionVault.connect(settler as Signer).settle(settleDecision, { gasPrice: gasPriceWei });
+            app.set("settleDecisions", [OptionExecution.NoExecution, OptionExecution.NoExecution]);
             app.set("settleOverride", false);
             app.set("settleTx", tx);
         } catch (err) {
             console.error(err);
         }
     }
-}, {
-    timezone: "Asia/Shanghai"
 });
-*/
+
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
 //     const response = await axios.post(url, {
