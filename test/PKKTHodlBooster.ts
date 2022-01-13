@@ -59,7 +59,7 @@ describe.only("PKKT Hodl Booster", async function () {
             [
               "USDTToken",
               "USDT",
-              BigNumber.from(10000000).mul(USDTMultiplier),
+              BigNumber.from(100000000).mul(USDTMultiplier),
               USDT_DECIMALS
             ]
           ) as ERC20Mock;
@@ -69,7 +69,7 @@ describe.only("PKKT Hodl Booster", async function () {
             [
               "Wrapped BTC",
               "WBTC",
-              BigNumber.from(100).mul(WBTCMultiplier),
+              BigNumber.from(1000).mul(WBTCMultiplier),
               WBTC_DECIMALS
             ]
           ) as ERC20Mock;
@@ -146,21 +146,21 @@ describe.only("PKKT Hodl Booster", async function () {
           counterPartyAssetAmountDecimals: wbtcOption.depositAssetAmountDecimals
        }); 
 
-          await usdt.transfer(alice.address,  BigNumber.from(1000000).mul(USDTMultiplier));
-          await usdt.transfer(bob.address,  BigNumber.from(1000000).mul(USDTMultiplier));
-          await usdt.transfer(carol.address,  BigNumber.from(1000000).mul(USDTMultiplier));
-          await usdt.transfer(trader.address,  BigNumber.from(1000000).mul(USDTMultiplier));
+          await usdt.transfer(alice.address,  BigNumber.from(10000000).mul(USDTMultiplier));
+          await usdt.transfer(bob.address,  BigNumber.from(10000000).mul(USDTMultiplier));
+          await usdt.transfer(carol.address,  BigNumber.from(10000000).mul(USDTMultiplier));
+          await usdt.transfer(trader.address,  BigNumber.from(10000000).mul(USDTMultiplier));
 
-          await wbtc.transfer(alice.address,  BigNumber.from(10).mul(WBTCMultiplier));
-          await wbtc.transfer(bob.address,  BigNumber.from(10).mul(WBTCMultiplier));
-          await wbtc.transfer(carol.address,  BigNumber.from(10).mul(WBTCMultiplier));  
-          await wbtc.connect(alice as Signer).approve(vault.address, BigNumber.from(10).mul(WBTCMultiplier));   
-          await wbtc.connect(bob as Signer).approve(vault.address, BigNumber.from(10).mul(WBTCMultiplier)); 
-          await wbtc.connect(carol as Signer).approve(vault.address, BigNumber.from(10).mul(WBTCMultiplier)); 
+          await wbtc.transfer(alice.address,  BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.transfer(bob.address,  BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.transfer(carol.address,  BigNumber.from(100).mul(WBTCMultiplier));  
+          await wbtc.connect(alice as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));   
+          await wbtc.connect(bob as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier)); 
+          await wbtc.connect(carol as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier)); 
           
-          await usdt.connect(alice as Signer).approve(vault.address, BigNumber.from(1000000).mul(USDTMultiplier));   
-          await usdt.connect(bob as Signer).approve(vault.address, BigNumber.from(1000000).mul(USDTMultiplier)); 
-          await usdt.connect(carol as Signer).approve(vault.address, BigNumber.from(1000000).mul(USDTMultiplier));  
+          await usdt.connect(alice as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));   
+          await usdt.connect(bob as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier)); 
+          await usdt.connect(carol as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));  
 
         });
 
@@ -475,7 +475,8 @@ describe.only("PKKT Hodl Booster", async function () {
            assert.equal(btcEnough, result2[1].assetBalance.gte(0));
            var usdtEnough = await vault.balanceEnough(usdt.address);
            assert.equal(usdtEnough, result2[2].assetBalance.gte(0));
-           if (!ethEnough) {
+
+           if (!ethEnough) { 
               await trader.sendTransaction({
                 to: vault.address,
                 value: -result2[0].assetBalance, 
@@ -483,6 +484,7 @@ describe.only("PKKT Hodl Booster", async function () {
               console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
            }
            if (!btcEnough){
+              
               await wbtc.connect(trader as Signer).transfer(vault.address, -result2[1].assetBalance);
               console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
            }
@@ -524,10 +526,87 @@ describe.only("PKKT Hodl Booster", async function () {
           /* open round 5*/
           await vault.connect(settler as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
-          
-          //await renderTVL(false);
-          //await renderExecutionPlans();
+          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+          await renderCashFlow(OptionExecution.NoExecution, OptionExecution.NoExecution);
+          await vault.connect(settler as Signer).setOptionParameters([
 
+            packOptionParameter(ethPrice*1.03, 0.01 * RatioMultipler), 
+            packOptionParameter(ethPrice*0.97, 0.01 * RatioMultipler), 
+            packOptionParameter(btcPrice*1.03, 0.01 * RatioMultipler), 
+            packOptionParameter(btcPrice* 0.97, 0.01 * RatioMultipler)
+            ]); 
+
+          await vault.connect(alice as Signer).depositETH(optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(20).mul(ETHMultiplier)});
+
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(5).mul(WBTCMultiplier));
+          await vault.connect(carol as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(10).mul(WBTCMultiplier));
+          
+          await vault.connect(bob as Signer).deposit(optionPairs[ETHUSDTOPTION].putOptionId, BigNumber.from(40000).mul(USDTMultiplier));
+          await vault.connect(carol as Signer).deposit(optionPairs[ETHUSDTOPTION].putOptionId, BigNumber.from(20000).mul(USDTMultiplier));
+          
+          await vault.connect(bob as Signer).deposit(optionPairs[WBTCUSDTOPTION].putOptionId, BigNumber.from(50000).mul(USDTMultiplier));
+
+          
+          /* open round 6*/
+          await vault.connect(settler as Signer).initiateSettlement();   
+          console.log(`Open Round ${await vault.currentRound()}` );
+          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+          await renderCashFlow(OptionExecution.NoExecution, OptionExecution.NoExecution);
+          await vault.connect(settler as Signer).setOptionParameters([
+
+            packOptionParameter(ethPrice*1.03, 0.01 * RatioMultipler), 
+            packOptionParameter(ethPrice*0.97, 0.01 * RatioMultipler), 
+            packOptionParameter(btcPrice*1.03, 0.01 * RatioMultipler), 
+            packOptionParameter(btcPrice* 0.97, 0.01 * RatioMultipler)
+            ]); 
+ 
+          let assets: string[];
+          let beforeBalances: BigNumber[];
+          let movables: BigNumber[];
+          assets = [];
+          beforeBalances = [];
+          movables = [];
+          var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address); 
+          var diff = wbtcResult.leftOverAmount.add(wbtcResult.newDepositAmount).sub(wbtcResult.newReleasedAmount);
+          if (diff.gt(0)){
+            assets.push(wbtc.address);
+            beforeBalances.push(await wbtc.balanceOf(trader.address));
+            movables.push(diff);
+          }
+          var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(NULL_ADDRESS); 
+          var diff2 = ethResult.leftOverAmount.add(ethResult.newDepositAmount).sub(ethResult.newReleasedAmount);
+          if (diff2.gt(0)){
+            assets.push(NULL_ADDRESS);
+            beforeBalances.push(await trader.getBalance());
+            movables.push(diff2);
+           
+          }
+          var usdtResult = await vault.connect(settler as Signer).settlementCashflowResult(usdt.address); 
+          var diff3 = usdtResult.leftOverAmount.add(usdtResult.newDepositAmount).sub(usdtResult.newReleasedAmount);
+          if (diff3.gt(0)){
+            assets.push(usdt.address);
+            beforeBalances.push(await usdt.balanceOf(trader.address));
+            movables.push(diff3);
+          }
+          if (assets.length > 0){ 
+            await vault.connect(settler as Signer).batchWithdrawAssets(trader.address, assets);
+            for(var i = 0; i < assets.length; i++){
+              var asset = assets[i];
+              console.log("withdraw assets for ", names[asset]);
+              var newBalance = asset == NULL_ADDRESS ? 
+              await trader.getBalance() : 
+              ( 
+                asset == usdt.address ? 
+                await usdt.balanceOf(trader.address):
+                await wbtc.balanceOf(trader.address)
+              );
+
+              var diff = newBalance.sub(beforeBalances[i]);
+              assert.equal(diff.toString(), movables[i].toString());
+                 
+            }
+          }
+           
 
 
         });
