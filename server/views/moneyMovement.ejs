@@ -50,6 +50,13 @@
                         <td class="usdcRequired" data-vault-address="<%= vaultAddress %>"><%= usdcData.required %></td>
                     </tr>
                 </table>
+                <% if (ethData.leftover < 0 || wbtcData.leftover < 0 || usdcData.leftover < 0) { %>
+                    <table class="styled-table">
+                        <tr>
+                            <td>Send funds back to vault: <%= vaultAddress %></td>
+                        </tr>
+                    </table>
+                <% } %>
                 <% if (canWithdraw) { %>
                     <%- include("partials/setGasPrice") %>
                     <input type="submit" class="button" value="Withdraw Assets" />

@@ -69,7 +69,7 @@ async function main({ command }, { ethers, deployments }) {
     else if (command == 2) {
         // await optionVault.connect(settler as Signer).initiateSettlement();
         
-        // // await deposits();
+        //await deposits();
 
         // await optionVault.connect(alice as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(5).mul(ETH_MULTIPLIER)});
         // await optionVault.connect(alice as Signer).deposit(WBTCCALLOPTION, BigNumber.from(2).mul(WBTC_MULTIPLIER));
@@ -95,6 +95,7 @@ async function main({ command }, { ethers, deployments }) {
 
         // /* open round 3*/
         // await optionVault.connect(settler as Signer).initiateSettlement();
+        
         var balance = await optionVault.connect(alice as Signer).getAccountBalance(ETHCALLOPTION);
         await optionVault.connect(alice as Signer).initiateWithraw(
             ETHCALLOPTION, 

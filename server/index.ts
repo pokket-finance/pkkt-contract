@@ -93,15 +93,16 @@ cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
             // to resubmit the transaction with a higher gas price
             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
-            app.set("initiateSettlementResubmit", true);
         }
         else {
             tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: gasPriceWei });
             console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
-            app.set("initiateSettlementResubmit", false);
+            //app.set("initiateSettlementResubmit", false);
         }
+        app.set("initiateSettlementResubmit", true);
         app.set("initiateSettlementTx", tx);
         ethers.provider.once(tx.hash, async (transaction) => {
+            app.set("initiateSettlementResubmit", false);
             let info = await transporter.sendMail({
                 from: '"SERVER" test@account',
                 to: "matt.auer@pokket.com",
@@ -118,51 +119,51 @@ cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
 
 // Force a No exercise decision for the vaults
 // if the trader does not manually set parameters
-// const DECISION_MAX_GAS_PRICE = 100;
-// const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
-// cron.schedule(process.env.SETTLE_CONFIG!, async () => {
-//     console.log("Settle cron job...");
-//     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-//     const settler = await getSettler();
-//     const round = await optionVault.currentRound();
-//     const canSettleVault = await canSettle(optionVault);
-//     // Force Settlement
-//     let tx;
-//     let settleDecision = app.get("settleDecisions");
-//     if (settleDecision === undefined) {
-//         settleDecision = {};
-//         settleDecision = [OptionExecution.NoExecution, OptionExecution.NoExecution];
-//     }
-//     let settleOverride = app.get("settleOverride");
-//     if (settleOverride === undefined) {
-//         settleOverride = false;
-//     }
-//     if (canSettleVault && !settleOverride) {
-//         let gasPriceWei = await ethers.provider.getGasPrice();
-//         if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
-//             gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
-//         }
-//         console.log(settleDecision);
-//         try {
-//             tx = await optionVault.connect(settler as Signer).settle(settleDecision, { gasPrice: gasPriceWei });
-//             ethers.provider.once(tx.hash, async (transaction) => {
-//                 let info = await transporter.sendMail({
-//                     from: '"SERVER" test@account',
-//                     to: "matt.auer@pokket.com",
-//                     subject: "Exercise Decision Confirmation",
-//                     text: "The ExerciseDecision transaction has been confirmed on the blockchain"
-//                 });
-//                 console.log("Message send: %s", info.messageId);
-//                 console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-//             });
-//             app.set("settleDecisions", [OptionExecution.NoExecution, OptionExecution.NoExecution]);
-//             app.set("settleOverride", false);
-//             app.set("settleTx", tx);
-//         } catch (err) {
-//             console.error(err);
-//         }
-//     }
-// });
+const DECISION_MAX_GAS_PRICE = 100;
+const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
+cron.schedule(process.env.SETTLE_CONFIG!, async () => {
+    console.log("Settle cron job...");
+    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const settler = await getSettler();
+    const round = await optionVault.currentRound();
+    const canSettleVault = await canSettle(optionVault);
+    // Force Settlement
+    let tx;
+    let settleDecision = app.get("settleDecisions");
+    if (settleDecision === undefined) {
+        settleDecision = {};
+        settleDecision = [OptionExecution.NoExecution, OptionExecution.NoExecution];
+    }
+    let settleOverride = app.get("settleOverride");
+    if (settleOverride === undefined) {
+        settleOverride = false;
+    }
+    if (canSettleVault && !settleOverride) {
+        let gasPriceWei = await ethers.provider.getGasPrice();
+        if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
+            gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
+        }
+        console.log(settleDecision);
+        try {
+            tx = await optionVault.connect(settler as Signer).settle(settleDecision, { gasPrice: gasPriceWei });
+            ethers.provider.once(tx.hash, async (transaction) => {
+                let info = await transporter.sendMail({
+                    from: '"SERVER" test@account',
+                    to: "matt.auer@pokket.com",
+                    subject: "Exercise Decision Confirmation",
+                    text: "The ExerciseDecision transaction has been confirmed on the blockchain"
+                });
+                console.log("Message send: %s", info.messageId);
+                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            });
+            app.set("settleDecisions", [OptionExecution.NoExecution, OptionExecution.NoExecution]);
+            app.set("settleOverride", false);
+            app.set("settleTx", tx);
+        } catch (err) {
+            console.error(err);
+        }
+    }
+});
 
 
 // app.get("/graph", async (req, res) => {

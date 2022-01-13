@@ -233,13 +233,13 @@ export async function postSetOptionDecision(req: Request, res: Response) {
  * @returns option execution decision
  */
  function getExecutionStatus(executionDecision: String): OptionExecution {
-    if (executionDecision == "noExercise"){
-        return OptionExecution.NoExecution
+    if (executionDecision == "exercisePut"){
+        return OptionExecution.ExecutePut
     }
     else if (executionDecision == "exerciseCall") {
         return OptionExecution.ExecuteCall;
     }
-    return OptionExecution.ExecutePut;
+    return OptionExecution.NoExecution;
 }
 
 // TODO Move this type declaration somewhere else
