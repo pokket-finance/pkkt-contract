@@ -170,9 +170,13 @@ export async function getSettler(): Promise<SignerWithAddress> {
     return await ethers.getSigner(settler);
 }
 
-export function getSettlerWallet(): Wallet {
+export async function getSettlerWallet(): Promise<Wallet> {
     // TODO abstract this for the settler
-    const privateKey = "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
+    var network = await ethers.provider.getNetwork();
+    
+    const privateKey =  network.name == "ropsten" ? 
+    "0x" + process.env.ROPSTEN_SETTLER_PRIVATE_KEY:
+    "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
     return new ethers.Wallet(privateKey);
 }
 
@@ -282,7 +286,7 @@ export async function getTransactionInformation(tx) {
 }
 
 export async function resendTransaction(tx, manualGasPriceWei) {
-    const settlerWallet = getSettlerWallet();
+    const settlerWallet = await getSettlerWallet();
     let unsignedTx = {
         gasPrice: manualGasPriceWei,
         gasLimit: tx.gasLimit,
