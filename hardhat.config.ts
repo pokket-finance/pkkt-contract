@@ -58,12 +58,12 @@ dotenv.config();
     deployer: {
       default: 0,
       1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
-      3: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329", //ropsten
+      3: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B", //ropsten
       4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     settler: {
       default: 1,
-      3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
+      3: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4",
       4: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4"
     },
     alice: {
@@ -83,7 +83,7 @@ dotenv.config();
     trader: { 
       default: 4,
       1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
-      3: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
+      3: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4",
       4: "0x88ad553a4793f91E9b36BBee418f0A497E9bBF6D"
     }
   },

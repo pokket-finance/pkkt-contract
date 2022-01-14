@@ -1,0 +1,18 @@
+{
+    "data": [
+        {
+            "callStrike": "3600",
+            "putStrike": "3200",
+            "callPremium": 0.01,
+            "putPremium": 0.02,
+            "pairId": 0
+        },
+        {
+            "callStrike": "50000",
+            "putStrike": "45000",
+            "callPremium": 0.02,
+            "putPremium": 0.03,
+            "pairId": 1
+        }
+    ]
+}

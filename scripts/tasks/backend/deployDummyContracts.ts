@@ -37,7 +37,7 @@ const main = async ({ fresh, init, initbackend }, { network, ethers, deployments
 
     if (initbackend) {
         await initializeUsers([], { ethers, deployments, getNamedAccounts });
-        await generateOptionData({ command: initbackend }, { ethers, deployments });
+        await generateOptionData({ command: initbackend }, { ethers, deployments, getNamedAccounts });
     }
     // For testing stalled transactions
     // await network.provider.send("evm_setAutomine", [false]);

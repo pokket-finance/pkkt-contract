@@ -85,7 +85,7 @@ const main = async ({
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);    
 
 };
-main.tags = ["PKKTHodlBoosterCallOption"];
+main.tags = ["PKKTHodlBoosterOption"];
 
 export default main;
 

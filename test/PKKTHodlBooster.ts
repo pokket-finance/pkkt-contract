@@ -509,7 +509,6 @@ describe.only("PKKT Hodl Booster", async function () {
             var option = optionSettings[i];
             for(var j = 0; j < accounts.length; j++) {
               var account = accounts[j];
-
               var accountBalance = await vault.connect(account.account as Signer).getAccountBalance(option.optionId); 
               if (accountBalance.releasedDepositAssetAmount.gt(0)) { 
                 await vault.connect(account.account as Signer).withdraw(option.optionId, accountBalance.releasedDepositAssetAmount, option.depositAsset);
