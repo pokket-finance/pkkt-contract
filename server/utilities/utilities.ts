@@ -5,10 +5,20 @@ import axios from "axios";
 import nodemailer from "nodemailer";
 
 import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
+ 
+import { OptionVault, PKKTHodlBoosterOption } from "../../typechain"; 
 
-import { OptionVault, PKKTHodlBoosterOption } from "../../typechain";
-import * as dotenv from "dotenv";  
-  
+export type PredictedData = { 
+    pairId: number,
+    callStrike: number,
+    putStrike: number,
+    callPremium: number,
+    putPremium: number
+};
+
+export type PredictedDataArray = {
+    data: PredictedData[]
+};
 // type OptionState = {
 //         round: BigNumber;
 //         totalAmount: BigNumber;
@@ -35,7 +45,13 @@ export async function initializeEmailer() {
     });
 }
 
+export let predictedDataDb;
 
+export async function initializePredictedData() {
+    
+    const JSONdb = require('simple-json-db');
+    predictedDataDb = new JSONdb('predictedData.json');
+}
 
 /**
  * Retrieves the contract from deployments
@@ -268,14 +284,16 @@ export async function isTransactionMined(tx): Promise<boolean> {
     return false;
 }
 
-export function getPredictedOptionData(app, dataName: string) {
-    let predictedOptionData = app.get(dataName);
-    if (predictedOptionData === undefined) {
+export function getPredictedOptionData(app, optionId: number) { 
+    var data = predictedDataDb.JSON(); 
+    let predictedOptionData =  data?.data?.find(d=>d.pairId == optionId); 
+    if (!predictedOptionData) {
         predictedOptionData = {
             callStrike: 0,
             putStrike: 0,
             callPremium: 0,
-            putPremium: 0
+            putPremium: 0,
+            pairId: optionId  
         }
     }
     return predictedOptionData;

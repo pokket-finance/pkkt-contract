@@ -4,7 +4,9 @@ import { Request, Response } from "express";
 import {
     ETH_PRICE_PRECISION,
     RATIO_MULTIPLIER,
-    WBTC_PRICE_PRECISION
+    WBTC_PRICE_PRECISION,
+    ETH_USDC_OPTION_ID,
+    WBTC_USDC_OPTION_ID
 } from "../../constants/constants";
 import { PKKTHodlBoosterOption } from "../../typechain";
 import {
@@ -17,7 +19,8 @@ import {
     canShowInitiateSettlement,
     getPredictedOptionData
 } from "../utilities/utilities";
-import { getPredictedEthData } from "./predictedData";
+import { getPredictedEthData } from "./predictedData"; 
+
 
 // /show/epoch route
 export async function showEpoch(req: Request, res: Response) {
@@ -29,8 +32,8 @@ export async function showEpoch(req: Request, res: Response) {
     if (round === 0) {
         optionRound = 0;
     }
-    let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
-    let predictedWbtcOption = getPredictedOptionData(req.app, "predictedWbtcOption");
+    let predictedEthOption = getPredictedOptionData(req.app, ETH_USDC_OPTION_ID);
+    let predictedWbtcOption = getPredictedOptionData(req.app, WBTC_USDC_OPTION_ID);
     
     let ethOption = {
         callStrike: BigNumber.from(0),

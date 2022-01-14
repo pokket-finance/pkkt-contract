@@ -13,6 +13,7 @@ import {
     setSettlementParameters,
     getSettler,
     initializeEmailer,
+    initializePredictedData,
     transporter
 } from "./utilities/utilities";
 import {
@@ -188,5 +189,6 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
 // Start the express server
 app.listen(port, async () => {
     console.log(`server is listening on ${port}`);
+    await initializePredictedData();
     await initializeEmailer();
 });

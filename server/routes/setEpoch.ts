@@ -17,7 +17,9 @@ import {
     getSettlerWallet,
     resendTransaction,
     transporter,
-    getMoneyMovementData
+    getMoneyMovementData,
+    getPredictedOptionData,
+    predictedDataDb, 
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -29,22 +31,23 @@ import {
     WBTC_DECIMALS,
     USDC_DECIMALS,
     NULL_ADDRESS
-} from "../../constants/constants";
+} from "../../constants/constants"; 
 import { PKKTHodlBoosterOption } from "../../typechain";
 import { packOptionParameter } from "../../test/utilities/optionPair";
-
+import { dataSource } from "@graphprotocol/graph-ts";
+ 
 export async function getSetEpoch (req: Request, res: Response) { 
     const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
 
-    const settler = await getSettler()
+    const settler = await getSettler();
     const round = await optionVault.currentRound();
     let areOptionParametersSet = await areOptionParamsSet(round);
     const underSettlement = await canSettle(optionVault);
     if (underSettlement) {
         areOptionParametersSet = true;
     }
-    let predictedEthOption = getPredictedOptionData(req.app, "predictedEthOption");
-    let predictedWbtcOption = getPredictedOptionData(req.app , "predictedWbtcOption");
+    let predictedEthOption = getPredictedOptionData(req.app, ETH_USDC_OPTION_ID);
+    let predictedWbtcOption = getPredictedOptionData(req.app , WBTC_USDC_OPTION_ID);
 
     let setEpochGasEstimate;
     try { 
@@ -57,7 +60,7 @@ export async function getSetEpoch (req: Request, res: Response) {
         req.app.set("setEpochGasEstimate", setEpochGasEstimate)
     } catch (err) {
         setEpochGasEstimate = req.app.get("setEpochGasEstimate");
-    }
+    } 
 
     const success = req.params.success;
     const tx = req.app.get("setEpochTx");
@@ -97,7 +100,7 @@ export async function getSetEpoch (req: Request, res: Response) {
             predictedWbtcOption,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
-            gasEstimate: setEpochGasEstimate,
+            //gasEstimate: setEpochGasEstimate,
             minimumGasPrice,
             transactionMined,
             recommendedGasPrice: gasPriceGwei, 
@@ -165,6 +168,7 @@ export async function postSetEpoch(req: Request, res: Response) {
 };
 
 export async function postSetPredictedEpoch(req: Request, res: Response) {
+     
     const ethCallPremium = parseFloat(req.body.predictedEthCallPremium);
     const ethPutPremium = parseFloat(req.body.predictedEthPutPremium);
     const wbtcCallPremium = parseFloat(req.body.predictedWbtcCallPremium);
@@ -172,34 +176,24 @@ export async function postSetPredictedEpoch(req: Request, res: Response) {
     const ethCallStrikePrice = req.body.predictedEthCallStrike;
     const ethPutStrikePrice = req.body.predictedEthPutStrike;
     const wbtcCallStrikePrice = req.body.predictedWbtcCallStrike;
-    const wbtcPutStrikePrice = req.body.predictedWbtcPutStrike;
+    const wbtcPutStrikePrice = req.body.predictedWbtcPutStrike; 
     const predictedEthOption = {
         callStrike: ethCallStrikePrice,
         putStrike: ethPutStrikePrice,
         callPremium: ethCallPremium,
-        putPremium: ethPutPremium
+        putPremium: ethPutPremium,
+        pairId: ETH_USDC_OPTION_ID, 
     }
     const predictedWbtcOption = {
         callStrike: wbtcCallStrikePrice,
         putStrike: wbtcPutStrikePrice,
         callPremium: wbtcCallPremium,
-        putPremium: wbtcPutPremium
-    }
-
-    req.app.set("predictedEthOption", predictedEthOption);
-    req.app.set("predictedWbtcOption", predictedWbtcOption);
+        putPremium: wbtcPutPremium,
+        pairId: WBTC_USDC_OPTION_ID, 
+    } 
+    predictedDataDb.JSON({ data:[predictedEthOption, predictedWbtcOption] })
+    predictedDataDb.sync();
     res.redirect("/set/epoch:true");
 }
 
-function getPredictedOptionData(app, dataName: string) {
-    let predictedOptionData = app.get(dataName);
-    if (predictedOptionData === undefined) {
-        predictedOptionData = {
-            callStrike: 0,
-            putStrike: 0,
-            callPremium: 0,
-            putPremium: 0
-        }
-    }
-    return predictedOptionData;
-}
+ 
