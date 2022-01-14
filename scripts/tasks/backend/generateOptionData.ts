@@ -45,12 +45,16 @@ async function main({ command }, { ethers, deployments }) {
         packOptionParameter(btcPrice*0.95, 0.025 * RATIO_MULTIPLIER),
     ];
 
+    if (command == 20) {
+        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+    }
+
     // Set Option Parameters
     if (command == 1) {
         // round 1
+        await optionVault.connect(settler as Signer).initiateSettlement();
+        //
         //await optionVault.connect(settler as Signer).initiateSettlement();
-        //await deposits();
-       // await optionVault.connect(settler as Signer).initiateSettlement();
         // const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
         // const btcPrice = 50000 * (10**WBTC_PRICE_PRECISION);
         // //set the strikeprice and premium of user deposits collected in round 1
@@ -63,7 +67,7 @@ async function main({ command }, { ethers, deployments }) {
 
         // /* open round 3*/
         // await optionVault.connect(settler as Signer).initiateSettlement();
-        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+        //await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
     }
     // initiate settlement
     else if (command == 2) {

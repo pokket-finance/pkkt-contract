@@ -78,10 +78,10 @@ app.get("*", showEpoch);
 
 // The maximum gas price we are willing to use
 // Denominated in GWEI
-/*
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 // Schedule initiate settlement
+/*
 cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
     console.log("Initiate Settlement cron job...");
     const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
@@ -166,7 +166,6 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
     }
 });
 */
-
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
 //     const response = await axios.post(url, {
