@@ -69,26 +69,26 @@ export async function getMoneyMovement(req: Request, res: Response) {
         withdrawGasEstimate = req.app.get("withdrawGasEstimate");
         // Even though we withdraw the accounting result has not changed
         // Therefore we need to update the values for the frontend
-        if (transactionMined) {
-            if (parseFloat(usdcData.leftover) > 0) {
-                usdcData.leftover = "0";
-            }
-            if (parseFloat(usdcData.required) > 0){
-                usdcData.required = "0";
-            }
-            if (parseFloat(wbtcData.leftover) > 0) {
-                wbtcData.leftover = "0";
-            }
-            if (parseFloat(wbtcData.required) > 0) {
-                wbtcData.required = "0";
-            }
-            if (parseFloat(ethData.leftover) > 0) {
-                ethData.leftover = "0";
-            }
-            if (parseFloat(ethData.required) > 0) {
-                ethData.required = "0";
-            }
-        }
+        // if (transactionMined) {
+        //     if (parseFloat(usdcData.leftover) > 0) {
+        //         usdcData.leftover = "0";
+        //     }
+        //     if (parseFloat(usdcData.required) > 0){
+        //         usdcData.required = "0";
+        //     }
+        //     if (parseFloat(wbtcData.leftover) > 0) {
+        //         wbtcData.leftover = "0";
+        //     }
+        //     if (parseFloat(wbtcData.required) > 0) {
+        //         wbtcData.required = "0";
+        //     }
+        //     if (parseFloat(ethData.leftover) > 0) {
+        //         ethData.leftover = "0";
+        //     }
+        //     if (parseFloat(ethData.required) > 0) {
+        //         ethData.required = "0";
+        //     }
+        // }
     }
 
     

@@ -23,7 +23,9 @@ window.addEventListener("load", () => {
  function calculateTransaction() {
     let gasPriceElement = document.querySelector("input[name='manualGasPrice']");
     let gasPrice = parseFloat(gasPriceElement.value);
+    console.log(gasPrice);
     let gasEstimate = parseFloat(gasPriceElement.dataset.gasEstimate);
+    console.log(gasEstimate);
     let transactionPrice = gasPrice * gasEstimate / 10000000000;
     let costToWithdraw = document.querySelector(".transactionCost");
     costToWithdraw.innerHTML = transactionPrice;

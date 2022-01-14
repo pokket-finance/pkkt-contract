@@ -100,7 +100,7 @@ export async function getSetEpoch (req: Request, res: Response) {
             predictedWbtcOption,
             showInitiateSettlement: await canShowInitiateSettlement(req.app),
             success,
-            //gasEstimate: setEpochGasEstimate,
+            gasEstimate: setEpochGasEstimate,
             minimumGasPrice,
             transactionMined,
             recommendedGasPrice: gasPriceGwei, 
