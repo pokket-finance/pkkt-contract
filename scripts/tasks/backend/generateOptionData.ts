@@ -18,7 +18,7 @@ import {
     WBTC_USDC_OPTION_ID
 } from "../../../constants/constants";
 import { getDeployedContractHelper,packOptionParameter } from "./utilities";
-import { getSettler } from "../../../server/utilities/utilities";
+import { settlerWallet } from "../../../server/utilities/utilities";
 
 
 async function main({ command }, { ethers, deployments, getNamedAccounts }) {
@@ -52,7 +52,7 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
     ];
 
     if (command == 20) {
-        await optionVault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+        await optionVault.connect(settler as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.ExecuteCall]);
     }
 
     // 30000000000
