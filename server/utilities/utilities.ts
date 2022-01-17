@@ -1,5 +1,4 @@
 import { BigNumber, Contract, Signer, Wallet, ethers } from "ethers"; 
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"; 
 import axios from "axios";
 import nodemailer from "nodemailer";
 
@@ -52,7 +51,7 @@ export let predictedDataDb;
 export async function initializePredictedData() {
     
     const JSONdb = require('simple-json-db');
-    predictedDataDb = new JSONdb('predictedData.json');
+    predictedDataDb = new JSONdb('predictedData.json'); 
 }
 
 /**
@@ -220,11 +219,10 @@ export async function getOptionStateData(vault: PKKTHodlBoosterOption, round: nu
  */
  
 export let settlerWallet: ethers.Wallet;
-export function initializeSettlerWallet() {
+export function initializeSettlerWallet() { 
     // TODO abstract this for the settler
-    const provider = new ethers.providers.JsonRpcProvider(process.env.CHAIN_ID); 
-    
-    const privateKey =  provider.network.name == "ropsten" ? 
+    const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL, Number(process.env.CHAIN_ID));  
+    const privateKey =  provider.network.chainId == 3 ? 
         "0x" + process.env.ROPSTEN_SETTLER_PRIVATE_KEY:
         "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
     //const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";

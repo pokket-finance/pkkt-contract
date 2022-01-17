@@ -74,93 +74,97 @@ app.get("*", showEpoch);
 
 // CRON JOBS
 
-// The maximum gas price we are willing to use
-// Denominated in GWEI
-const MAX_GAS_PRICE = 16;
-const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
-// Schedule initiate settlement 
-cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
-    console.log("Initiate Settlement cron job...");
-    const vault = await getPKKTHodlBoosterOption() ;
-    const settler = settlerWallet;
-    try {
-        const gasPriceWei = await settlerWallet.provider.getGasPrice();
-        let tx;
-        if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
-            // Let the trader know and allow them
-            // to resubmit the transaction with a higher gas price
-            tx = await vault.initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
-            console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
-        }
-        else {
-            tx = await vault.initiateSettlement({ gasPrice: gasPriceWei });
-            console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
-            //app.set("initiateSettlementResubmit", false);
-        }
-        app.set("initiateSettlementResubmit", true);
-        app.set("initiateSettlementTx", tx);
-        settlerWallet.provider.once(tx.hash, async (transaction) => {
-            app.set("initiateSettlementResubmit", false);
-            let info = await transporter.sendMail({
-                from: '"SERVER" test@account',
-                to: "matt.auer@pokket.com",
-                subject: "Initiate Settlement Confirmation",
-                text: "The Initiate Settlement transaction has been confirmed on the blockchain"
-            });
-            console.log("Message send: %s", info.messageId);
-            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-        });
-    } catch (err) {
-        console.error(err);
-    }
-});
+if (process.env.ENABLE_CRON_JOB) {
 
-// Force a No exercise decision for the vaults
-// if the trader does not manually set parameters
-const DECISION_MAX_GAS_PRICE = 100;
-const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
-cron.schedule(process.env.SETTLE_CONFIG!, async () => {
-    console.log("Settle cron job...");
-    const optionVault = await getPKKTHodlBoosterOption(); 
-    const round = await optionVault.currentRound();
-    const canSettleVault = await canSettle(optionVault);
-    // Force Settlement
-    let tx;
-    let settleDecision = app.get("settleDecisions");
-    if (settleDecision === undefined) {
-        settleDecision = {};
-        settleDecision = [OptionExecution.NoExecution, OptionExecution.NoExecution];
-    }
-    let settleOverride = app.get("settleOverride");
-    if (settleOverride === undefined) {
-        settleOverride = false;
-    }
-    if (canSettleVault && !settleOverride) {
-        let gasPriceWei = await settlerWallet.provider.getGasPrice();
-        if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
-            gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
-        }
-        console.log(settleDecision);
+    // The maximum gas price we are willing to use
+    // Denominated in GWEI
+    const MAX_GAS_PRICE = 16;
+    const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
+    // Schedule initiate settlement 
+    cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
+        console.log("Initiate Settlement cron job...");
+        const vault = await getPKKTHodlBoosterOption() ;
+        const settler = settlerWallet;
         try {
-            tx = await optionVault.settle(settleDecision, { gasPrice: gasPriceWei });
+            const gasPriceWei = await settlerWallet.provider.getGasPrice();
+            let tx;
+            if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
+                // Let the trader know and allow them
+                // to resubmit the transaction with a higher gas price
+                tx = await vault.initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
+                console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
+            }
+            else {
+                tx = await vault.initiateSettlement({ gasPrice: gasPriceWei });
+                console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
+                //app.set("initiateSettlementResubmit", false);
+            }
+            app.set("initiateSettlementResubmit", true);
+            app.set("initiateSettlementTx", tx);
             settlerWallet.provider.once(tx.hash, async (transaction) => {
+                app.set("initiateSettlementResubmit", false);
                 let info = await transporter.sendMail({
                     from: '"SERVER" test@account',
                     to: "matt.auer@pokket.com",
-                    subject: "Exercise Decision Confirmation",
-                    text: "The ExerciseDecision transaction has been confirmed on the blockchain"
+                    subject: "Initiate Settlement Confirmation",
+                    text: "The Initiate Settlement transaction has been confirmed on the blockchain"
                 });
                 console.log("Message send: %s", info.messageId);
                 console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
             });
-            app.set("settleDecisions", [OptionExecution.NoExecution, OptionExecution.NoExecution]);
-            app.set("settleOverride", false);
-            app.set("settleTx", tx);
         } catch (err) {
             console.error(err);
         }
-    }
-}); 
+    });
+
+    // Force a No exercise decision for the vaults
+    // if the trader does not manually set parameters
+    const DECISION_MAX_GAS_PRICE = 100;
+    const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
+    cron.schedule(process.env.SETTLE_CONFIG!, async () => {
+        console.log("Settle cron job...");
+        const optionVault = await getPKKTHodlBoosterOption(); 
+        const round = await optionVault.currentRound();
+        const canSettleVault = await canSettle(optionVault);
+        // Force Settlement
+        let tx;
+        let settleDecision = app.get("settleDecisions");
+        if (settleDecision === undefined) {
+            settleDecision = {};
+            settleDecision = [OptionExecution.NoExecution, OptionExecution.NoExecution];
+        }
+        let settleOverride = app.get("settleOverride");
+        if (settleOverride === undefined) {
+            settleOverride = false;
+        }
+        if (canSettleVault && !settleOverride) {
+            let gasPriceWei = await settlerWallet.provider.getGasPrice();
+            if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
+                gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
+            }
+            console.log(settleDecision);
+            try {
+                tx = await optionVault.settle(settleDecision, { gasPrice: gasPriceWei });
+                settlerWallet.provider.once(tx.hash, async (transaction) => {
+                    let info = await transporter.sendMail({
+                        from: '"SERVER" test@account',
+                        to: "matt.auer@pokket.com",
+                        subject: "Exercise Decision Confirmation",
+                        text: "The ExerciseDecision transaction has been confirmed on the blockchain"
+                    });
+                    console.log("Message send: %s", info.messageId);
+                    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+                });
+                app.set("settleDecisions", [OptionExecution.NoExecution, OptionExecution.NoExecution]);
+                app.set("settleOverride", false);
+                app.set("settleTx", tx);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    }); 
+}
+
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
 //     const response = await axios.post(url, {
