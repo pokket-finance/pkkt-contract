@@ -1,7 +1,6 @@
 import express from "express";
-import path from "path";
-import { ethers, getNamedAccounts } from "hardhat";
-import { BigNumber, BigNumberish, Signer } from "ethers";
+import path from "path"; 
+import { BigNumber, BigNumberish, Signer, ethers } from "ethers";
 import cron from "node-cron";
 import nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
@@ -9,19 +8,17 @@ dotenv.config();
 
 import {
     canSettle,
-    getDeployedContractHelper,
+    getPKKTHodlBoosterOption,
     setSettlementParameters,
-    getSettler,
+    settlerWallet,
     initializeEmailer,
     initializePredictedData,
-    transporter
-} from "./utilities/utilities";
-import {
-    PKKTHodlBoosterOption
-} from "../typechain";
+    transporter,
+    initializeSettlerWallet
+} from "./utilities/utilities"; 
 import {
     OptionExecution,
-} from "../constants/constants";
+} from "./utilities/constants";
 
 const app = express();
 const port = 3001;
@@ -81,29 +78,28 @@ app.get("*", showEpoch);
 // Denominated in GWEI
 const MAX_GAS_PRICE = 16;
 const MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
-// Schedule initiate settlement
-/*
+// Schedule initiate settlement 
 cron.schedule(process.env.INITIATE_SETTLEMENT_CONFIG!, async () => {
     console.log("Initiate Settlement cron job...");
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-    const settler = await getSettler();
+    const vault = await getPKKTHodlBoosterOption() ;
+    const settler = settlerWallet;
     try {
-        const gasPriceWei = await ethers.provider.getGasPrice();
+        const gasPriceWei = await settlerWallet.provider.getGasPrice();
         let tx;
         if (gasPriceWei.gt(MAX_GAS_PRICE_WEI)) {
             // Let the trader know and allow them
             // to resubmit the transaction with a higher gas price
-            tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
+            tx = await vault.initiateSettlement({ gasPrice: MAX_GAS_PRICE_WEI });
             console.log(`Server manually initiating settlement with gas price of ${MAX_GAS_PRICE_WEI}`);
         }
         else {
-            tx = await vault.connect(settler as Signer).initiateSettlement({ gasPrice: gasPriceWei });
+            tx = await vault.initiateSettlement({ gasPrice: gasPriceWei });
             console.log(`Server initiating settlement with gas price of ${gasPriceWei}`);
             //app.set("initiateSettlementResubmit", false);
         }
         app.set("initiateSettlementResubmit", true);
         app.set("initiateSettlementTx", tx);
-        ethers.provider.once(tx.hash, async (transaction) => {
+        settlerWallet.provider.once(tx.hash, async (transaction) => {
             app.set("initiateSettlementResubmit", false);
             let info = await transporter.sendMail({
                 from: '"SERVER" test@account',
@@ -125,8 +121,7 @@ const DECISION_MAX_GAS_PRICE = 100;
 const DECISION_MAX_GAS_PRICE_WEI = ethers.utils.parseUnits(MAX_GAS_PRICE.toString(), "gwei");
 cron.schedule(process.env.SETTLE_CONFIG!, async () => {
     console.log("Settle cron job...");
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-    const settler = await getSettler();
+    const optionVault = await getPKKTHodlBoosterOption(); 
     const round = await optionVault.currentRound();
     const canSettleVault = await canSettle(optionVault);
     // Force Settlement
@@ -141,14 +136,14 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
         settleOverride = false;
     }
     if (canSettleVault && !settleOverride) {
-        let gasPriceWei = await ethers.provider.getGasPrice();
+        let gasPriceWei = await settlerWallet.provider.getGasPrice();
         if (gasPriceWei.gt(DECISION_MAX_GAS_PRICE_WEI)) {
             gasPriceWei = DECISION_MAX_GAS_PRICE_WEI;
         }
         console.log(settleDecision);
         try {
-            tx = await optionVault.connect(settler as Signer).settle(settleDecision, { gasPrice: gasPriceWei });
-            ethers.provider.once(tx.hash, async (transaction) => {
+            tx = await optionVault.settle(settleDecision, { gasPrice: gasPriceWei });
+            settlerWallet.provider.once(tx.hash, async (transaction) => {
                 let info = await transporter.sendMail({
                     from: '"SERVER" test@account',
                     to: "matt.auer@pokket.com",
@@ -165,8 +160,7 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
             console.error(err);
         }
     }
-});
-*/
+}); 
 // app.get("/graph", async (req, res) => {
 //     const url = "https://api.thegraph.com/subgraphs/name/matt-user/option-rinkeby";
 //     const response = await axios.post(url, {
@@ -188,6 +182,7 @@ cron.schedule(process.env.SETTLE_CONFIG!, async () => {
 // Start the express server
 app.listen(port, async () => {
     console.log(`server is listening on ${port}`);
+    await initializeSettlerWallet();
     await initializePredictedData();
     await initializeEmailer();
 });

@@ -7,12 +7,11 @@ import {
     WBTC_PRICE_PRECISION,
     ETH_USDC_OPTION_ID,
     WBTC_USDC_OPTION_ID
-} from "../../constants/constants";
-import { PKKTHodlBoosterOption } from "../../typechain";
+} from "../utilities/constants"; 
 import {
     canSettle,
     canShowMoneyMovement,
-    getDeployedContractHelper,
+    getPKKTHodlBoosterOption,
     getOptionStateData,
     settlementResubmit,
     isTransactionMined,
@@ -25,7 +24,7 @@ import { getPredictedEthData } from "./predictedData";
 // /show/epoch route
 export async function showEpoch(req: Request, res: Response) {
 
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption
+    const optionVault = await getPKKTHodlBoosterOption();
     let round = await optionVault.currentRound();
 
     let optionRound = round - 1;

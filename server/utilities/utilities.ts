@@ -1,13 +1,15 @@
-import { BigNumber, Contract, Signer, Wallet } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers, getNamedAccounts, deployments } from "hardhat";
+import { BigNumber, Contract, Signer, Wallet, ethers } from "ethers"; 
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"; 
 import axios from "axios";
 import nodemailer from "nodemailer";
 
-import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
+import { OptionExecution, NULL_ADDRESS, ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "./constants";
  
-import { OptionVault, PKKTHodlBoosterOption } from "../../typechain"; 
+import { getPKKTHodlBoosterOptionContract,PKKTHodlBoosterOption, 
+getERC20TokenContract, ERC20 } from "@pokket-finance/smartcontract";  
 
+import * as dotenv from "dotenv";
+dotenv.config();
 export type PredictedData = { 
     pairId: number,
     callStrike: number,
@@ -44,7 +46,7 @@ export async function initializeEmailer() {
         }
     });
 }
-
+ 
 export let predictedDataDb;
 
 export async function initializePredictedData() {
@@ -59,11 +61,25 @@ export async function initializePredictedData() {
  * @param name name of the contract to get from deployments
  * @returns contract object
  */
-export async function getDeployedContractHelper(name: string): Promise<Contract> {
-    const Contract = await deployments.get(name);
-    return await ethers.getContractAt(Contract.abi, Contract.address);
+export async function getPKKTHodlBoosterOption(): Promise<PKKTHodlBoosterOption> {
+  
+    let address: string;
+    address = process.env.VAULT_ADDRESS ?? ""; //should not happen
+    return await getPKKTHodlBoosterOptionContract(address, settlerWallet);
 }
 
+export async function getWBTC(): Promise<ERC20> {
+    
+    let address: string;
+    address = process.env.WBTC_ADDRESS ?? ""; //should not happen
+    return await getERC20TokenContract(address, settlerWallet);
+}
+export async function getUSDC(): Promise<ERC20> {
+    
+    let address: string;
+    address = process.env.USDC_ADDRESS ?? ""; //should not happen
+    return await getERC20TokenContract(address, settlerWallet);
+}
 /**
  * Gets the tvl option data
  * @param options ethcall, ethput, wbtccall, wbtcput options
@@ -100,14 +116,12 @@ export async function getTVLOptionData(options, vault) {
  * can only exercise one or none of the options as they are European
  */
 export async function setSettlementParameters(ethDecision: OptionExecution, wbtcDecision: OptionExecution) {
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-
-    const settler = await getSettler();
-
+    const optionVault = await getPKKTHodlBoosterOption();
+ 
     const settleParameters = [ ethDecision, wbtcDecision];
 
     try {
-        await optionVault.connect(settler as Signer).settle(settleParameters);
+        await optionVault.settle(settleParameters);
     } catch (err) {
         console.error(err);
     }
@@ -134,6 +148,10 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
+export function packOptionParameter (strikePrice: number, premiumRate: number): BigNumber { 
+    return BigNumber.from(strikePrice).shl(16).or(BigNumber.from(premiumRate));
+ }
+ 
 /**
  * Determines whether or not we can settle the vault
  * @param vault option vault to get execution accounting result
@@ -158,7 +176,7 @@ export async function areOptionParamsSet(round: number): Promise<boolean> {
     if (round === 0) {
         return false;
     }
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const vault = await getPKKTHodlBoosterOption();
 
     const optionStates = await getOptionStateData(vault, round);
     for (let optionState of optionStates) {
@@ -200,30 +218,19 @@ export async function getOptionStateData(vault: PKKTHodlBoosterOption, round: nu
  * Function to get the settler account
  * @returns the settler account
  */
-export async function getSettler(): Promise<SignerWithAddress> {
-    const { settler } = await getNamedAccounts();
-    return await ethers.getSigner(settler);
-}
-
-export async function getSettlerWallet(): Promise<Wallet> {
+ 
+export let settlerWallet: ethers.Wallet;
+export function initializeSettlerWallet() {
     // TODO abstract this for the settler
-    var network = await ethers.provider.getNetwork();
+    const provider = new ethers.providers.JsonRpcProvider(process.env.CHAIN_ID); 
     
-    const privateKey =  network.name == "ropsten" ? 
+    const privateKey =  provider.network.name == "ropsten" ? 
         "0x" + process.env.ROPSTEN_SETTLER_PRIVATE_KEY:
         "0x" + process.env.MAINNET_SETTLER_PRIVATE_KEY;
     //const privateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-    return new ethers.Wallet(privateKey);
+    settlerWallet = new ethers.Wallet(privateKey, provider);
 }
-
-/**
- * Function to get the trader account
- * @returns the trader account
- */
-export async function getTrader(): Promise<SignerWithAddress> {
-    const { trader } = await getNamedAccounts();
-    return await ethers.getSigner(trader);
-}
+ 
 
 export function settlementResubmit(app): boolean {
     let initiateSettlementResubmit = app.get("initiateSettlementResubmit");
@@ -249,8 +256,8 @@ export async function canShowInitiateSettlement(app): Promise<boolean> {
  * @param assetAddress asset to get data for
  * @returns data about the settlement cash flow result
  */
-export async function getMoneyMovementData(vault: OptionVault, settler: SignerWithAddress, assetDecimals, assetAddress: string) {
-    let assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);
+export async function getMoneyMovementData(vault: PKKTHodlBoosterOption, assetDecimals, assetAddress: string) {
+    let assetCashFlow = await vault.settlementCashflowResult(assetAddress);
     return {
         queuedLiquidity: ethers.utils.formatUnits(
             assetCashFlow.newDepositAmount,
@@ -273,8 +280,9 @@ export async function getMoneyMovementData(vault: OptionVault, settler: SignerWi
     };
 }
 
-export async function isTransactionMined(tx): Promise<boolean> {
-    const txReceipt = await ethers.provider.getTransactionReceipt(tx.hash);
+export async function isTransactionMined(tx): Promise<boolean> { 
+    const provider = settlerWallet.provider;
+    const txReceipt = await provider.getTransactionReceipt(tx.hash);
     if(txReceipt){
         if(txReceipt.blockNumber){
             //console.log(JSON.stringify(txReceipt, null, 4));
@@ -317,14 +325,15 @@ export async function getTransactionInformation(tx) {
         let gasPriceStr = ethers.utils.formatUnits(minimumGasPriceWei, "gwei");
         minimumGasPrice = parseFloat(gasPriceStr) * 1.1;
     }
-    const gasPrice = await ethers.provider.getGasPrice();
+    
+    const provider = settlerWallet.provider;
+    const gasPrice = await provider.getGasPrice();
     const gasPriceGweiStr = ethers.utils.formatUnits(gasPrice, "gwei");
     const gasPriceGwei = parseFloat(gasPriceGweiStr);
     return { minimumGasPrice, gasPriceGwei, transactionMined };
 }
 
-export async function resendTransaction(tx, manualGasPriceWei) {
-    const settlerWallet = await getSettlerWallet();
+export async function resendTransaction(tx, manualGasPriceWei) { 
     let unsignedTx = {
         gasPrice: manualGasPriceWei,
         gasLimit: tx.gasLimit,
@@ -334,6 +343,6 @@ export async function resendTransaction(tx, manualGasPriceWei) {
         data: tx.data,
         chainId: tx.chainId
     }
-    const signedTx = await settlerWallet.signTransaction(unsignedTx);
-    return await ethers.provider.sendTransaction(signedTx);
+    const signedTx = await settlerWallet.signTransaction(unsignedTx); 
+    return await settlerWallet.provider.sendTransaction(signedTx);
 }

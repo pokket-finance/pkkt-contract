@@ -1,25 +1,26 @@
 import { Request, Response } from "express";
-import { Signer } from "ethers";
-import { ethers } from "hardhat";
+import { Signer, ethers } from "ethers"; 
 import nodemailer from "nodemailer";
 
-import {
-    getSettler,
+import { 
     areOptionParamsSet,
     canSettle,
     settlementResubmit,
-    getDeployedContractHelper,
+    getPKKTHodlBoosterOption, 
     canShowMoneyMovement,
     isTransactionMined,
     canShowInitiateSettlement,
     getPrices,
     getTransactionInformation,
-    getSettlerWallet,
+    settlerWallet,
     resendTransaction,
     transporter,
     getMoneyMovementData,
     getPredictedOptionData,
     predictedDataDb, 
+    packOptionParameter,
+    getWBTC,
+    getUSDC
 } from "../utilities/utilities";
 import {
     ETH_PRICE_PRECISION,
@@ -31,15 +32,10 @@ import {
     WBTC_DECIMALS,
     USDC_DECIMALS,
     NULL_ADDRESS
-} from "../../constants/constants"; 
-import { PKKTHodlBoosterOption } from "../../typechain";
-import { packOptionParameter } from "../../test/utilities/optionPair";
-import { dataSource } from "@graphprotocol/graph-ts";
+} from "../utilities/constants";   
  
 export async function getSetEpoch (req: Request, res: Response) { 
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-
-    const settler = await getSettler();
+    const optionVault = await getPKKTHodlBoosterOption(); 
     const round = await optionVault.currentRound();
     let areOptionParametersSet = await areOptionParamsSet(round);
     const underSettlement = await canSettle(optionVault);
@@ -51,7 +47,7 @@ export async function getSetEpoch (req: Request, res: Response) {
 
     let setEpochGasEstimate;
     try { 
-        setEpochGasEstimate = await optionVault.connect(settler as Signer).estimateGas.setOptionParameters([
+        setEpochGasEstimate = await optionVault.estimateGas.setOptionParameters([
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
             packOptionParameter(0, 0.02 * RATIO_MULTIPLIER), 
@@ -81,11 +77,11 @@ export async function getSetEpoch (req: Request, res: Response) {
     // let usdcBalance: any = await usdc.balanceOf(usdc.address);
     // usdcBalance = ethers.utils.formatUnits(usdcBalance, USDC_DECIMALS);
 
-    const wbtc = await getDeployedContractHelper("WBTC");
-    const usdc = await getDeployedContractHelper("USDC");
-    let ethData = await getMoneyMovementData(optionVault, settler, ETH_DECIMALS, NULL_ADDRESS);
-    let wbtcData = await getMoneyMovementData(optionVault, settler, WBTC_DECIMALS, wbtc.address);
-    let usdcData = await getMoneyMovementData(optionVault, settler, USDC_DECIMALS, usdc.address);
+    const wbtc = await getWBTC();
+    const usdc = await getUSDC();
+    let ethData = await getMoneyMovementData(optionVault, ETH_DECIMALS, NULL_ADDRESS);
+    let wbtcData = await getMoneyMovementData(optionVault, WBTC_DECIMALS, wbtc.address);
+    let usdcData = await getMoneyMovementData(optionVault, USDC_DECIMALS, usdc.address);
 
     const priceData = await getPrices();
     const ethPrice = priceData.ethereum.usd;
@@ -115,7 +111,7 @@ export async function getSetEpoch (req: Request, res: Response) {
 };
 
 export async function postSetEpoch(req: Request, res: Response) {
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const optionVault = await getPKKTHodlBoosterOption();
     const ethCallPremium = parseFloat(req.body.ethCallPremium);
     const ethPutPremium = parseFloat(req.body.ethPutPremium);
     const wbtcCallPremium = parseFloat(req.body.wbtcCallPremium);
@@ -130,8 +126,7 @@ export async function postSetEpoch(req: Request, res: Response) {
         packOptionParameter(wbtcCallStrikePrice, wbtcCallPremium * RATIO_MULTIPLIER),
         packOptionParameter(wbtcPutStrikePrice, wbtcPutPremium * RATIO_MULTIPLIER)
     ];
-    const manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
-    const settler = await getSettler();
+    const manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei"); 
     let round = await optionVault.currentRound();
     if (await areOptionParamsSet(round)) {
         res.redirect("/set/epoch:true");
@@ -147,9 +142,9 @@ export async function postSetEpoch(req: Request, res: Response) {
             tx = await resendTransaction(tx, manualGasPriceWei);
         }
         else {
-            tx = await optionVault.connect(settler as Signer).setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
+            tx = await optionVault.setOptionParameters(optionParameters, { gasPrice: manualGasPriceWei });
         }
-        ethers.provider.once(tx.hash, async (transaction) => {
+        settlerWallet.provider.once(tx.hash, async (transaction) => {
             let info = await transporter.sendMail({
                 from: '"SERVER" test@account',
                 to: "matt.auer@pokket.com",

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import { getPredictedOptionData } from "../utilities/utilities";
-import {  ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../../constants/constants";
+import {  ETH_USDC_OPTION_ID, WBTC_USDC_OPTION_ID } from "../utilities/constants";
 
 export function getPredictedData(req: Request, res: Response) {
     res.json({

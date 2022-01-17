@@ -1,15 +1,13 @@
-import { Signer } from "ethers";
-import { Request, Response } from "express";
-import { ethers } from "hardhat";
+import { Signer, ethers } from "ethers";
+import { Request, Response } from "express"; 
 import nodemailer from "nodemailer";
-
-import { PKKTHodlBoosterOption } from "../../typechain";
+ 
 import {
     canSettle,
     canShowInitiateSettlement,
     canShowMoneyMovement,
-    getDeployedContractHelper,
-    getSettler,
+    settlerWallet,
+    getPKKTHodlBoosterOption,
     getTransactionInformation,
     isTransactionMined,
     resendTransaction,
@@ -19,17 +17,16 @@ import {
 
 // GET /initiateSettlement route
 export async function getManualInitiateSettlement(req: Request, res: Response) {
-    // Checks if the initiate settlement has been mined 
-    const settler = await getSettler();
+    // Checks if the initiate settlement has been mined  
     let tx = req.app.get("initiateSettlementTx");
     const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
 
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const vault = await getPKKTHodlBoosterOption();
     const round = await vault.currentRound();
 
     let initiateSettlementGasEstimate;
     try {
-        initiateSettlementGasEstimate = await vault.connect(settler as Signer)
+        initiateSettlementGasEstimate = await vault
             .estimateGas.initiateSettlement();
         req.app.set("initiateSettlementGasEstimate", initiateSettlementGasEstimate);
     } catch (err) {
@@ -60,8 +57,7 @@ export async function setManualInitiateSettlement(req: Request, res: Response) {
     }
     const manualGasPriceGwei = req.body.manualGasPrice;
     const manualGasPriceWei = ethers.utils.parseUnits(manualGasPriceGwei, "gwei");
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-    const settler = await getSettler();
+    const vault = await getPKKTHodlBoosterOption(); 
     let tx = req.app.get("initiateSettlementTx");
     let transactionMined = true;
     if (tx !== undefined) {
@@ -72,7 +68,7 @@ export async function setManualInitiateSettlement(req: Request, res: Response) {
             let txResponse = await resendTransaction(tx, manualGasPriceWei);
             req.app.set("initiateSettlementTx", txResponse);
             req.app.set("initiateSettlementResubmit", false);
-            ethers.provider.once(txResponse.hash, async (transaction) => {
+            settlerWallet.provider.once(txResponse.hash, async (transaction) => {
                 let info = await transporter.sendMail({
                     from: '"SERVER" test@account',
                     to: "matt.auer@pokket.com",

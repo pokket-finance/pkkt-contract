@@ -1,20 +1,18 @@
-import { Request, Response } from "express";
-import { ethers } from "hardhat";
-import { Signer } from "ethers";
+import { Request, Response } from "express"; 
+import { Signer, ethers } from "ethers";
 import nodemailer from "nodemailer";
-
-import { PKKTHodlBoosterOption, ERC20Mock } from "../../typechain";
+ 
 import {
     ETH_DECIMALS,
     NULL_ADDRESS,
     WBTC_DECIMALS,
     USDC_DECIMALS
-} from "../../constants/constants";
+} from "../utilities/constants";
 import {
     getMoneyMovementData,
-    getDeployedContractHelper,
-    getSettler,
-    getTrader,
+    getPKKTHodlBoosterOption, 
+    getUSDC,
+    getWBTC,
     settlementResubmit,
     canSettle,
     areOptionParamsSet,
@@ -24,23 +22,22 @@ import {
     getTransactionInformation,
     resendTransaction,
     transporter,
-} from "../utilities/utilities";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+    settlerWallet,
+} from "../utilities/utilities"; 
 
 export async function getMoneyMovement(req: Request, res: Response) {
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-    let usdc = await getDeployedContractHelper("USDC");
-    let wbtc = await getDeployedContractHelper("WBTC");
-    const settler = await getSettler()
+    const vault = await getPKKTHodlBoosterOption();
+    let usdc = await getUSDC();
+    let wbtc = await getWBTC(); 
 
-    const trader = await getTrader();
+    const trader = settlerWallet;
     let ethData = {
         queuedLiquidity: "0",
         withdrawalRequest: "0",
         leftover: "0",
         required: "0"
     };
-    ethData = await getMoneyMovementData(vault, settler, ETH_DECIMALS, NULL_ADDRESS);
+    ethData = await getMoneyMovementData(vault, ETH_DECIMALS, NULL_ADDRESS);
 
     let wbtcData = {
         queuedLiquidity: "0",
@@ -48,7 +45,7 @@ export async function getMoneyMovement(req: Request, res: Response) {
         leftover: "0",
         required: "0"
     };
-    wbtcData = await getMoneyMovementData(vault, settler, WBTC_DECIMALS, wbtc.address);
+    wbtcData = await getMoneyMovementData(vault, WBTC_DECIMALS, wbtc.address);
 
     let usdcData = { 
         queuedLiquidity: "0",
@@ -56,13 +53,13 @@ export async function getMoneyMovement(req: Request, res: Response) {
         leftover: "0",
         required: "0"
     };
-    usdcData = await getMoneyMovementData(vault, settler, USDC_DECIMALS, usdc.address);
+    usdcData = await getMoneyMovementData(vault, USDC_DECIMALS, usdc.address);
 
     let tx = req.app.get("withdrawTx");
     const { minimumGasPrice, gasPriceGwei, transactionMined } = await getTransactionInformation(tx);
     let withdrawGasEstimate;
     try {
-        withdrawGasEstimate = await await vault.connect(settler as Signer)
+        withdrawGasEstimate = await await vault
             .estimateGas.batchWithdrawAssets(trader.address, [wbtc.address, NULL_ADDRESS, usdc.address]);
         req.app.set("withdrawGasEstimate", withdrawGasEstimate);
     } catch {
@@ -137,12 +134,11 @@ async function canWithdrawAssets(ethData, wbtcData, usdcData, vault, round): Pro
 }
 
 export async function postMoneyMovement(req: Request, res: Response) {
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-    const wbtc = await getDeployedContractHelper("WBTC") as ERC20Mock;
-    const usdc = await getDeployedContractHelper("USDC") as ERC20Mock;
+    const vault = await getPKKTHodlBoosterOption();
+    let usdc = await getUSDC();
+    let wbtc = await getWBTC(); 
 
-    const trader = await getTrader();
-    const settler = await getSettler();
+    const trader = settlerWallet; 
     const manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
 
     let tx = req.app.get("withdrawTx");
@@ -157,7 +153,7 @@ export async function postMoneyMovement(req: Request, res: Response) {
                 tx = await resendTransaction(tx, manualGasPriceWei);
             }
             else {
-                tx =  await vault.connect(settler as Signer).batchWithdrawAssets(
+                tx =  await vault.batchWithdrawAssets(
                     trader.address,
                     [
                         wbtc.address,
@@ -167,7 +163,7 @@ export async function postMoneyMovement(req: Request, res: Response) {
                     { gasPrice: manualGasPriceWei }
                 );
             }
-            ethers.provider.once(tx.hash,async (transaction) => {
+            settlerWallet.provider.once(tx.hash,async (transaction) => {
                 let info = await transporter.sendMail({
                     from: "'SERVER' test@account",
                     to: "matt.auer@pokket.com",

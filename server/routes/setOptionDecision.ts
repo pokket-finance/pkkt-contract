@@ -1,6 +1,5 @@
-import { Request, Response } from "express";
-import { ethers } from "hardhat";
-import { BigNumber, Signer } from "ethers";
+import { Request, Response } from "express"; 
+import { BigNumber, Signer, ethers } from "ethers";
 import nodemailer from "nodemailer";
 import * as dotenv from "dotenv"
 dotenv.config();
@@ -12,28 +11,25 @@ import {
     OptionExecution,
     ETH_USDC_OPTION_ID,
     WBTC_USDC_OPTION_ID
-} from "../../constants/constants";
-import {
-    getSettler,
+} from "../utilities/constants";
+import { 
     canSettle,
     settlementResubmit,
     setSettlementParameters,
-    getDeployedContractHelper,
+    getPKKTHodlBoosterOption,
     canShowMoneyMovement,
     isTransactionMined,
     canShowInitiateSettlement,
     getPrices,
-    getSettlerWallet,
+    settlerWallet,
     resendTransaction,
     getTransactionInformation,
     transporter
 } from "../utilities/utilities"
-import { PKKTHodlBoosterOption } from "../../typechain";
+import { PKKTHodlBoosterOption } from  "@pokket-finance/smartcontract";
 
 export async function getSetOptionDecision(req: Request, res: Response) {
-    const optionVault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
-
-    const settler = await getSettler()
+    const optionVault = await getPKKTHodlBoosterOption(); 
 
     const round = await optionVault.currentRound();
 
@@ -64,8 +60,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         notExerciseEthData = await getExerciseDecisionData(
             0,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
@@ -81,8 +76,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         exerciseCallEthData = await getExerciseDecisionData(
             1,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
@@ -93,8 +87,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         exercisePutEthData = await getExerciseDecisionData(
             2,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             ethOptionPair,
             ETH_DECIMALS,
             USDC_DECIMALS,
@@ -105,8 +98,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         notExerciseWbtcData = await getExerciseDecisionData(
             3,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
@@ -116,8 +108,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         exerciseCallWbtcData = await getExerciseDecisionData(
             4,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
@@ -128,8 +119,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
         exercisePutWbtcData = await getExerciseDecisionData(
             5,
             round,
-            optionVault,
-            settler,
+            optionVault, 
             wbtcOptionPair,
             WBTC_DECIMALS,
             USDC_DECIMALS,
@@ -140,7 +130,7 @@ export async function getSetOptionDecision(req: Request, res: Response) {
 
     let settleGasEstimate;
     try {
-        settleGasEstimate = await optionVault.connect(settler as Signer)
+        settleGasEstimate = await optionVault
             .estimateGas.settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
         req.app.set("settleGasEstimate", settleGasEstimate);
     } catch (err) {
@@ -189,7 +179,7 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     if (req.body.manualGasPrice) {
         manualGasPriceWei = ethers.utils.parseUnits(req.body.manualGasPrice, "gwei");
     }
-    const vault = await getDeployedContractHelper("PKKTHodlBoosterOption") as PKKTHodlBoosterOption;
+    const vault = await getPKKTHodlBoosterOption();
     if (!(await canSettle(vault))) {
         res.redirect("/set/decision");
         return;
@@ -198,13 +188,12 @@ export async function postSetOptionDecision(req: Request, res: Response) {
     let transactionMined = true;
     if (tx !== undefined) {
         transactionMined = await isTransactionMined(tx);
-    }
-    const settler = await getSettler();
+    } 
     try {
         if (!transactionMined) {
             let txResponse = await resendTransaction(tx, manualGasPriceWei);
             // TODO remove listeners for previous unmined tx that get speed up
-            ethers.provider.once(txResponse.hash, async (transaction) => {
+            settlerWallet.provider.once(txResponse.hash, async (transaction) => {
                 let info = await transporter.sendMail({
                     from: '"SERVER" test@account',
                     to: "matt.auer@pokket.com",
@@ -264,8 +253,8 @@ type OptionPairExecutionAccountingResult = {
     execute: OptionExecution
 }
 
-async function getExerciseDecisionData(index, round, vault: PKKTHodlBoosterOption, settler, optionPair, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
-        let accounting = await vault.connect(settler as Signer).executionAccountingResult(index);
+async function getExerciseDecisionData(index, round, vault: PKKTHodlBoosterOption, optionPair, callOptionAssetDecimals, putOptionAssetDecimals, strikePriceDecimals) {
+        let accounting = await vault.executionAccountingResult(index);
         
         let callAssetAutoRoll = accounting.callOptionResult.autoRollAmount
             .add(accounting.callOptionResult.autoRollPremium)
