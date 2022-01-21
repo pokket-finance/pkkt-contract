@@ -40,24 +40,24 @@ dotenv.config();
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts:[`0x${process.env.MAINNET_DEPLOYER_PRIVATE_KEY}`,`0x${process.env.MAINNET_SETTLER_PRIVATE_KEY}`],
+      accounts:[`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
     },
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
-      accounts:[`0x${process.env.ROPSTEN_DEPLOYER_PRIVATE_KEY}`,`0x${process.env.ROPSTEN_SETTLER_PRIVATE_KEY}`],
+      accounts:[`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
       gasPrice: 100000000000,
-      accounts: { mnemonic: process.env.RINKEBY_PRIVATE_KEY },
+      accounts: { mnemonic: process.env.DEPLOYER_PRIVATE_KEY },
     },
   },
   namedAccounts: {
     deployer: {
       default: 0,
-      1: "0xf9C2085C9601dd5D4F06762F94C31D0F8c419329",
+      1: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
       3: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B", //ropsten
       4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
@@ -67,12 +67,10 @@ dotenv.config();
       4: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4"
     },
     alice: {
-      default: 2,
-      4: "0x57680aba4bb27Fd82b51EeBdB8C5b3f4A073b2aA"
+      default: 2, 
     },
     bob: {
-      default: 3,
-      4: "0x7e3E166B473cDc33b302B942205c63deDf136F4C"
+      default: 3, 
     },
     owner: {
       default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -81,10 +79,7 @@ dotenv.config();
       4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     trader: { 
-      default: 4,
-      1: "0x7BC55d94EEC38E15fE84c90Bf2B10BF4Eabd1189",
-      3: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4",
-      4: "0x88ad553a4793f91E9b36BBee418f0A497E9bBF6D"
+      default: 4, 
     }
   },
 

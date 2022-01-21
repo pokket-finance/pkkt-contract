@@ -17,8 +17,7 @@ import {
     NULL_ADDRESS,
     WBTC_USDC_OPTION_ID
 } from "../../../constants/constants";
-import { getDeployedContractHelper,packOptionParameter } from "./utilities";
-import { settlerWallet } from "../../../server/utilities/utilities";
+import { getDeployedContractHelper,packOptionParameter } from "./utilities"; 
 
 
 async function main({ command }, { ethers, deployments, getNamedAccounts }) {
