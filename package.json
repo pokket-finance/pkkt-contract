@@ -59,6 +59,8 @@
     "test": "npx hardhat test test/*.ts test/libraries/*.ts",
     "test:integration": "npx hardhat test test/integration/*.ts",
     "compile": "npx hardhat compile",
+    "prepare:qa":"copy .env.qa .env",
+    "prepare:prod":"copy .env.prod .env",
     "deploy:prod": "npx hardhat prepare-accounts && npx hardhat deploy --network mainnet",
     "deploy:qa": "npx hardhat prepare-accounts && npx hardhat deploy --network ropsten",
     "deploy:dev": "npx hardhat prepare-accounts && npx hardhat deploy --network localhost",
