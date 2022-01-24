@@ -606,11 +606,25 @@ describe.only("PKKT Hodl Booster", async function () {
             }
           }
            
-
-
         });
 
-        it("physical balance perspective", async function () {
+        it("hacker perspective", async function () { 
+          await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
+          await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!settler");   
+          await expect(vault.connect(alice as Signer).settle([])).to.be.revertedWith("!settler");  
+          await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, usdt.address)).to.be.revertedWith("!settler");  
+          await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [usdt.address])).to.be.revertedWith("!settler");  
+          await expect(vault.connect(bob as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(vault.connect(settler as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(vault.connect(settler as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await vault.connect(deployer as Signer).transferOwnership(alice.address);
+          await expect(vault.connect(deployer as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await vault.connect(alice as Signer).setSettler(bob.address);
+          await vault.connect(bob as Signer).initiateSettlement(); 
+          await vault.connect(alice as Signer).transferOwnership(deployer.address);
+          await vault.connect(deployer as Signer).setSettler(settler.address);
+          await expect(vault.connect(bob as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
+
         });
       }); 
         
