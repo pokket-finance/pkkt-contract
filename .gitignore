@@ -18,3 +18,4 @@ build
 /deployments/localhost/*.json
 /deployments/localhost/*.json
 package-lock.json
+data.json

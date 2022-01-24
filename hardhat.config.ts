@@ -20,9 +20,13 @@ import generateOptionData from "./scripts/tasks/backend/generateOptionData";
 import sendUserCoins from "./scripts/tasks/backend/sendUserCoins";
 import transferOwnerShip from './scripts/tasks/transferOwnerShip';
 import verifyContracts from './scripts/tasks/verifyContracts';
+import prepareAccounts from './scripts/tasks/prepareAccounts';
+import initiateSettlement from './scripts/tasks/initiateSettlement';
 
 dotenv.config();
 
+process.env.TEST_MNEMONIC =
+  "test test test test test test test test test test test junk";
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -37,36 +41,39 @@ dotenv.config();
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
         gasLimit: 8e6,
         blockNumber: 13600000, 
-        accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`],
+        accounts: {
+          mnemonic: process.env.TEST_MNEMONIC,
+        },
       } 
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts:[`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+      accounts: {
+        mnemonic: process.env.TEST_MNEMONIC,
+      },
     },
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
-      accounts:[`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+      accounts: {
+        mnemonic: process.env.TEST_MNEMONIC,
+      },
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
       gasPrice: 100000000000,
-      accounts: { mnemonic: process.env.DEPLOYER_PRIVATE_KEY },
+      accounts: {
+        mnemonic: process.env.TEST_MNEMONIC,
+      },
     },
   },
   namedAccounts: {
     deployer: {
       default: 0,
-      1: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B",
-      3: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B", //ropsten
-      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
     },
     settler: {
       default: 1,
-      3: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4",
-      4: "0x7FAa46FB04BB00de3F6D5E90d78b4a37f8E48cd4"
     },
     alice: {
       default: 2, 
@@ -115,8 +122,11 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip)
-.addParam("owneraccount", "The account of new owner, take, a gnosis-safe account");
+task("prepare-accounts", "Prepare accounts", prepareAccounts);
+task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
+
+task("new-round", "Initiate a new round", initiateSettlement)
+.addFlag("forceSettlerPrivateKey", "If set, settler private key must be input if missing");
 
 
 task("verify-contracts", "Verify solidity source", verifyContracts);

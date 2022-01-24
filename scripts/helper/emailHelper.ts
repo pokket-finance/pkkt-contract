@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config(); 
  
 
-export async function getEmailer(): Promise<{emailSender: emailer, emailReceivers: string[]} { 
+export async function getEmailer(): Promise<{emailSender: emailer, emailReceivers: string[]}> { 
     let creator: emailerCreator;
     let emailSender: emailer;
     let emailReceivers: string[];

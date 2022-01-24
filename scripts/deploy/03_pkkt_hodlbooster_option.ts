@@ -5,15 +5,15 @@ import { ethers } from "hardhat";
 import { PKKTHodlBoosterOption} from "../../typechain";
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
- 
+
 dotenv.config();   
 const main = async ({
   network,
-  deployments,
+  deployments, 
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  const { deployer, settler } = await getNamedAccounts(); 
+  var { deployer, settler } = await getNamedAccounts();   
   const emailer = await getEmailer();
   const isMainnet = network.name === "mainnet" ; 
   var usdcAddress = isMainnet ? USDC_ADDRESS : process.env.USDC_ADDRESS;
@@ -29,7 +29,8 @@ const main = async ({
           BigNumber.from(100000000).mul(USDC_MULTIPLIER),
           USDC_DECIMALS,
       ],
-  });
+      
+  } );
   usdcAddress = USDC.address;
   console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
 
@@ -84,13 +85,16 @@ const main = async ({
       OptionLifecycle: optionLifecycle.address,
     } 
   }); 
-  console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);    
+  console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);
   const emailContent = { 
     to: emailer.emailReceivers, 
     cc: [],
     subject:`PKKTHodlBoosterOption deployed on ${network.name}`,
-    content: `Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}\r\n.Please run "npx hardhat transfer-ownership --network ${network.name} --owneraccount 0x..." to transfer ownership to a more secured account.\r\nPlease run "npx hardhat verify-contracts --network ${network.name}" to verify the contract deployed on etherscan.`,
-    isHtml: false
+    content: `<h1>Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}</h1><h2>Initial Deployer Address: ${deployer}, Settler Address: ${settler}.</h2>` + 
+    `<ol><li>Please run "npm run transfer-ownership:${process.env.ENV?.toLocaleLowerCase()}" to transfer ownership to a more secured account.</li>`+
+    `<li>Please run "npm run verify-contracts:${process.env.ENV?.toLocaleLowerCase()}" to verify the contract deployed on etherscan.</li>` + 
+    `<li>Please run "npm run new-round::${process.env.ENV?.toLocaleLowerCase()}" under the new owner account to start the initial round</li></ol>`,
+    isHtml: true
 }
 
   await emailer.emailSender.sendEmail(emailContent);
