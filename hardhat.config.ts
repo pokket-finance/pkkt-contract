@@ -115,7 +115,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("ownership-to-gnosissafe", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip)
+task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip)
 .addParam("owneraccount", "The account of new owner, take, a gnosis-safe account");
 
 

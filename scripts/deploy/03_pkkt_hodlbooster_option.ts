@@ -3,6 +3,7 @@ import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS,
 import { BigNumber, BigNumberish, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { PKKTHodlBoosterOption} from "../../typechain";
+import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
  
 dotenv.config();   
@@ -13,6 +14,7 @@ const main = async ({
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
   const { deployer, settler } = await getNamedAccounts(); 
+  const emailer = await getEmailer();
   const isMainnet = network.name === "mainnet" ; 
   var usdcAddress = isMainnet ? USDC_ADDRESS : process.env.USDC_ADDRESS;
   var wbtcAddress = isMainnet? WBTC_ADDRESS : process.env.WBTC_ADDRESS;
@@ -83,7 +85,17 @@ const main = async ({
     } 
   }); 
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);    
+  const emailContent = { 
+    to: emailer.emailReceivers, 
+    cc: [],
+    subject:`PKKTHodlBoosterOption deployed on ${network.name}`,
+    content: `Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}\r\n.Please run "npx hardhat transfer-ownership --network ${network.name} --owneraccount 0x..." to transfer ownership to a more secured account.\r\nPlease run "npx hardhat verify-contracts --network ${network.name}" to verify the contract deployed on etherscan.`,
+    isHtml: false
+}
 
+  await emailer.emailSender.sendEmail(emailContent);
+  
+  console.log(`03 - Deployment notification email sent`);    
 };
 main.tags = ["PKKTHodlBoosterOption"];
 
