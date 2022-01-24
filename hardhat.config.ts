@@ -19,6 +19,7 @@ import initializeUsers from "./scripts/tasks/backend/initializeUsers";
 import generateOptionData from "./scripts/tasks/backend/generateOptionData";
 import sendUserCoins from "./scripts/tasks/backend/sendUserCoins";
 import transferOwnerShip from './scripts/tasks/transferOwnerShip';
+import verifyContracts from './scripts/tasks/verifyContracts';
 
 dotenv.config();
 
@@ -116,6 +117,10 @@ task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
 task("ownership-to-gnosissafe", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip)
 .addParam("owneraccount", "The account of new owner, take, a gnosis-safe account");
+
+
+task("verify-contracts", "Verify solidity source", verifyContracts);
+
 
 task("propose-upgrade", "Proposes the new implementation for upgrade to gnosis safe for approval", proposeUpgrade)
   .addParam("proxyname", "name of proxy in ./deployments")
