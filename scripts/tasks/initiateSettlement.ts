@@ -21,7 +21,12 @@ const main = async ({}, {
 
     const hodlBoosterOption = await deployments.get("PKKTHodlBoosterOption"); 
     const hodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", hodlBoosterOption.address);
+    const previousRound = await hodlBoosterOptionContract.currentRound();
+    console.log("PKKTHodlBoosterOption is currently under round " + previousRound);
     await hodlBoosterOptionContract.connect(settlerWallet).initiateSettlement();
+    console.log("Initiated new round upon PKKTHodlBoosterOption");
+    //wait for longer
+    await new Promise(resolve => setTimeout(resolve, parseInt(process.env.NETWORK_DELAY?? "10000")));
     const currentRound = await hodlBoosterOptionContract.currentRound();
     
     console.log(`Initiate settlment for ${currentRound} round upon PKKTHodlBoosterOption on ${network.name} by ${settler}`);    
