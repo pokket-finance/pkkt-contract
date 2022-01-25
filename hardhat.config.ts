@@ -27,6 +27,11 @@ dotenv.config();
 
 process.env.TEST_MNEMONIC =
   "test test test test test test test test test test test junk";
+ 
+var accounts = process.env.DEPLOYER_PRIVATE_KEY ? 
+[`0x${process.env.DEPLOYER_PRIVATE_KEY}`] : {
+  mnemonic: process.env.TEST_MNEMONIC,
+};
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -41,39 +46,33 @@ process.env.TEST_MNEMONIC =
         url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
         gasLimit: 8e6,
         blockNumber: 13600000, 
-        accounts: {
-          mnemonic: process.env.TEST_MNEMONIC,
-        },
+        accounts: accounts,
       } 
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
-      accounts: {
-        mnemonic: process.env.TEST_MNEMONIC,
-      },
+      accounts: accounts,
     },
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-      gas: 2100000,
-      accounts: {
-        mnemonic: process.env.TEST_MNEMONIC,
-      },
+      gas: 2100000, 
+      accounts: accounts,
     },
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000,
       gasPrice: 100000000000,
-      accounts: {
-        mnemonic: process.env.TEST_MNEMONIC,
-      },
+      accounts: accounts,
     },
   },
   namedAccounts: {
     deployer: {
       default: 0,
+      3: process.env.DEPLOYER_PUBLIC_KEY,
+      1: process.env.DEPLOYER_PUBLIC_KEY
     },
     settler: {
-      default: 1,
+      default: 1, 
     },
     alice: {
       default: 2, 
@@ -82,13 +81,10 @@ process.env.TEST_MNEMONIC =
       default: 3, 
     },
     owner: {
-      default: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-      1: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
-      3: "0x0B1983a488Bcad8f16AaDa89BEd47CdCa4eECB42",
-      4: "0x4EF10084EB9541EbE1d0Ed060Cdc87C37a850E8B"
+      default: 4
     },
     trader: { 
-      default: 4, 
+      default: 5, 
     }
   },
 

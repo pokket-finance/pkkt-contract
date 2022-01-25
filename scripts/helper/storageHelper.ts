@@ -13,7 +13,8 @@ export function getStorage(): storage {
     else{
         secureStorage = creator.createStorage(storageType.awsSSM, {
             region: process.env.AWS_REGION,
-            tableName: process.env.AWS_TABLENAME
+            tableName: process.env.AWS_TABLENAME,
+            encryted: true
         });
     }
     
