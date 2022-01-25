@@ -117,11 +117,11 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("prepare-accounts", "Prepare accounts", prepareAccounts);
+task("prepare-accounts", "Prepare accounts", prepareAccounts)
+.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
 
-task("new-round", "Initiate a new round", initiateSettlement)
-.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
+task("new-round", "Initiate a new round", initiateSettlement);
 
 
 task("verify-contracts", "Verify solidity source", verifyContracts);
