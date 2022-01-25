@@ -26,7 +26,6 @@ import initiateSettlement from './scripts/tasks/initiateSettlement';
 dotenv.config();
  
 let data = require(process.env.CONFIG_FILE as string); 
-console.log("data.deployerAddress", data.deployerAddress)
 var accounts = data.deployerPrivateKey ? 
 [`0x${data.deployerPrivateKey}`] : {
   mnemonic: "test test test test test test test test test test test junk",
