@@ -27,7 +27,7 @@ Plugin should import from hardhat.config.js
 
 4. run "npm run transfer-ownership:dev" or "npm run transfer-ownership:qa" or "npm run transfer-ownership:prod" under the root folder to transfer ownership the smart contract to a more secured account under localhost/ropsten/eth-mainnet
 
-5. run "npm run new-round:dev" or "npm run new-round:qa" or "npm run new-round:prod" under the root folder to start the initial round under localhost/ropsten/eth-mainnet.Settler private must be set at this stage.
+5. run "npm run new-epoch:dev" or "npm run new-epoch:qa" or "npm run new-epoch:prod" under the root folder to start the initial epoch under localhost/ropsten/eth-mainnet.Settler private must be set at this stage.
 
 ## License
 
