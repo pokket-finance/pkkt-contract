@@ -87,8 +87,8 @@ const main = async ({
   }); 
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);
   const emailContent = { 
-    to: emailer.emailReceivers, 
-    cc: [],
+    to: emailer.emailTos, 
+    cc: emailer.emailCcs,
     subject:`PKKTHodlBoosterOption deployed on ${network.name}`,
     content: `<h2>Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Initial Deployer Address: ${deployer}</h3><h3>Settler Address: ${settler}</h3>` + 
     `<ol><li>Please run "npm run transfer-ownership:${process.env.ENV?.toLocaleLowerCase()}" to transfer ownership to a more secured account.</li>`+

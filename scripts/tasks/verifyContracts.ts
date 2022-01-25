@@ -62,8 +62,8 @@ const main = async (
 
   var emailer = await getEmailer();
   const emailContent = { 
-    to: emailer.emailReceivers, 
-    cc: [],
+    to: emailer.emailTos, 
+    cc: emailer.emailCcs,
     subject:`PKKTHodlBoosterOption verified on etherscan`,
     content: `<h3>PKKTHodlBoosterOption verified on etherscan (${network.name})</h3>Please visit <a href="${process.env.ETHERSCAN_SITE}/address/${PKKTHodlBoosterOption.address}#code">smart contract code on etherscan (${network.name})</a>for more details`,
     isHtml: true

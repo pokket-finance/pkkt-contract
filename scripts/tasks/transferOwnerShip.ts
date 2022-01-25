@@ -26,8 +26,8 @@ const main = async ({}, {
     console.log(`Transfer ownership of PKKTHodlBoosterOption on ${network.name} to ${result.ownerAddress}`);    
     var emailer = await getEmailer();
     const emailContent = { 
-      to: emailer.emailReceivers, 
-      cc: [],
+      to: emailer.emailTos, 
+      cc: emailer.emailCcs,
       subject:`Transfer ownership of PKKTHodlBoosterOption on ${network.name}`,
       content: `<h3>Transfer ownership of PKKTHodlBoosterOption on ${network.name} to <b>${result.ownerAddress}</b></h3>Please keep make sure that account ${result.ownerAddress} is fully secured.`,
       isHtml: true

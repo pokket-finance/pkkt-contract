@@ -4,10 +4,11 @@ import * as dotenv from "dotenv";
 dotenv.config(); 
  
 
-export async function getEmailer(): Promise<{emailSender: emailer, emailReceivers: string[]}> { 
+export async function getEmailer(): Promise<{emailSender: emailer, emailTos: string[], emailCcs:string[]}> { 
     let creator: emailerCreator;
     let emailSender: emailer;
-    let emailReceivers: string[];
+    let emailTos: string[];
+    let emailCcs: string[];
     creator = new emailerCreator(); 
     if(process.env.USE_EMAILSERVICE) {
         
@@ -28,12 +29,14 @@ export async function getEmailer(): Promise<{emailSender: emailer, emailReceiver
     else{
         emailSender = await creator.createEmailer(emailerType.nodemailer, {});
     }
-    emailReceivers = process.env.EMAIL_TO?.split(",") ?? [];
-    if (emailReceivers.length == 0 ){
+    emailTos = process.env.EMAIL_TO?.split(";") ?? [];
+    if (emailTos.length == 0 ){
         console.error("EMAIL_TO not specified");
     }
+    emailCcs = process.env.EMAIL_CC?.split(";") ?? []; 
     return {
         emailSender,
-        emailReceivers
+        emailTos,
+        emailCcs
     }
 }

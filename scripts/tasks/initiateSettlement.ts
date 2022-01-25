@@ -26,17 +26,16 @@ const main = async ({}, {
     await hodlBoosterOptionContract.connect(settlerWallet).initiateSettlement();
     console.log("Initiated new round upon PKKTHodlBoosterOption");
     //wait for longer
-    await new Promise(resolve => setTimeout(resolve, parseInt(process.env.NETWORK_DELAY?? "10000")));
-    const currentRound = await hodlBoosterOptionContract.currentRound();
-    
+    //await new Promise(resolve => setTimeout(resolve, parseInt(process.env.NETWORK_DELAY?? "10000"))); 
+    const currentRound = previousRound + 1;
     console.log(`Initiate settlment for ${currentRound} round upon PKKTHodlBoosterOption on ${network.name} by ${settler}`);    
 
     var emailer = await getEmailer();
     const emailContent = { 
-      to: emailer.emailReceivers, 
-      cc: [],
+      to: emailer.emailTos, 
+      cc: emailer.emailCcs,
       subject:`Start new round for PKKTHodlBoosterOption on ${network.name}`,
-      content: `Start new round for PKKTHodlBoosterOption on ${network.name}</br>Currently <b>Round ${currentRound}</b></br>Please visit <a href="${process.env.TRADER_SITE}">Trader Site</a> with account ${settler} for more details.`,
+      content: `Start new round for PKKTHodlBoosterOption on ${network.name}</br>Currently round is <b>${currentRound}</b>.</br>Please visit <a href="${process.env.TRADER_SITE}">Trader Site</a> with account ${settler} for more details.`,
       isHtml: true
   }
   
