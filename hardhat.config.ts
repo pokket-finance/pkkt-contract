@@ -70,8 +70,8 @@ var accounts = data.deployerPrivateKey ?
       3: data.deployerAddress ? data.deployerAddress : 0,
       1: data.deployerAddress ? data.deployerAddress : 0,
     },
-    settler: {
-      default: 1, 
+    settler: { 
+      default: data.settlerAddress ? data.settlerAddress : 1,
     },
     alice: {
       default: 2, 
