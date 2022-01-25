@@ -24,13 +24,12 @@ import prepareAccounts from './scripts/tasks/prepareAccounts';
 import initiateSettlement from './scripts/tasks/initiateSettlement';
 
 dotenv.config();
-
-process.env.TEST_MNEMONIC =
-  "test test test test test test test test test test test junk";
  
-var accounts = process.env.DEPLOYER_PRIVATE_KEY ? 
-[`0x${process.env.DEPLOYER_PRIVATE_KEY}`] : {
-  mnemonic: process.env.TEST_MNEMONIC,
+let data = require(process.env.CONFIG_FILE as string); 
+console.log("data.deployerAddress", data.deployerAddress)
+var accounts = data.deployerPrivateKey ? 
+[`0x${data.deployerPrivateKey}`] : {
+  mnemonic: "test test test test test test test test test test test junk",
 };
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -67,9 +66,9 @@ var accounts = process.env.DEPLOYER_PRIVATE_KEY ?
   },
   namedAccounts: {
     deployer: {
-      default: 0,
-      3: process.env.DEPLOYER_PUBLIC_KEY,
-      1: process.env.DEPLOYER_PUBLIC_KEY
+      default: data.deployerAddress ? data.deployerAddress : 0,
+      3: data.deployerAddress ? data.deployerAddress : 0,
+      1: data.deployerAddress ? data.deployerAddress : 0,
     },
     settler: {
       default: 1, 

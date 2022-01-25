@@ -13,7 +13,7 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, settler } = await getNamedAccounts();   
+  var { deployer, settler } = await getNamedAccounts();    
   const emailer = await getEmailer();
   const isMainnet = network.name === "mainnet" ; 
   var usdcAddress = isMainnet ? USDC_ADDRESS : process.env.USDC_ADDRESS;
@@ -54,7 +54,7 @@ const main = async ({
  }
 
 
-  console.log("03 - Deploying PKKTHodlBoosterOption on", network.name); 
+  console.log(`03 - Deploying PKKTHodlBoosterOption on ${network.name} from ${deployer}`); 
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer,
   });

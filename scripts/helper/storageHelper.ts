@@ -25,7 +25,7 @@ export function getFileStorage(): storage {
     creator = new storageCreator();
     var secureStorage: storage;
     secureStorage = creator.createStorage(storageType.disk, { 
-        fileName:"./data.json",
+        fileName:process.env.CONFIG_FILE,
      });
     
      return secureStorage;

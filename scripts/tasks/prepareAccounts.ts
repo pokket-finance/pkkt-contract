@@ -66,19 +66,9 @@ const main = async ({ forceSettlerPrivateKey }, {
     var fileStorage = getFileStorage();
     var deployerAddress = await fileStorage.readValue("deployerAddress");
     var settlerAddress = await fileStorage.readValue("settlerAddress");
-    var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey");
-    if (deployerAddress){
-      process.env.DEPLOYER_PUBLIC_KEY = deployerAddress;
-    }
-    if (deployerPrivateKey){
-      process.env.DEPLOYER_PRIVATE_KEY = deployerPrivateKey;
-    }
-    if (settlerAddress) {
-      process.env.SETTLER_PUBLIC_KEY  = settlerAddress;
-    }
-
-    if (process.env.DEPLOYER_PUBLIC_KEY && process.env.SETTLER_PUBLIC_KEY && process.env.DEPLOYER_PRIVATE_KEY ){
-      console.log(`Deployer Address: ${process.env.DEPLOYER_PUBLIC_KEY}; Settler Address: ${process.env.SETTLER_PUBLIC_KEY}`);
+    var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
+    if (deployerAddress && settlerAddress && deployerPrivateKey ){
+      console.log(`Deployer Address: ${deployerAddress}; Settler Address: ${settlerAddress}`);
       if (!forceSettlerPrivateKey){
         return;
       }
@@ -96,10 +86,7 @@ const main = async ({ forceSettlerPrivateKey }, {
 
     
     result = await promptHelper(schema);   
-    console.log(`Deployer Address: ${result.deployerAddress}; Settler Address: ${result.settlerAddress}`);
-    process.env.DEPLOYER_PUBLIC_KEY = result.deployerAddress;
-    process.env.SETTLER_PUBLIC_KEY = result.settlerAddress;
-    process.env.DEPLOYER_PRIVATE_KEY = result.deployerPrivateKey;
+    console.log(`Deployer Address: ${result.deployerAddress}; Settler Address: ${result.settlerAddress}`); 
     await fileStorage.writeValue("deployerAddress", result.deployerAddress);
     await fileStorage.writeValue("settlerAddress", result.settlerAddress);
     await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey);
