@@ -90,10 +90,10 @@ const main = async ({
     to: emailer.emailReceivers, 
     cc: [],
     subject:`PKKTHodlBoosterOption deployed on ${network.name}`,
-    content: `<h1>Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}</h1><h2>Initial Deployer Address: ${deployer}, Settler Address: ${settler}.</h2>` + 
+    content: `<h2>Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Initial Deployer Address: ${deployer}</h3><h3>Settler Address: ${settler}</h3>` + 
     `<ol><li>Please run "npm run transfer-ownership:${process.env.ENV?.toLocaleLowerCase()}" to transfer ownership to a more secured account.</li>`+
-    `<li>Please run "npm run verify-contracts:${process.env.ENV?.toLocaleLowerCase()}" to verify the contract deployed on etherscan.</li>` + 
-    `<li>Please run "npm run new-round::${process.env.ENV?.toLocaleLowerCase()}" under the new owner account to start the initial round</li></ol>`,
+    `<li>Please run "npm run etherscan-verify:${process.env.ENV?.toLocaleLowerCase()}" to verify the contract deployed on etherscan.</li>` + 
+    `<li>Please run "npm run new-round:${process.env.ENV?.toLocaleLowerCase()}" under the new owner account to start the initial round</li></ol>`,
     isHtml: true
 }
 

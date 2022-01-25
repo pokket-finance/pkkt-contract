@@ -2,7 +2,7 @@
 import { getStorage, getFileStorage } from "../helper/storageHelper";
 import promptHelper from '../helper/promptHelper';
  
-const main = async ({ forceSettlerPrivateKey }, {
+const main = async ({ forcesettlerkey }, {
     network,
     deployments,
     getNamedAccounts,
@@ -69,7 +69,7 @@ const main = async ({ forceSettlerPrivateKey }, {
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
     if (deployerAddress && settlerAddress && deployerPrivateKey ){
       console.log(`Deployer Address: ${deployerAddress}; Settler Address: ${settlerAddress}`);
-      if (!forceSettlerPrivateKey){
+      if (!forcesettlerkey){
         return;
       }
       else {

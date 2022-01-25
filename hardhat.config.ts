@@ -121,7 +121,7 @@ task("prepare-accounts", "Prepare accounts", prepareAccounts);
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
 
 task("new-round", "Initiate a new round", initiateSettlement)
-.addFlag("forceSettlerPrivateKey", "If set, settler private key must be input if missing");
+.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
 
 
 task("verify-contracts", "Verify solidity source", verifyContracts);

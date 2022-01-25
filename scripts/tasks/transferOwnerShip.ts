@@ -1,6 +1,7 @@
 
 import promptHelper from '../helper/promptHelper';
 import { getFileStorage } from "../helper/storageHelper";
+import {getEmailer} from '../helper/emailHelper';
 const main = async ({}, {
     network, ethers, deployments
 }) => {   
@@ -23,6 +24,16 @@ const main = async ({}, {
     await fileStorage.writeValue("ownerAddress", result.ownerAddress);
     
     console.log(`Transfer ownership of PKKTHodlBoosterOption on ${network.name} to ${result.ownerAddress}`);    
+    var emailer = await getEmailer();
+    const emailContent = { 
+      to: emailer.emailReceivers, 
+      cc: [],
+      subject:`Transfer ownership of PKKTHodlBoosterOption on ${network.name}`,
+      content: `<h2>Transfer ownership of PKKTHodlBoosterOption on ${network.name} to <b>${result.ownerAddress}</b><h2>Please keep make sure that account ${result.ownerAddress} is fully secured.`,
+      isHtml: true
+  }
+  
+   await emailer.emailSender.sendEmail(emailContent);
 
 }; 
 export default main;

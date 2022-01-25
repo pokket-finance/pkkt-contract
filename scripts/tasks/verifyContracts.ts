@@ -1,6 +1,8 @@
 import { TaskArguments } from "hardhat/types";
+import { exit } from "process";
 import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER} from "../../constants/constants"; 
 
+import {getEmailer} from '../helper/emailHelper';
 const main = async (
   _taskArgs: TaskArguments,
   { deployments, network, run, getNamedAccounts }
@@ -18,8 +20,10 @@ const main = async (
     await run("verify:verify", {
       address: OptionLifecycle.address,
     });
+    console.log("Verified OptionLifecycle on etherscan");
   } catch (e) {
     console.error(e);
+    exit(-1);
   }
  
 
@@ -50,10 +54,21 @@ const main = async (
       constructorArguments: HODLBOOSTER_ARGS,
       libraries: { OptionLifecycle: OptionLifecycle.address },
     });
+    console.log("Verified PKKTHodlBoosterOption on etherscan");
   } catch (e) {
     console.error(e);
+    exit(-1);
   }
 
-   
+  var emailer = await getEmailer();
+  const emailContent = { 
+    to: emailer.emailReceivers, 
+    cc: [],
+    subject:`PKKTHodlBoosterOption verified on etherscan`,
+    content: `<h2>PKKTHodlBoosterOption verified on etherscan (${network})<h2>Please visit <a href="${process.env.ETHERSCAN_SITE}/address/${PKKTHodlBoosterOption.address}#code">smart contract code on etherscan (${network})</a>for more details`,
+    isHtml: true
+}
+
+ await emailer.emailSender.sendEmail(emailContent);
 };
 export default main;
