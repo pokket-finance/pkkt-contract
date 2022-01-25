@@ -23,7 +23,7 @@ const main = async (
     console.log("Verified OptionLifecycle on etherscan");
   } catch (e) {
     console.error(e);
-    exit(-1);
+    //exit(-1);
   }
  
 
