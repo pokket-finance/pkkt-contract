@@ -4,8 +4,7 @@ pragma solidity =0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; 
 //import "hardhat/console.sol";
 
 import {StructureData} from "./libraries/StructureData.sol";
@@ -15,8 +14,7 @@ import "./interfaces/ISettlementAggregator.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 abstract contract OptionVault is
-    Ownable,
-    ReentrancyGuard,
+    Ownable, 
     ISettlementAggregator
 {
     using SafeERC20 for IERC20;
@@ -54,7 +52,7 @@ abstract contract OptionVault is
         uint256 _amount,
         address _contractAddress,
         bool _redeem
-    ) internal nonReentrant {
+    ) internal lock {
         if (!_redeem) {
             require(balanceEnough(_contractAddress));
         }
@@ -395,8 +393,8 @@ abstract contract OptionVault is
         }
     }
 
-    //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external override {
+    //todo: whitelist
+    function withdrawAsset(address _trader, address _asset) external override lock {
         validateSettler();
         StructureData.AssetData storage assetSubData = assetData[_asset];
         require(assetSubData.leftOverAmount > 0); 
@@ -406,7 +404,7 @@ abstract contract OptionVault is
         assetSubData.leftOverAmount = 0;
     }
 
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external override {
+    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock {
         validateSettler();
         uint256 count = _assets.length;
         for(uint256 i = 0; i < count; i++) {
@@ -484,6 +482,14 @@ abstract contract OptionVault is
     }
 
     receive() external payable {}
+
+     uint256 private locked = 0;
+     modifier lock {
+        require(locked == 0, "system-locked");
+        locked = 1;
+        _;
+        locked = 0;
+    }
     function validateSettler() private view {
          require(settlerRoleAddress == msg.sender, "!settler"); 
     }
