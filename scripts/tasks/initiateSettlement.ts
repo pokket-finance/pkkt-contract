@@ -35,7 +35,7 @@ const main = async ({}, {
       to: emailer.emailTos, 
       cc: emailer.emailCcs,
       subject:`Start new round for PKKTHodlBoosterOption on ${network.name}`,
-      content: `Start new epoch for PKKTHodlBoosterOption on ${network.name}</br>Current epoch number is <b>${currentRound}</b>.</br>Please visit <a href="${process.env.TRADER_SITE}">Trader Site</a> with account ${settler} for more details.`,
+      content: `Start new epoch for PKKTHodlBoosterOption on ${network.name}</br>Current epoch number is <b>${currentRound}</b>.</br>Please visit <a href="${process.env.TRADER_SITE}">Trader Site</a> with account ${settler} to set up the predicted data/make decision.`,
       isHtml: true
   }
   

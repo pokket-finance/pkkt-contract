@@ -491,7 +491,7 @@ abstract contract OptionVault is
         locked = 0;
     }
     function validateSettler() private view {
-         require(settlerRoleAddress == msg.sender, "!settler"); 
+         require(settlerRoleAddress == msg.sender, "!Settler"); 
     }
     function autoRollToCounterPartyByOption(
         StructureData.OptionData storage _option,
