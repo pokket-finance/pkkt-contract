@@ -485,7 +485,7 @@ abstract contract OptionVault is
 
      uint256 private locked = 0;
      modifier lock {
-        require(locked == 0, "system-locked");
+        require(locked == 0, "locked");
         locked = 1;
         _;
         locked = 0;
