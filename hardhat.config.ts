@@ -52,7 +52,7 @@ var accounts = data.deployerPrivateKey ?
       accounts: accounts,
     },
     ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: process.env.ROPSTEN_RPC_URL ?? `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 20e9,
