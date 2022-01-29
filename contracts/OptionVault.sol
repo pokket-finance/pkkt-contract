@@ -102,8 +102,7 @@ abstract contract OptionVault is
         assetCount = assetCount_;
     }
 
-    function initiateSettlement() external override {
-        validateSettler();
+    function initiateSettlement() external override settlerOnly { 
         require(!underSettlement);
         currentRound = currentRound + 1;
         underSettlement = true;
@@ -218,9 +217,9 @@ abstract contract OptionVault is
 
     function settle(StructureData.OptionExecution[] memory _execution)
         external
-        override
-    {
-        validateSettler();
+        override 
+        settlerOnly
+    { 
         require(underSettlement);
         uint256 count = _execution.length;
         require(count == optionPairCount);
@@ -380,8 +379,7 @@ abstract contract OptionVault is
 
     function setOptionParameters(
         uint256[] memory _parameters
-    ) external override {
-        validateSettler();
+    ) external override settlerOnly { 
         uint256 count = _parameters.length; 
         require(!underSettlement);
         require(currentRound > 1);
@@ -394,8 +392,7 @@ abstract contract OptionVault is
     }
 
     //todo: whitelist
-    function withdrawAsset(address _trader, address _asset) external override lock {
-        validateSettler();
+    function withdrawAsset(address _trader, address _asset) external override lock settlerOnly { 
         StructureData.AssetData storage assetSubData = assetData[_asset];
         require(assetSubData.leftOverAmount > 0); 
         uint128 balance = uint128(assetSubData.leftOverAmount);
@@ -404,8 +401,7 @@ abstract contract OptionVault is
         assetSubData.leftOverAmount = 0;
     }
 
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock {
-        validateSettler();
+    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock settlerOnly{ 
         uint256 count = _assets.length;
         for(uint256 i = 0; i < count; i++) {
             StructureData.AssetData storage assetSubData = assetData[_assets[i]];
@@ -490,8 +486,9 @@ abstract contract OptionVault is
         _;
         locked = 0;
     }
-    function validateSettler() private view {
+    modifier settlerOnly() {
          require(settlerRoleAddress == msg.sender, "!settler"); 
+         _;
     }
     function autoRollToCounterPartyByOption(
         StructureData.OptionData storage _option,
