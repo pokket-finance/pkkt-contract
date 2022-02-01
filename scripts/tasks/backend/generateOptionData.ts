@@ -18,7 +18,7 @@ import {
     WBTC_USDC_OPTION_ID
 } from "../../../constants/constants";
 import { getDeployedContractHelper,packOptionParameter } from "./utilities";
-import { settlerWallet } from "../../../server/utilities/utilities";
+//import { settlerWallet } from "../../../server/utilities/utilities";
 
 
 async function main({ command }, { ethers, deployments, getNamedAccounts }) {
@@ -52,7 +52,7 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
     ];
 
     if (command == 20) {
-        await optionVault.connect(settler as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.ExecuteCall]);
+        await optionVault.connect(settler as Signer).settle([0, 1], { gasPrice: 50000000000, gasLimit: 2100000 });
     }
 
     // 30000000000
@@ -61,7 +61,7 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
         // round 1
         // let gasPrice = await ethers.provider.getGasPrice();
         // console.log(ethers.utils.formatUnits(gasPrice, "gwei"));
-        await optionVault.connect(settler as Signer).initiateSettlement({ gasPrice: 30000000000 });
+        await optionVault.connect(settler as Signer).initiateSettlement({ gasPrice: 50000000000, gasLimit: 2100000 });
         //
         //await optionVault.connect(settler as Signer).initiateSettlement();
         // const ethPrice = 4000 * (10**ETH_PRICE_PRECISION);
@@ -82,17 +82,20 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
     else if (command == 2) {
         // await optionVault.connect(settler as Signer).initiateSettlement();
         let gasPrice = await ethers.provider.getGasPrice();
-        console.log(ethers.utils.formatUnits(gasPrice, "gwei"));
-        await usdc.connect(deployer as Signer).approve(
+        // console.log(ethers.utils.formatUnits(gasPrice, "gwei"));
+        await usdc.connect(settler as Signer).approve(
             optionVault.address,
-            BigNumber.from(1000000).mul(USDC_MULTIPLIER),
+            BigNumber.from(100000000000).mul(USDC_MULTIPLIER),
             { gasPrice }
         );
-        await wbtc.connect(deployer as Signer).approve(
+        await wbtc.connect(settler as Signer).approve(
             optionVault.address,
-            BigNumber.from(10).mul(WBTC_MULTIPLIER),
+            BigNumber.from(100000000000).mul(WBTC_MULTIPLIER),
             { gasPrice }
         );
+
+        await optionVault.connect(deployer as Signer).deposit(WBTCCALLOPTION, BigNumber.from(1).mul(WBTC_MULTIPLIER), { gasPrice: 50000000000, gasLimit: 2100000 });
+        await optionVault.connect(deployer as Signer).deposit(WBTCPUTOPTION, BigNumber.from(5000).mul(USDC_MULTIPLIER), { gasPrice: 50000000000, gasLimit: 2100000 });
         //await deposits();
 
         // await optionVault.connect(alice as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(5).mul(ETH_MULTIPLIER)});
@@ -145,9 +148,9 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
     else if (command == 3) {
         // let gasPrice = await ethers.provider.getGasPrice();
         // console.log(ethers.utils.formatUnits(gasPrice, "gwei"));
-        // await optionVault.connect(deployer as Signer).deposit(WBTCCALLOPTION, BigNumber.from(1).mul(WBTC_MULTIPLIER), { gasPrice });
-        // await optionVault.connect(deployer as Signer).deposit(WBTCPUTOPTION, BigNumber.from(50000).mul(USDC_MULTIPLIER))
-        await optionVault.connect(deployer as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(1).mul(ETH_MULTIPLIER), gasPrice: 30000000000 });
+        await optionVault.connect(deployer as Signer).deposit(WBTCCALLOPTION, BigNumber.from(1).mul(WBTC_MULTIPLIER), { gasPrice: 50000000000, gasLimit: 2100000 });
+        await optionVault.connect(deployer as Signer).deposit(WBTCPUTOPTION, BigNumber.from(5000).mul(USDC_MULTIPLIER), { gasPrice: 50000000000, gasLimit: 2100000 });
+        await optionVault.connect(deployer as Signer).depositETH(ETHCALLOPTION, { value: BigNumber.from(1).mul(ETH_MULTIPLIER), gasPrice: 50000000000, gasLimit: 2100000 });
 
         // await optionVault.connect(settler as Signer).setOptionParameters([
         //     packOptionParameter(ethPrice*1.04, 0.02 * RATIO_MULTIPLIER), 
@@ -173,11 +176,11 @@ async function main({ command }, { ethers, deployments, getNamedAccounts }) {
     else if (command == 4) {
         var balance = await optionVault.connect(deployer as Signer).getAccountBalance(WBTCCALLOPTION);
         var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
-        await optionVault.connect(deployer as Signer).initiateWithraw(WBTCCALLOPTION, diff, { gasPrice: 30000000000 }); 
+        await optionVault.connect(settler as Signer).initiateWithraw(WBTCCALLOPTION, diff, { gasPrice: 50000000000, gasLimit: 2100000 }); 
 
         var balance = await optionVault.connect(deployer as Signer).getAccountBalance(WBTCPUTOPTION);
         var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 
-        await optionVault.connect(deployer as Signer).initiateWithraw(WBTCPUTOPTION, diff, { gasPrice: 30000000000 }); 
+        await optionVault.connect(settler as Signer).initiateWithraw(WBTCPUTOPTION, diff, { gasPrice: 50000000000, gasLimit: 2100000 }); 
 
         // var balance = await optionVault.connect(deployer as Signer).getAccountBalance(ETHCALLOPTION);
         // var diff = balance.lockedDepositAssetAmount.sub(balance.toTerminateDepositAssetAmount); 

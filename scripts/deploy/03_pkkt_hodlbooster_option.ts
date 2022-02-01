@@ -80,7 +80,8 @@ const main = async ({
     contract: "PKKTHodlBoosterOption",
     libraries: {
       OptionLifecycle: optionLifecycle.address,
-    } 
+    },
+    gasPrice: BigNumber.from(50000000000)
   }); 
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);    
 

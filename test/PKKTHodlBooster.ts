@@ -8,7 +8,7 @@ import {advanceBlockTo} from "./utilities/timer";
 import {OptionPair, OptionSetting, packOptionParameter,parseOptionParameter} from "./utilities/optionPair";
 import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS } from "../constants/constants";
+import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS, USDC_MULTIPLIER } from "../constants/constants";
 import { AssertionError } from "assert/strict";
 import { Table  } from 'console-table-printer';
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
@@ -166,6 +166,57 @@ describe.only("PKKT Hodl Booster", async function () {
 
         afterEach(async function () {
  
+        });
+
+        it("turn on and off deposits", async () => {
+          await vault.connect(settler as Signer).initiateSettlement();
+
+          // user can deposit
+          await vault.connect(alice as Signer).depositETH(optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(5).mul(ETHMultiplier)});
+          await vault.connect(alice as Signer).deposit(optionPairs[ETHUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER));
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(2).mul(WBTCMultiplier));
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER));
+
+          var ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId); 
+          assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(5).mul(ETHMultiplier).toString()); 
+          var usdcEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].putOptionId); 
+          assert.equal(usdcEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(USDTMultiplier).toString());
+
+          var wbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].callOptionId); 
+          assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2).mul(WBTCMultiplier).toString()); 
+          var usdcWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].putOptionId); 
+          assert.equal(usdcWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(USDTMultiplier).toString()); 
+
+
+
+          // check that turning deposits off works
+          await vault.connect(settler as Signer).switchOptionPair(0);
+          await expect(vault.connect(alice as Signer).depositETH(optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(5).mul(ETHMultiplier)})).to.be.revertedWith("cannot deposit eth or usdc");
+          await expect(vault.connect(alice as Signer).deposit(optionPairs[ETHUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER))).to.be.revertedWith("cannot deposit eth or usdc");
+
+          await vault.connect(settler as Signer).switchOptionPair(1);
+          await expect(vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(2).mul(WBTCMultiplier))).to.be.revertedWith("cannot deposit wbtc or usdc");
+          await expect(vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER))).to.be.revertedWith("cannot deposit wbtc or usdc");
+
+          // check that turning deposits back on works
+          await vault.connect(settler as Signer).switchOptionPair(0);
+          await vault.connect(alice as Signer).depositETH(optionPairs[ETHUSDTOPTION].callOptionId, { value: BigNumber.from(5).mul(ETHMultiplier)});
+          await vault.connect(alice as Signer).deposit(optionPairs[ETHUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER));
+
+          await vault.connect(settler as Signer).switchOptionPair(1);
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].callOptionId, BigNumber.from(2).mul(WBTCMultiplier));
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTION].putOptionId, BigNumber.from(1000).mul(USDC_MULTIPLIER));
+
+          var ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].callOptionId); 
+          assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).toString()); 
+          var usdcEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTION].putOptionId); 
+          assert.equal(usdcEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(USDTMultiplier).toString());
+
+          var wbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].callOptionId); 
+          assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(4).mul(WBTCMultiplier).toString()); 
+          var usdcWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCUSDTOPTION].putOptionId); 
+          assert.equal(usdcWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(USDTMultiplier).toString()); 
+
         });
        
         it("user perspective", async function () {
@@ -494,7 +545,7 @@ describe.only("PKKT Hodl Booster", async function () {
             console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, USDT_DECIMALS)} usdt`);
           }
           ethEnough = await vault.balanceEnough(NULL_ADDRESS);
-          btcEnough = await vault.balanceEnough(wbtc.address); 
+          btcEnough = await vault.balanceEnough(wbtc.address);
           usdtEnough = await vault.balanceEnough(usdt.address);
           assert.isTrue(ethEnough);
           assert.isTrue(btcEnough);
