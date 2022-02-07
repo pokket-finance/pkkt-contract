@@ -193,8 +193,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
 
     // Switches allowing deposits for the given option pait on/off
-    function switchOptionPair(uint8 pairId) external {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+    function switchOptionPair(uint8 pairId) external settlerOnly {
         // ETH-USDC pair
         if(pairId == 0) {
             canDepositEthAndUsdc = !canDepositEthAndUsdc;

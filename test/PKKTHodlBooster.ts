@@ -8,11 +8,7 @@ import {advanceBlockTo} from "./utilities/timer";
 import {OptionPair, OptionSetting, packOptionParameter,parseOptionParameter} from "./utilities/optionPair";
 import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-<<<<<<< HEAD
-import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS, USDC_MULTIPLIER } from "../constants/constants";
-=======
-import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS, WBTC_MULTIPLIER } from "../constants/constants";
->>>>>>> 31e75057123d12fb56a830ad30cb4f5f4d4b0352
+import { NULL_ADDRESS,WEI,GWEI ,USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, SETTLEMENTPERIOD,OptionExecution, WBTC_ADDRESS, WBTC_MULTIPLIER, USDC_MULTIPLIER } from "../constants/constants";
 import { AssertionError } from "assert/strict";
 import { Table  } from 'console-table-printer';
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
