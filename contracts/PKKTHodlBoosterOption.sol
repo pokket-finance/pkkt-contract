@@ -138,7 +138,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     //deposit eth
     function depositETH(uint8 _optionId) external payable override canDeposit(_optionId) {
         require(currentRound > 0, "!Started");
-        require(msg.value > 0);
+        require(msg.value > 0, "no value");
 
         validateOptionById(_optionId);
         StructureData.OptionPairDefinition storage pair = optionPairs[

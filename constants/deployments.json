@@ -1,9 +1,7 @@
 {
     "localhost": {
-        "OptionLifecycle": "0xD84379CEae14AA33C123Af12424A37803F885889",
-        "PKKTHodlBoosterOption": "0x2B0d36FACD61B71CC05ab8F3D2355ec3631C0dd5",
-        "USDC": "0x4EE6eCAD1c2Dae9f525404De8555724e3c35d07B",
-        "WBTC": "0xBEc49fA140aCaA83533fB00A2BB19bDdd0290f25"
+        "OptionLifecycle": "0x4EE6eCAD1c2Dae9f525404De8555724e3c35d07B",
+        "PKKTHodlBoosterOption": "0xBEc49fA140aCaA83533fB00A2BB19bDdd0290f25"
     },
     "mainnet": {
     },
@@ -13,5 +11,11 @@
         "StructureData": "0xcE12e6f175d75Ca87219DB68D08f5617cd0F0d50",
         "USDC": "0x254a9c29eaf137Fc7a6c23C9bb0D82a68C39c37D",
         "WBTC": "0xdb9A0a443f020d211349de053B65650cb3aC364B"
+    },
+    "ropsten": {
+        "OptionLifecycle": "0x28D1E0e4460FB7e65DE364e613b3C29C0C0A0933",
+        "PKKTHodlBoosterOption": "0x70457f140341e4f9d646e0Ba62CF45e3c8437F95",
+        "USDC": "0x0f3210636461Ae2C7ADAEF4d1A8124EB0F3b63fA",
+        "WBTC": "0xE75e6098CE2d7F289b07ABB055321d690ed2912d"
     }
 }

@@ -4,8 +4,7 @@ pragma solidity =0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; 
 //import "hardhat/console.sol";
 
 import {StructureData} from "./libraries/StructureData.sol";
@@ -15,8 +14,7 @@ import "./interfaces/ISettlementAggregator.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 abstract contract OptionVault is
-    AccessControl,
-    ReentrancyGuard,
+    Ownable, 
     ISettlementAggregator
 {
     using SafeERC20 for IERC20;
@@ -25,6 +23,7 @@ abstract contract OptionVault is
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    event SettlerChanged(address indexed previousSettler, address indexed newSettler);
     uint16 public override currentRound;
     bool public underSettlement;
     uint8 public optionPairCount;
@@ -41,14 +40,11 @@ abstract contract OptionVault is
     uint8 private assetCount;
     mapping(uint8 => address) private asset;
     mapping(address => StructureData.AssetData) private assetData;
-
+    
+    address private settlerRoleAddress;
     constructor(address _settler) {
         require(_settler != address(0));
-
-        // Contract deployer will be able to grant and revoke trading role
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        // Address capable of initiating and finizalizing settlement
-        _setupRole(StructureData.SETTLER_ROLE, _settler);
+        settlerRoleAddress = _settler;
     }
 
     function clientWithdraw(
@@ -56,17 +52,21 @@ abstract contract OptionVault is
         uint256 _amount,
         address _contractAddress,
         bool _redeem
-    ) internal nonReentrant {
+    ) internal lock {
         if (!_redeem) {
             require(balanceEnough(_contractAddress));
         }
         OptionLifecycle.withdraw(_target, _amount, _contractAddress);
     }
-
+    function setSettler(address _settler) external onlyOwner{
+        address oldSettlerAddress = settlerRoleAddress;
+        settlerRoleAddress = _settler;
+        emit SettlerChanged(oldSettlerAddress, _settler);
+    } 
+    
     function addOptionPairs(
         StructureData.OptionPairDefinition[] memory _optionPairDefinitions
-    ) public override {
-        _checkRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    ) public override onlyOwner { 
         uint256 length = _optionPairDefinitions.length;
         uint8 optionPairCount_ = optionPairCount;
         uint8 assetCount_ = assetCount;
@@ -102,8 +102,7 @@ abstract contract OptionVault is
         assetCount = assetCount_;
     }
 
-    function initiateSettlement() external override {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+    function initiateSettlement() external override settlerOnly { 
         require(!underSettlement);
         currentRound = currentRound + 1;
         underSettlement = true;
@@ -218,9 +217,9 @@ abstract contract OptionVault is
 
     function settle(StructureData.OptionExecution[] memory _execution)
         external
-        override
-    {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+        override 
+        settlerOnly
+    { 
         require(underSettlement);
         uint256 count = _execution.length;
         require(count == optionPairCount);
@@ -380,8 +379,7 @@ abstract contract OptionVault is
 
     function setOptionParameters(
         uint256[] memory _parameters
-    ) external override {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+    ) external override settlerOnly { 
         uint256 count = _parameters.length; 
         require(!underSettlement);
         require(currentRound > 1);
@@ -393,9 +391,8 @@ abstract contract OptionVault is
         }
     }
 
-    //todo: whitelist / nonReentrancy check
-    function withdrawAsset(address _trader, address _asset) external override {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+    //todo: whitelist
+    function withdrawAsset(address _trader, address _asset) external override lock settlerOnly { 
         StructureData.AssetData storage assetSubData = assetData[_asset];
         require(assetSubData.leftOverAmount > 0); 
         uint128 balance = uint128(assetSubData.leftOverAmount);
@@ -404,8 +401,7 @@ abstract contract OptionVault is
         assetSubData.leftOverAmount = 0;
     }
 
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external override {
-        _checkRole(StructureData.SETTLER_ROLE, msg.sender);
+    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock settlerOnly{ 
         uint256 count = _assets.length;
         for(uint256 i = 0; i < count; i++) {
             StructureData.AssetData storage assetSubData = assetData[_assets[i]];
@@ -416,6 +412,7 @@ abstract contract OptionVault is
             assetSubData.leftOverAmount = 0;
         }  
     }
+
     function balanceEnough(address _asset) public view override returns (bool) {
         StructureData.AssetData storage assetSubData = assetData[_asset];
         int128 balance = assetSubData.leftOverAmount;
@@ -482,6 +479,17 @@ abstract contract OptionVault is
 
     receive() external payable {}
 
+     uint256 private locked = 0;
+     modifier lock {
+        require(locked == 0, "locked");
+        locked = 1;
+        _;
+        locked = 0;
+    }
+    modifier settlerOnly() {
+         require(settlerRoleAddress == msg.sender, "!settler"); 
+         _;
+    }
     function autoRollToCounterPartyByOption(
         StructureData.OptionData storage _option,
         StructureData.OptionState storage _optionState,

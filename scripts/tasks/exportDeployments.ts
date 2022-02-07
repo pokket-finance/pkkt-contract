@@ -3,7 +3,8 @@ import path from "path";
 import { promisify } from "util";
 import stringify from "json-stable-stringify";
 
-const main = async () => {
+const main = async ({network}) => {
+  console.log(network)
   const readdir = promisify(fs.readdir);
   const deploymentsDir = path.resolve(
     path.join(__dirname, "..", "..", "deployments")
