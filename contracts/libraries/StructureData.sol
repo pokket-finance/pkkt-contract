@@ -104,6 +104,7 @@ library StructureData {
         uint8 counterPartyAssetAmountDecimals;
         address depositAsset;
         address counterPartyAsset;
+        bool manualDepositDisabled;
     }
     struct SettlementAccountingResult {
         uint128 depositAmount;

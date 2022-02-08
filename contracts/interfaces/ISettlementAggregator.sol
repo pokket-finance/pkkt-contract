@@ -5,6 +5,9 @@ import {StructureData} from "../libraries/StructureData.sol";
 interface ISettlementAggregator {
          
     function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) external; 
+
+    function toggleOptionPairDeposit(uint8 _pairId) external;
+    
     function currentRound() external view returns(uint16);
     //rollToNext + dryRunSettlement
     //todo: specifying quota
