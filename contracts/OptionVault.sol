@@ -102,6 +102,12 @@ abstract contract OptionVault is
         assetCount = assetCount_;
     }
 
+
+    function toggleOptionPairDeposit(uint8 _pairId) external override settlerOnly {
+        StructureData.OptionPairDefinition storage pair = optionPairs[_pairId];
+        pair.manualDepositDisabled = !pair.manualDepositDisabled;
+    }
+    
     function initiateSettlement() external override settlerOnly { 
         require(!underSettlement);
         currentRound = currentRound + 1;

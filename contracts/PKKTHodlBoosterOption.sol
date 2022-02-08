@@ -18,20 +18,8 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     using SafeMath for uint256;
     using Utils for uint256;
     using OptionLifecycle for StructureData.UserState;
-
-    bool public canDepositEthAndUsdc;
-    bool public canDepositWbtcAndUsdc;
-
-    modifier canDeposit(uint8 _optionId) {
-        if (_optionId == 1 || _optionId == 2) {
-            require(canDepositEthAndUsdc, "cannot deposit eth or usdc");
-        }
-        if (_optionId == 3 || _optionId == 4) {
-            require(canDepositWbtcAndUsdc, "cannot deposit wbtc or usdc");
-        }
-        _;
-    }
-
+ 
+ 
     //private data for complete withdrawal and redeposit
 
     //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
@@ -40,9 +28,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         address _settler,
         StructureData.OptionPairDefinition[] memory _optionPairDefinitions
     ) OptionVault(_settler) {
-        addOptionPairs(_optionPairDefinitions);
-        canDepositEthAndUsdc = true;
-        canDepositWbtcAndUsdc = true;
+        addOptionPairs(_optionPairDefinitions); 
     }
 
     function validateOptionById(uint8 _optionId) private view {
@@ -136,7 +122,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
 
     //deposit eth
-    function depositETH(uint8 _optionId) external payable override canDeposit(_optionId) {
+    function depositETH(uint8 _optionId) external payable override {
         require(currentRound > 0, "!Started");
         require(msg.value > 0, "no value");
 
@@ -144,6 +130,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
         ];
+        require(!pair.manualDepositDisabled, "DepositDisabled");  
         address depositAsset = pair.callOptionId == _optionId
             ? pair.depositAsset
             : pair.counterPartyAsset;
@@ -164,13 +151,14 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint8 _optionId, uint256 _amount) external override canDeposit(_optionId) {
+    function deposit(uint8 _optionId, uint256 _amount) external override {
         require(currentRound > 0, "!Started");
         require(_amount > 0, "!amount");
         validateOptionById(_optionId);
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
         ];
+        require(!pair.manualDepositDisabled, "DepositDisabled");  
         address depositAsset = pair.callOptionId == _optionId
             ? pair.depositAsset
             : pair.counterPartyAsset;
@@ -191,18 +179,7 @@ contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
             _amount
         );
     }
-
-    // Switches allowing deposits for the given option pait on/off
-    function switchOptionPair(uint8 pairId) external settlerOnly {
-        // ETH-USDC pair
-        if(pairId == 0) {
-            canDepositEthAndUsdc = !canDepositEthAndUsdc;
-        }
-        // WBTC-USDC pair
-        else if (pairId == 1) {
-            canDepositWbtcAndUsdc = !canDepositWbtcAndUsdc;
-        }
-    }
+ 
 
     //used to render the history at client side, reading the minting transactions of a specific address,
     //for each transaction, read the blockheight and call this method to get the result
