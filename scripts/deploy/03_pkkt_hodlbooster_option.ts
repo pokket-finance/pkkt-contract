@@ -57,6 +57,7 @@ const main = async ({
   console.log(`03 - Deploying PKKTHodlBoosterOption on ${network.name} from ${deployer}`); 
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer,
+    gasPrice: BigNumber.from(200e9)
   });
   const optionVault = await deploy("PKKTHodlBoosterOption", {
     from: deployer,
@@ -84,7 +85,7 @@ const main = async ({
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     },
-    gasPrice: BigNumber.from(50000000000)
+    gasPrice: BigNumber.from(200e9)
   }); 
   console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);
   const emailContent = { 
