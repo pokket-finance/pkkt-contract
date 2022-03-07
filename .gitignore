@@ -19,4 +19,5 @@ build
 /deployments/localhost/*.json
 package-lock.json
 data.json
+bsc.data.json
 serverData.json
