@@ -1,6 +1,7 @@
 import { TaskArguments } from "hardhat/types";
 import { exit } from "process";
-import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER} from "../../constants/constants"; 
+import { NULL_ADDRESS, BSC_ETH_ADDRESS, USDC_ADDRESS, BSC_USDC_ADDRESS, 
+  WBTC_ADDRESS, BSC_WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER, CHAINID} from "../../constants/constants"; 
 
 import {getEmailer} from '../helper/emailHelper';
 const main = async (
@@ -11,10 +12,25 @@ const main = async (
   const { settler } = await getNamedAccounts();  
   const OptionLifecycle = await deployments.get("OptionLifecycle");  
   const PKKTHodlBoosterOption = await deployments.get("PKKTHodlBoosterOption");  
-
-  const isMainnet = network.name === "mainnet" ; 
-  var usdcAddress = isMainnet ? USDC_ADDRESS : process.env.USDC_ADDRESS;
-  var wbtcAddress = isMainnet? WBTC_ADDRESS : process.env.WBTC_ADDRESS;
+  const chainId = network.config.chainId;
+  let usdcAddress:string;
+  let wbtcAddress:string;
+  let ethAddress:string;
+  if (!chainId || chainId == CHAINID.ETH_MAINNET){
+     usdcAddress = USDC_ADDRESS;
+     wbtcAddress = WBTC_ADDRESS;
+     ethAddress = NULL_ADDRESS;
+  }
+  else if (chainId == CHAINID.BSC_MAINNET) { 
+    usdcAddress = BSC_USDC_ADDRESS;
+    wbtcAddress = BSC_WBTC_ADDRESS;
+    ethAddress = BSC_ETH_ADDRESS;
+  }
+  else {
+    usdcAddress = process.env.USDC_ADDRESS!;
+    wbtcAddress = process.env.WBTC_ADDRESS!;
+    ethAddress = process.env.WBTC_ADDRESS!;
+  } 
 
   try {
     await run("verify:verify", {
@@ -31,7 +47,7 @@ const main = async (
     { 
       depositAssetAmountDecimals: ETH_DECIMALS,
       counterPartyAssetAmountDecimals: USDC_DECIMALS,
-      depositAsset: NULL_ADDRESS,
+      depositAsset: ethAddress,
       counterPartyAsset: usdcAddress,
       callOptionId: 0,
       putOptionId: 0
