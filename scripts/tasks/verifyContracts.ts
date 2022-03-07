@@ -10,7 +10,7 @@ const main = async (
 ) => {
     
   const { settler } = await getNamedAccounts();  
-  const OptionLifecycle = await deployments.get("OptionLifecycle");  
+  const OptionLifecycle = await deployments.get("OptionLifecycle");   
   const PKKTHodlBoosterOption = await deployments.get("PKKTHodlBoosterOption");  
   const chainId = network.config.chainId;
   let usdcAddress:string;
@@ -29,7 +29,7 @@ const main = async (
   else {
     usdcAddress = process.env.USDC_ADDRESS!;
     wbtcAddress = process.env.WBTC_ADDRESS!;
-    ethAddress = process.env.WBTC_ADDRESS!;
+    ethAddress = process.env.ETH_ADDRESS!; 
   } 
 
   try {

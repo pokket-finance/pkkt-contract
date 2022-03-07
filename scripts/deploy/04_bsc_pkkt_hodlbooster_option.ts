@@ -76,8 +76,7 @@ const main = async ({
   console.log(`Deployed ETH at ${ETH.address} on ${network.name}`);
   ethAddress = ETH.address;
 
-}
-
+} 
   console.log(`04 - Deploying BSC PKKTHodlBoosterOption on ${network.name} from ${deployer}`); 
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer, 
