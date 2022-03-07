@@ -50,25 +50,41 @@ var accounts = data.deployerPrivateKey ?
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, 
       accounts: accounts,
+      chainId: 1
     },
     ropsten: {
       url: process.env.ROPSTEN_RPC_URL ?? `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 60e9,
-    },
-    rinkeby: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      chainId: 3
+    }, 
+    bsctest: { 
+      url: process.env.BSCTEST_RPC_URL ?? `https://data-seed-prebsc-1-s1.binance.org:8545`,
       gas: 2100000,
-      gasPrice: 100000000000,
+      gasPrice: 20e9,
       accounts: accounts,
+      chainId: 97
     },
+    bsc: { 
+      url: process.env.BSC_RPC_URL ?? `https://bsc-dataseed.binance.org`,
+      gas: 2100000,
+      gasPrice: 5e9,
+      accounts: accounts,
+      chainId: 56
+    }
   },
   namedAccounts: {
     deployer: {
       default: data.deployerAddress ? data.deployerAddress : 0,
+      //ropsten
       3: data.deployerAddress ? data.deployerAddress : 0,
+      //main
       1: data.deployerAddress ? data.deployerAddress : 0,
+      //bscmain
+      56: data.deployerAddress ? data.deployerAddress : 0,
+      //bsctest
+      97: data.deployerAddress ? data.deployerAddress : 0
     },
     settler: { 
       default: data.settlerAddress ? data.settlerAddress : 1,

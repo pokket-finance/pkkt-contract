@@ -1,11 +1,12 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER} from "../../constants/constants"; 
+import { BSC_ETH_ADDRESS, BSC_USDC_ADDRESS, BSC_WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER} from "../../constants/constants"; 
 import { BigNumber, BigNumberish, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { PKKTHodlBoosterOption} from "../../typechain";
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
+
 dotenv.config();   
 const main = async ({
   network,
@@ -13,30 +14,34 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, settler } = await getNamedAccounts();   
-  if (network.config.chainId && network.config.chainId != CHAINID.ETH_MAINNET && network.config.chainId != CHAINID.ETH_ROPSTEN) {
-    console.log('Not eth-mainnet/ropsten/hardhat, skip deploying HodlBooster');
-    return;
-  } 
+  var { deployer, settler } = await getNamedAccounts();    
   const emailer = await getEmailer();
-  const isMainnet = network.name === "mainnet" ; 
-  var usdcAddress = isMainnet ? USDC_ADDRESS : process.env.USDC_ADDRESS;
-  var wbtcAddress = isMainnet? WBTC_ADDRESS : process.env.WBTC_ADDRESS;
+   
+  if (!network.config.chainId && network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET) {
+    console.log('Not bsc mainnet/testnet, skip deploying BSC HodlBooster');
+    return;
+  }  
+
+  const isMainnet = network.name === "bsc" ; 
+  var usdcAddress = isMainnet ? BSC_USDC_ADDRESS : process.env.USDC_ADDRESS;
+  var wbtcAddress = isMainnet? BSC_WBTC_ADDRESS : process.env.WBTC_ADDRESS;
+  var ethAddress = isMainnet? BSC_ETH_ADDRESS : process.env.ETH_ADDRESS;
+  
+  //deploy mock usdc, wbtc and eth
   if (!usdcAddress && !isMainnet){
-     //deploy mock usdc and wbtc
      const USDC = await deploy("USDC", {
       contract: "ERC20Mock",
       from: deployer,
       args: [
-          "USDCToken",
+          "Pegged USDC",
           "USDC",
           BigNumber.from(100000000).mul(USDC_MULTIPLIER),
           USDC_DECIMALS,
       ],
       
-  } );
-  usdcAddress = USDC.address;
-  console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
+    } );
+    usdcAddress = USDC.address;
+    console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
 
   }
    
@@ -45,8 +50,8 @@ const main = async ({
         contract: "ERC20Mock",
         from: deployer,
         args: [
-            "Wrapped BTC",
-            "WBTC",
+            "Pegged BTC",
+            "BTCB",
             BigNumber.from(10000).mul(WBTC_MULTIPLIER),
             WBTC_DECIMALS
         ],
@@ -54,11 +59,26 @@ const main = async ({
     
     console.log(`Deployed WBTC at ${WBTC.address} on ${network.name}`);
     wbtcAddress = WBTC.address;
-
  }
 
+ if (!ethAddress && !isMainnet){
+  const ETH = await deploy("ETH", {
+    contract: "ERC20Mock",
+    from: deployer,
+    args: [
+        "Pegged ETH",
+        "ETH",
+        BigNumber.from(100000).mul(ETH_MULTIPLIER),
+        ETH_DECIMALS
+    ],
+  });
 
-  console.log(`03 - Deploying PKKTHodlBoosterOption on ${network.name} from ${deployer}`); 
+  console.log(`Deployed ETH at ${ETH.address} on ${network.name}`);
+  ethAddress = ETH.address;
+
+}
+
+  console.log(`04 - Deploying BSC PKKTHodlBoosterOption on ${network.name} from ${deployer}`); 
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer, 
   });
@@ -68,7 +88,7 @@ const main = async ({
       { 
         depositAssetAmountDecimals: ETH_DECIMALS,
         counterPartyAssetAmountDecimals: USDC_DECIMALS,
-        depositAsset: NULL_ADDRESS,
+        depositAsset: ethAddress,
         counterPartyAsset: usdcAddress,
         callOptionId: 0,
         putOptionId: 0
@@ -89,7 +109,7 @@ const main = async ({
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
-  console.log(`03 - Deployed PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);
+  console.log(`04 - Deployed BSC PKKTHodlBoosterOption on ${network.name} to ${optionVault.address}`);
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
@@ -103,9 +123,9 @@ const main = async ({
 
   await emailer.emailSender.sendEmail(emailContent);
   
-  console.log(`03 - Deployment notification email sent`);    
+  console.log(`04 - Deployment notification email sent`);    
 };
-main.tags = ["PKKTHodlBoosterOption"];
+main.tags = ["BSCPKKTHodlBoosterOption"];
 
 export default main;
 

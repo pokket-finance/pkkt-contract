@@ -6,6 +6,8 @@ import {
     OptionVault
 } from "../../../typechain";
 import {
+    CHAINID,
+    ETH_MULTIPLIER,
     USDC_MULTIPLIER,
     WBTC_MULTIPLIER
 } from "../../../constants/constants";
@@ -28,6 +30,12 @@ const main = async ({ target }, { network, ethers, deployments}) => {
             to: target,
             value: ethers.utils.parseEther("100.0")
         }) ;
+        console.log("Send 100 eth to " + target);
+     }
+     else if (network.config.chainId == CHAINID.BSC_TESTNET){
+         
+        const eth = await getDeployedContractHelper("ETH", ethers, deployments) as ERC20Mock; 
+        await eth.transfer(target, BigNumber.from(100).mul(ETH_MULTIPLIER));
         console.log("Send 100 eth to " + target);
      }
 
