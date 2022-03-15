@@ -58,7 +58,7 @@ const main = async (
         if (chainId == CHAINID.BSC_TESTNET) {
           
           await run("verify:verify", {
-            address: wbtcAddress,
+            address: ethAddress,
             constructorArguments: [
               "Pegged ETH",
               "ETH",
