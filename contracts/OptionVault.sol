@@ -42,6 +42,9 @@ abstract contract OptionVault is
     mapping(address => StructureData.AssetData) private assetData;
     
     address private settlerRoleAddress;
+    uint256 private locked = 0;
+
+
     constructor(address _settler) {
         require(_settler != address(0));
         settlerRoleAddress = _settler;
@@ -485,7 +488,6 @@ abstract contract OptionVault is
 
     receive() external payable {}
 
-     uint256 private locked = 0;
      modifier lock {
         require(locked == 0, "locked");
         locked = 1;
