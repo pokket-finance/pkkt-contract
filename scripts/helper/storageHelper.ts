@@ -14,7 +14,7 @@ export function getStorage(): storage {
         secureStorage = creator.createStorage(storageType.awsSSM, {
             region: process.env.AWS_REGION,
             tableName: process.env.AWS_TABLENAME,
-            encryted: true,
+            encrypted: true,
             keyId: process.env.SECURE_KEYID
         });
     }
