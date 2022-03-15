@@ -1,8 +1,8 @@
 import { TaskArguments } from "hardhat/types";
 import { exit } from "process";
-import { NULL_ADDRESS, BSC_ETH_ADDRESS, USDC_ADDRESS, BSC_USDC_ADDRESS, 
+import { NULL_ADDRESS, BSC_ETH_ADDRESS, USDC_ADDRESS, BSC_USDC_ADDRESS, ETH_MULTIPLIER,
   WBTC_ADDRESS, BSC_WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER, CHAINID} from "../../constants/constants"; 
-
+  import { BigNumber, BigNumberish, Contract } from "ethers";
 import {getEmailer} from '../helper/emailHelper';
 const main = async (
   _taskArgs: TaskArguments,
@@ -31,6 +31,48 @@ const main = async (
     wbtcAddress = process.env.WBTC_ADDRESS!;
     ethAddress = process.env.ETH_ADDRESS!; 
   } 
+
+  if(chainId == CHAINID.ETH_ROPSTEN || 
+    chainId == CHAINID.BSC_TESTNET) {
+      try{
+        await run("verify:verify", {
+          address: usdcAddress,
+          constructorArguments: [
+            "Pegged USDC",
+            "USDC",
+            BigNumber.from(100000000).mul(USDC_MULTIPLIER),
+            USDC_DECIMALS,
+        ] 
+        });
+        console.log("Verified USDC on etherscan");
+        await run("verify:verify", {
+          address: wbtcAddress,
+          constructorArguments: [
+            "Pegged BTC",
+            "BTCB",
+            BigNumber.from(10000).mul(WBTC_MULTIPLIER),
+            WBTC_DECIMALS
+        ] 
+        });
+        console.log("Verified WBTC on etherscan");
+        if (chainId == CHAINID.BSC_TESTNET) {
+          
+          await run("verify:verify", {
+            address: wbtcAddress,
+            constructorArguments: [
+              "Pegged ETH",
+              "ETH",
+              BigNumber.from(100000).mul(ETH_MULTIPLIER),
+              ETH_DECIMALS
+          ]
+          });
+          console.log("Verified ETH on etherscan");
+        }
+      } catch (e) {
+        console.error(e);
+        //exit(-1);
+      }
+    }
 
   try {
     await run("verify:verify", {
