@@ -22,6 +22,7 @@ import transferOwnerShip from './scripts/tasks/transferOwnerShip';
 import verifyContracts from './scripts/tasks/verifyContracts';
 import prepareAccounts from './scripts/tasks/prepareAccounts';
 import initiateSettlement from './scripts/tasks/initiateSettlement';
+import setSettler from './scripts/tasks/setSettler';
 
 dotenv.config();
  
@@ -161,6 +162,8 @@ task("deploy-dummy-contracts", "Deploys contracts to allow backend interaction",
 task("initialize-dummy-users", "Initializes Alice and Bob to interact with deployed dummy contracts", initializeUsers)
 task("send-coins", "Send test coins to specific address", sendUserCoins)
 .addParam("target", "target address");
+
+task("set-settler", "Reset the settler", setSettler);
 
 task("generate-dummy-data", "Generates dummy option data for various purposes", generateOptionData)
   .addParam("command", "number of the command you want to generate data");
