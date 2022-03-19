@@ -18,16 +18,12 @@ Plugin should import from hardhat.config.js
 | hardhat-etherscan    | https://www.npmjs.com/package/@nomiclabs/hardhat-etherscan    |
 | hardhat-gas-reporter | https://www.npmjs.com/package/@nomiclabs/hardhat-gas-reporter |
 
-## Deploy PKKT Factory contract
+## Deploy HodlBoosterOption contract
 1. run "npm run prepare:dev" or "npm run prepare:qa" or "npm run deploy:prod" under the root folder to prepare for later operations.
 
 2. run "npm run deploy:dev" or "npm run deploy:qa" or "npm run deploy:prod" under the root folder to deploy the contract to localhost/ropsten/eth-mainnet. Settler private key can be skipped at this stage.
 
-3. run "npm run etherscan-verify:qa" or "npm run etherscan-verify:prod" under the root folder to deploy verify the contract on etherscan for ropsten/eth-mainnet
-
-4. run "npm run transfer-ownership:dev" or "npm run transfer-ownership:qa" or "npm run transfer-ownership:prod" under the root folder to transfer ownership the smart contract to a more secured account under localhost/ropsten/eth-mainnet
-
-5. run "npm run new-epoch:dev" or "npm run new-epoch:qa" or "npm run new-epoch:prod" under the root folder to start the initial epoch under localhost/ropsten/eth-mainnet.Settler private must be set at this stage.
+3. run "npm run new-epoch:dev" or "npm run new-epoch:qa" or "npm run new-epoch:prod" under the root folder to start the initial epoch under localhost/ropsten/eth-mainnet.Settler private must be set at this stage.
 
 ## License
 

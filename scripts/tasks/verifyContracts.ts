@@ -9,7 +9,7 @@ const main = async (
   { deployments, network, run, getNamedAccounts }
 ) => {
     
-  const { settler } = await getNamedAccounts();  
+  const { owner, settler } = await getNamedAccounts();  
   const OptionLifecycle = await deployments.get("OptionLifecycle");   
   const PKKTHodlBoosterOption = await deployments.get("PKKTHodlBoosterOption");  
   const chainId = network.config.chainId;
@@ -85,7 +85,7 @@ const main = async (
   }
  
 
-  const HODLBOOSTER_ARGS =  [settler, [
+  const HODLBOOSTER_ARGS =  [owner, settler, [
     { 
       depositAssetAmountDecimals: ETH_DECIMALS,
       counterPartyAssetAmountDecimals: USDC_DECIMALS,

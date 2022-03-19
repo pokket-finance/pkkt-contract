@@ -87,8 +87,11 @@ var accounts = data.deployerPrivateKey ?
       //bsctest
       97: data.deployerAddress ? data.deployerAddress : 0
     },
+    owner: { 
+      default: data.ownerAddress ? data.ownerAddress : 1,
+    },
     settler: { 
-      default: data.settlerAddress ? data.settlerAddress : 1,
+      default: data.settlerAddress ? data.settlerAddress : 2,
     },
     alice: {
       default: 2, 
@@ -96,11 +99,8 @@ var accounts = data.deployerPrivateKey ?
     bob: {
       default: 3, 
     },
-    owner: {
-      default: 4
-    },
     trader: { 
-      default: 5, 
+      default: 4, 
     }
   },
 

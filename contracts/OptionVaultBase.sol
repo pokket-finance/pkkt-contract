@@ -3,18 +3,18 @@ pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; 
 //import "hardhat/console.sol";
 
 import {StructureData} from "./libraries/StructureData.sol";
 import {Utils} from "./libraries/Utils.sol";
 import {OptionLifecycle} from "./libraries/OptionLifecycle.sol";
+import {OptionVaultStorage} from "./storage/OptionVaultStorage.sol";
 import "./interfaces/ISettlementAggregator.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
-abstract contract OptionVault is
-    Ownable, 
+abstract contract OptionVaultBase is
+    OptionVaultStorage, 
     ISettlementAggregator
 {
     using SafeERC20 for IERC20;
@@ -23,32 +23,8 @@ abstract contract OptionVault is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    event SettlerChanged(address indexed previousSettler, address indexed newSettler);
-    uint16 public override currentRound;
-    bool public underSettlement;
-    uint8 public optionPairCount;
+    event SettlerChanged(address indexed previousSettler, address indexed newSettler); 
 
-    mapping(address => StructureData.SettlementCashflowResult)
-        public settlementCashflowResult;
-
-    mapping(uint8 => StructureData.OptionPairDefinition) public optionPairs;
-
-    mapping(uint8 => StructureData.OptionPairExecutionAccountingResult)
-        public executionAccountingResult;
-
-    mapping(uint8 => StructureData.OptionData) internal optionData;
-    uint8 private assetCount;
-    mapping(uint8 => address) private asset;
-    mapping(address => StructureData.AssetData) private assetData;
-    
-    address private settlerRoleAddress;
-    uint256 private locked = 0;
-
-
-    constructor(address _settler) {
-        require(_settler != address(0));
-        settlerRoleAddress = _settler;
-    }
 
     function clientWithdraw(
         address _target,
@@ -61,15 +37,14 @@ abstract contract OptionVault is
         }
         OptionLifecycle.withdraw(_target, _amount, _contractAddress);
     }
-    function setSettler(address _settler) external onlyOwner{
+    function setSettlerInternal(address _settler) internal {
         address oldSettlerAddress = settlerRoleAddress;
         settlerRoleAddress = _settler;
         emit SettlerChanged(oldSettlerAddress, _settler);
-    } 
-    
-    function addOptionPairs(
+    }  
+    function addOptionPairsInternal(
         StructureData.OptionPairDefinition[] memory _optionPairDefinitions
-    ) public override onlyOwner { 
+    ) internal { 
         uint256 length = _optionPairDefinitions.length;
         uint8 optionPairCount_ = optionPairCount;
         uint8 assetCount_ = assetCount;
@@ -488,7 +463,7 @@ abstract contract OptionVault is
 
     receive() external payable {}
 
-     modifier lock {
+    modifier lock {
         require(locked == 0, "locked");
         locked = 1;
         _;

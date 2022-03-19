@@ -29,6 +29,12 @@ const main = async ({ forcesettlerkey }, {
             return true;
           }
         }, 
+        ownerAddress: {
+          name:'Owner Address',
+          pattern: /^0x[0-9A-Fa-f]{40}$/,
+          message: 'Must be a hex starts with 0x',
+          required: true
+        } ,
         settlerAddress: {
           name:'Settler Address',
           pattern: /^0x[0-9A-Fa-f]{40}$/,
@@ -65,10 +71,11 @@ const main = async ({ forcesettlerkey }, {
     var storage = getStorage();
     var fileStorage = getFileStorage();
     var deployerAddress = await fileStorage.readValue("deployerAddress");
+    var ownerAddress = await fileStorage.readValue("ownerAddress");
     var settlerAddress = await fileStorage.readValue("settlerAddress");
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
-    if (deployerAddress && settlerAddress && deployerPrivateKey ){
-      console.log(`Deployer Address: ${deployerAddress}; Settler Address: ${settlerAddress}`);
+    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey ){
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`);
       if (!forcesettlerkey){
         return;
       }
@@ -86,11 +93,11 @@ const main = async ({ forcesettlerkey }, {
 
     
     result = await promptHelper(schema);   
-    console.log(`Deployer Address: ${result.deployerAddress}; Settler Address: ${result.settlerAddress}`); 
+    console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}`); 
     await fileStorage.writeValue("deployerAddress", result.deployerAddress);
+    await fileStorage.writeValue("ownerAddress", result.ownerAddress);
     await fileStorage.writeValue("settlerAddress", result.settlerAddress);
-    await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey);
-    await fileStorage.writeValue("ownerAddress", result.deployerAddress);
+    await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey); 
     if (result.settlerPrivateKey) { 
       console.log(`Settler private key written to secured storage`); 
       await storage.writeValue("SETTLER_PRIVATE_KEY", result.settlerPrivateKey);

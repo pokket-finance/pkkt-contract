@@ -8,28 +8,18 @@ import {StructureData} from "./libraries/StructureData.sol";
 import {Utils} from "./libraries/Utils.sol";
 import {OptionLifecycle} from "./libraries/OptionLifecycle.sol";
 import "./interfaces/IPKKTStructureOption.sol";
-import "./OptionVault.sol";
+import "./OptionVaultBase.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract PKKTHodlBoosterOption is OptionVault, IPKKTStructureOption {
+contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using SafeMath for uint256;
     using Utils for uint256;
     using OptionLifecycle for StructureData.UserState;
  
- 
-    //private data for complete withdrawal and redeposit
-
-    //take if for eth, we make price precision as 4, then underlying price can be 40000000 for 4000$
-    //for shib, we make price precision as 8, then underlying price can be 4000 for 0.00004000$
-    constructor(
-        address _settler,
-        StructureData.OptionPairDefinition[] memory _optionPairDefinitions
-    ) OptionVault(_settler) {
-        addOptionPairs(_optionPairDefinitions); 
-    }
+  
 
     function validateOptionById(uint8 _optionId) private view {
         require(_optionId != 0 && _optionId <= optionPairCount * 2);
