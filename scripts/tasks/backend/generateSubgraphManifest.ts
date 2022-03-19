@@ -14,11 +14,11 @@ const main = async ({ startblock = 13600000 }, { network, deployments }) => {
     const subgraphManifest = fs.readFileSync(subgraphManifestFile, "utf-8");
     let parsedSubgraph = YAML.parse(subgraphManifest);
     let optionName;
-    let PKKTHodlBoosterOption;
+    let HodlBoosterOption;
     for (let dataSource of parsedSubgraph.dataSources) {
         optionName = dataSource.name;
-        PKKTHodlBoosterOption = await deployments.get(optionName);
-        dataSource.source.address = PKKTHodlBoosterOption.address;
+        HodlBoosterOption = await deployments.get(optionName);
+        dataSource.source.address = HodlBoosterOption.address;
         dataSource.source.startBlock = startblock;
         dataSource.network = networkName;
     }

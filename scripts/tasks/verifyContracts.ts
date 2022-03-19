@@ -11,7 +11,7 @@ const main = async (
     
   const { owner, settler } = await getNamedAccounts();  
   const OptionLifecycle = await deployments.get("OptionLifecycle");   
-  const PKKTHodlBoosterOption = await deployments.get("PKKTHodlBoosterOption");  
+  const HodlBoosterOption = await deployments.get("HodlBoosterOption");  
   const chainId = network.config.chainId;
   let usdcAddress:string;
   let wbtcAddress:string;
@@ -108,11 +108,11 @@ const main = async (
 
   try {
     await run("verify:verify", {
-      address: PKKTHodlBoosterOption.address,
+      address: HodlBoosterOption.address,
       constructorArguments: HODLBOOSTER_ARGS,
       libraries: { OptionLifecycle: OptionLifecycle.address },
     });
-    console.log("Verified PKKTHodlBoosterOption on etherscan");
+    console.log("Verified HodlBoosterOption on etherscan");
   } catch (e) {
     console.error(e);
     exit(-1);
@@ -122,8 +122,8 @@ const main = async (
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
-    subject:`PKKTHodlBoosterOption verified on etherscan`,
-    content: `<h3>PKKTHodlBoosterOption verified on etherscan (${network.name})</h3>Please visit <a href="${process.env.ETHERSCAN_SITE}/address/${PKKTHodlBoosterOption.address}#code">smart contract code on etherscan (${network.name})</a>for more details`,
+    subject:`HodlBoosterOption verified on etherscan`,
+    content: `<h3>HodlBoosterOption verified on etherscan (${network.name})</h3>Please visit <a href="${process.env.ETHERSCAN_SITE}/address/${HodlBoosterOption.address}#code">smart contract code on etherscan (${network.name})</a>for more details`,
     isHtml: true
 }
 

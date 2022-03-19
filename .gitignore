@@ -14,7 +14,7 @@ typechain
 
 # Graph generated files
 generated
-build
+build 
 /deployments/localhost/*.json
 /deployments/localhost/*.json
 package-lock.json

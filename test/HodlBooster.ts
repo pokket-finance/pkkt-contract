@@ -3,7 +3,7 @@ import { assert, expect } from "chai";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { deployContract } from "./utilities/deploy";
 import { OptionPair, OptionSetting, packOptionParameter } from "./utilities/optionPair";
-import { PKKTHodlBoosterOption, ERC20Mock } from "../typechain";
+import { HodlBoosterOption, ERC20Mock } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { NULL_ADDRESS, GWEI, USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, USDC_MULTIPLIER } from "../constants/constants";
 import { Table } from 'console-table-printer';
@@ -21,8 +21,9 @@ const StrikePriceDecimals = 4;
 const ethPrice = 4000 * (10 ** PricePrecision);
 const btcPrice = 50000 * (10 ** PricePrecision);
 
-describe.only("PKKT Hodl Booster", async function () {
+describe.only("Hodl Booster", async function () {
     let deployer: SignerWithAddress;
+    let owner: SignerWithAddress;
     let settler: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
@@ -30,13 +31,13 @@ describe.only("PKKT Hodl Booster", async function () {
     let trader: SignerWithAddress;
     let usdt: ERC20Mock;
     let wbtc: ERC20Mock;
-    let vault: PKKTHodlBoosterOption;
+    let vault: HodlBoosterOption;
     let optionPairs: OptionPair[];
     let optionSettings: OptionSetting[];
     let names: {};
 
     before(async function () {
-      [deployer, settler, alice, bob, carol, trader] = await ethers.getSigners();
+      [deployer, owner, settler, alice, bob, carol, trader] = await ethers.getSigners();
     });
 
     context("operations", function () {
@@ -70,7 +71,7 @@ describe.only("PKKT Hodl Booster", async function () {
           names[NULL_ADDRESS] = "eth";
           names[wbtc.address] = "wbtc";
           vault = await deployContract(
-            "PKKTHodlBoosterOption",
+            "HodlBoosterOption",
             {
               signer: deployer as Signer,
               libraries: {
@@ -78,6 +79,7 @@ describe.only("PKKT Hodl Booster", async function () {
               }
             },
             [
+              owner.address,
               settler.address, [
               {
                 depositAssetAmountDecimals: ETH_DECIMALS,
@@ -96,7 +98,7 @@ describe.only("PKKT Hodl Booster", async function () {
               }
             ]
           ]
-          ) as PKKTHodlBoosterOption;
+          ) as HodlBoosterOption;
           optionSettings = [];
           const ethOption = await vault.optionPairs(0);
           const wbtcOption = await vault.optionPairs(1);
@@ -652,8 +654,9 @@ describe.only("PKKT Hodl Booster", async function () {
           await expect(vault.connect(bob as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(vault.connect(settler as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(vault.connect(settler as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await vault.connect(deployer as Signer).transferOwnership(alice.address);
-          await expect(vault.connect(deployer as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(vault.connect(deployer as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await vault.connect(owner as Signer).transferOwnership(alice.address);
+          await expect(vault.connect(owner as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await vault.connect(alice as Signer).setSettler(bob.address);
           await vault.connect(bob as Signer).initiateSettlement(); 
           await vault.connect(alice as Signer).transferOwnership(deployer.address);

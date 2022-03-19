@@ -2,7 +2,7 @@ import { BigNumber, Signer, Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
     ERC20Mock,
-    PKKTHodlBoosterOption,
+    HodlBoosterOption,
     OptionVault
 } from "../../../typechain";
 import {
@@ -19,10 +19,10 @@ const main = async (taskArgs, { ethers, deployments,
     const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
     const wbtc = await getDeployedContractHelper("WBTC", ethers, deployments) as ERC20Mock;
     const optionVault = await getDeployedContractHelper(
-        "PKKTHodlBoosterOption",
+        "HodlBoosterOption",
         ethers,
         deployments
-    ) as PKKTHodlBoosterOption;
+    ) as HodlBoosterOption;
      ;
     const users = [alice, bob, carol];
     for (let user of users) {

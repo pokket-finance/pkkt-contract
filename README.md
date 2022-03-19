@@ -1,6 +1,6 @@
 # pkkt-contracts
 
-Smart constracts for PKKT HodlBooster
+Smart constracts for HodlBHodlBoosterOptionooster
 
 ## Deploy Factory smart contract
 
@@ -8,7 +8,7 @@ Project currently use hardhat for deployment. The variable should import from pr
 
 ## Plugins
 
-PKKT Farming is currently extended with the following plugins.
+HodlBoosterOption is currently extended with the following plugins.
 Instructions on how to use them in your own application are linked below.
 Plugin should import from hardhat.config.js
 

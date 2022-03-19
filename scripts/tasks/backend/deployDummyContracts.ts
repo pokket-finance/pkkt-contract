@@ -10,7 +10,7 @@ import {
     ETH_DECIMALS,
     USDT_DECIMALS
 } from "../../../constants/constants";
-import { PKKTHodlBoosterOption } from "../../../typechain";
+import { HodlBoosterOption } from "../../../typechain";
 import { getDeployedContractHelper } from "./utilities";
 import initializeUsers from "./initializeUsers";
 import generateOptionData from "./generateOptionData";
@@ -18,19 +18,19 @@ import generateOptionData from "./generateOptionData";
 const main = async ({ fresh, init, initbackend }, { network, ethers, deployments, getNamedAccounts }) => {
     const { deploy } = await deployments;
     const [deployerSigner, settlerSigner] = await ethers.getSigners();
-    const { deployer, settler } = await getNamedAccounts();
+    const { deployer, owner, settler } = await getNamedAccounts();
     if(fresh) {
         const dir = `./deployments/${network.name}`;
         await removeDirectory(dir);
     }
-    await deployContracts(deployer, settler, deploy, ethers);
+    await deployContracts(deployer, owner, settler, deploy, ethers);
     
     if (init) {
         const optionVault = await getDeployedContractHelper(
-            "PKKTHodlBoosterOption",
+            "HodlBoosterOption",
             ethers,
             deployments
-        ) as PKKTHodlBoosterOption;
+        ) as HodlBoosterOption;
         await optionVault.connect(settlerSigner as Signer).initiateSettlement();
         console.log("Initialized the current round to :" + (await (await optionVault.currentRound()).toString()));
     }
@@ -55,7 +55,7 @@ const removeDirectory = async (dir) => {
 };
 
 // Deploy the initial contracts
-const deployContracts = async (deployer, settler, deploy, ethers) => { 
+const deployContracts = async (deployer, owner, settler, deploy, ethers) => { 
     const USDC = await deploy("USDC", {
         contract: "ERC20Mock",
         from: deployer,
@@ -86,9 +86,9 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
         from: deployer,
     });
 
-    const optionVault = await deploy("PKKTHodlBoosterOption", {
+    const optionVault = await deploy("HodlBoosterOption", {
         from: deployer,
-        args: [settler, [
+        args: [owner, settler, [
           { 
             depositAssetAmountDecimals: ETH_DECIMALS,
             counterPartyAssetAmountDecimals: USDT_DECIMALS,
@@ -108,7 +108,7 @@ const deployContracts = async (deployer, settler, deploy, ethers) => {
           
           }
         ]],
-        contract: "PKKTHodlBoosterOption",
+        contract: "HodlBoosterOptionStatic",
         libraries: {
           OptionLifecycle: optionLifecycle.address,
         } 

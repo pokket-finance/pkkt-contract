@@ -17,13 +17,13 @@ const main = async ({}, {
       };
 
     var  result = await promptHelper(schema); 
-    const hodlBoosterOption = await deployments.get("PKKTHodlBoosterOption"); 
-    const hodlBoosterOptionContract = await ethers.getContractAt("PKKTHodlBoosterOption", hodlBoosterOption.address);
+    const hodlBoosterOption = await deployments.get("HodlBoosterOption"); 
+    const hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address);
     await hodlBoosterOptionContract.transferOwnership(result.ownerAddress);
     var fileStorage = getFileStorage();
     await fileStorage.writeValue("ownerAddress", result.ownerAddress);
     
-    console.log(`Transfer ownership of PKKTHodlBoosterOption on ${network.name} to ${result.ownerAddress}`);    
+    console.log(`Transfer ownership of HodlBoosterOption on ${network.name} to ${result.ownerAddress}`);    
     var emailer = await getEmailer();
     const emailContent = { 
       to: emailer.emailTos, 
