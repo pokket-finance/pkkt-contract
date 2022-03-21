@@ -15,7 +15,7 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, settler } = await getNamedAccounts();    
+  var { deployer, owner, settler, admin } = await getNamedAccounts();    
     
   if (!network.config.chainId || 
     (network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET)) {
@@ -167,16 +167,44 @@ const main = async ({
     console.error(e); 
   }
 
-  const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS,
-  { OptionLifecycle: optionLifecycle.address });
   
-  console.log(`Deployed BSC HodlBoosterOption Proxy on ${network.name} to ${proxyContract.address}`);
+  const optionVault = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+    libraries: {
+      OptionLifecycle: optionLifecycle.address,
+    },
+  });
+
+  const initData = optionVault.interface.encodeFunctionData(
+    "initialize",
+    HODLBOOSTER_ARGS
+  );
+
+  const proxy = await deploy("RibbonThetaVaultETHCall", {
+    contract: "AdminUpgradeabilityProxy",
+    from: deployer,
+    args: [optionVaultLogic.address, admin, initData],
+  });
+ 
+  console.log(`Deployed BSC HodlBoosterOption Proxy on ${network.name} to ${proxy.address}`);
+
+  try {
+    await run("verify:verify", {
+      address: proxy.address,
+      constructorArguments: [optionVaultLogic.address, admin, initData],
+    });
+  } catch (error) {
+    console.log(error);
+  }
+  
+ /* const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS,
+  { OptionLifecycle: optionLifecycle.address });*/
+  
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxyContract.address}</h2><h3>Initial Deployer Address: ${deployer}</h3><h3>Settler Address: ${settler}</h3>` + 
+    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3><h3>Proxy Admin Address: ${admin}</h3>` + 
     `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
     isHtml: true
 }

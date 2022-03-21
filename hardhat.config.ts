@@ -93,14 +93,22 @@ var accounts = data.deployerPrivateKey ?
     settler: { 
       default: data.settlerAddress ? data.settlerAddress : 2,
     },
+    admin : {
+      default: 3,
+      //bscmain
+      56: data.adminAddress ? data.adminAddress : 3,
+      //bsctest
+      97: data.adminAddress ? data.adminAddress : 3
+      
+    },
     alice: {
-      default: 2, 
+      default: 4, 
     },
     bob: {
-      default: 3, 
+      default: 5, 
     },
     trader: { 
-      default: 4, 
+      default: 6, 
     }
   },
 

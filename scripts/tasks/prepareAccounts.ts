@@ -1,7 +1,9 @@
  
 import { getStorage, getFileStorage } from "../helper/storageHelper";
 import promptHelper from '../helper/promptHelper';
- 
+import * as dotenv from "dotenv";
+dotenv.config();
+
 const main = async ({ forcesettlerkey }, {
     network,
     deployments,
@@ -54,6 +56,14 @@ const main = async ({ forcesettlerkey }, {
         }
       }
     };
+    if (process.env.USE_PROXY) {
+      schema["properties"]["adminAddress"] = {
+        name: "Proxy Admin Address",
+        pattern: /^0x[0-9A-Fa-f]{40}$/,
+        message: 'Must be a hex starts with 0x',
+        required: true
+      }
+    }
     var schema2 = {
       properties: { 
         settlerPrivateKey: {
@@ -67,15 +77,23 @@ const main = async ({ forcesettlerkey }, {
           }
         }, 
       }
-    };
+    }; 
     var storage = getStorage();
     var fileStorage = getFileStorage();
     var deployerAddress = await fileStorage.readValue("deployerAddress");
     var ownerAddress = await fileStorage.readValue("ownerAddress");
     var settlerAddress = await fileStorage.readValue("settlerAddress");
+    var adminAddress = await fileStorage.readValue("adminAddress");
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
-    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey ){
-      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`);
+    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey && 
+      (!process.env.USE_PROXY || adminAddress)){ 
+      if (!process.env.USE_PROXY) {
+        console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`);
+      }
+      else{
+        console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}; Proxy Admin Address: ${adminAddress}`);
+
+      }
       if (!forcesettlerkey){
         return;
       }
@@ -91,13 +109,21 @@ const main = async ({ forcesettlerkey }, {
       }
     }
 
-    
     result = await promptHelper(schema);   
-    console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}`); 
+    if (!process.env.USE_PROXY) {
+      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}`); 
+    }
+    else{
+      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
+ 
+    }
     await fileStorage.writeValue("deployerAddress", result.deployerAddress);
     await fileStorage.writeValue("ownerAddress", result.ownerAddress);
     await fileStorage.writeValue("settlerAddress", result.settlerAddress);
     await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey); 
+    if(result.adminAddress){ 
+      await fileStorage.writeValue("adminAddress", result.adminAddress);
+    }
     if (result.settlerPrivateKey) { 
       console.log(`Settler private key written to secured storage`); 
       await storage.writeValue("SETTLER_PRIVATE_KEY", result.settlerPrivateKey);

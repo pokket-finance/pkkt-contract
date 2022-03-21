@@ -10,7 +10,7 @@ contract HodlBoosterOptionUpgradeable is OwnableUpgradeable, HodlBoosterOption {
         address _owner,
         address _settler,
          StructureData.OptionPairDefinition[] memory _optionPairDefinitions
-    ) internal initializer { 
+    ) external initializer { 
  
         __Ownable_init();
         
