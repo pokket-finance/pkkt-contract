@@ -167,7 +167,8 @@ const main = async ({
     console.error(e); 
   }
 
-  const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS);
+  const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS,
+  { OptionLifecycle: optionLifecycle.address });
   
   console.log(`Deployed BSC HodlBoosterOption Proxy on ${network.name} to ${proxyContract.address}`);
 
