@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
+import {deployUpgradeableContract} from '../helper/deployUpgradable';
 
 dotenv.config();   
 const main = async ({
@@ -15,13 +16,13 @@ const main = async ({
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
   var { deployer, owner, settler } = await getNamedAccounts();    
-  const emailer = await getEmailer();
-   
-  if (!network.config.chainId && network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET) {
+    
+  if (!network.config.chainId || 
+    (network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET)) {
     console.log('Not bsc mainnet/testnet, skip deploying BSC HodlBooster');
     return;
-  }  
-
+  }   
+  const emailer = await getEmailer();
   const isMainnet = network.name === "bsc" ; 
   var usdcAddress = isMainnet ? BSC_USDC_ADDRESS : process.env.USDC_ADDRESS;
   var wbtcAddress = isMainnet? BSC_WBTC_ADDRESS : process.env.WBTC_ADDRESS;
@@ -125,39 +126,56 @@ const main = async ({
     console.error(e);
     //exit(-1);
   }
-  const optionVault = await deploy("HodlBoosterOption", {
-    from: deployer,
-    args: [owner, settler, [
-      { 
-        depositAssetAmountDecimals: ETH_DECIMALS,
-        counterPartyAssetAmountDecimals: USDC_DECIMALS,
-        depositAsset: ethAddress,
-        counterPartyAsset: usdcAddress,
-        callOptionId: 0,
-        putOptionId: 0
-      
-      },
-      { 
-        depositAssetAmountDecimals: WBTC_DECIMALS,
-        counterPartyAssetAmountDecimals: USDC_DECIMALS,
-        depositAsset: wbtcAddress,
-        counterPartyAsset: usdcAddress,
-        callOptionId: 0,
-        putOptionId: 0
-      
-      }
-    ]],
-    contract: "HodlBoosterOptionStatic",
+
+  const HODLBOOSTER_ARGS = [owner, settler, [
+    { 
+      depositAssetAmountDecimals: ETH_DECIMALS,
+      counterPartyAssetAmountDecimals: USDC_DECIMALS,
+      depositAsset: ethAddress,
+      counterPartyAsset: usdcAddress,
+      callOptionId: 0,
+      putOptionId: 0
+    
+    },
+    { 
+      depositAssetAmountDecimals: WBTC_DECIMALS,
+      counterPartyAssetAmountDecimals: USDC_DECIMALS,
+      depositAsset: wbtcAddress,
+      counterPartyAsset: usdcAddress,
+      callOptionId: 0,
+      putOptionId: 0
+    
+    }
+  ]];
+
+  const optionVaultLogic = await deploy("HodlBoosterOption", {
+    from: deployer, 
+    contract: "HodlBoosterOptionUpgradeable",
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
-  console.log(`Deployed BSC HodlBoosterOption on ${network.name} to ${optionVault.address}`);
+
+  console.log(`Deployed BSC HodlBoosterOption Logic on ${network.name} to ${optionVaultLogic.address}`);
+  try {
+    await run("verify:verify", {
+      address: optionVaultLogic.address,
+      libraries: { OptionLifecycle: optionLifecycle.address },
+    });
+    console.log(`Verified HodlBoosterOption Logic on etherscan for ${network.name}`);
+  } catch (e) {
+    console.error(e); 
+  }
+
+  const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS);
+  
+  console.log(`Deployed BSC HodlBoosterOption Proxy on ${network.name} to ${proxyContract.address}`);
+
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Initial Deployer Address: ${deployer}</h3><h3>Settler Address: ${settler}</h3>` + 
+    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxyContract.address}</h2><h3>Initial Deployer Address: ${deployer}</h3><h3>Settler Address: ${settler}</h3>` + 
     `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
     isHtml: true
 }

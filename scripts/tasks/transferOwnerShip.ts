@@ -28,8 +28,8 @@ const main = async ({}, {
     const emailContent = { 
       to: emailer.emailTos, 
       cc: emailer.emailCcs,
-      subject:`Transfer ownership of PKKTHodlBoosterOption on ${network.name}`,
-      content: `<h3>Transfer ownership of PKKTHodlBoosterOption on ${network.name} to <b>${result.ownerAddress}</b></h3>Please keep make sure that account ${result.ownerAddress} is fully secured.`,
+      subject:`Transfer ownership of HodlBoosterOption on ${network.name}`,
+      content: `<h3>Transfer ownership of HodlBoosterOption on ${network.name} to <b>${result.ownerAddress}</b></h3>Please keep make sure that account ${result.ownerAddress} is fully secured.`,
       isHtml: true
   }
   

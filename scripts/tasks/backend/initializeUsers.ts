@@ -2,8 +2,7 @@ import { BigNumber, Signer, Contract } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
     ERC20Mock,
-    HodlBoosterOption,
-    OptionVault
+    HodlBoosterOption
 } from "../../../typechain";
 import {
     USDC_MULTIPLIER,

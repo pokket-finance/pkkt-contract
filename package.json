@@ -68,7 +68,7 @@
     "deploy:qa": "npx hardhat prepare-accounts && npx hardhat deploy --network ropsten",
     "deploy:bsc-prod": "npx hardhat prepare-accounts && npx hardhat deploy --network bsc",
     "deploy:bsc-qa": "npx hardhat prepare-accounts && npx hardhat deploy --network bsctest",
-    "deploy:dev": "npx hardhat prepare-accounts && npx hardhat deploy --network localhost",
+    "deploy:dev": "npx hardhat prepare-accounts && npx hardhat deploy --network ropsten",
     "transfer-ownership:prod": "npx hardhat prepare-accounts && npx hardhat transfer-ownership --network mainnet",
     "transfer-ownership:qa": "npx hardhat prepare-accounts && npx hardhat transfer-ownership --network ropsten",
     "transfer-ownership:bsc-prod": "npx hardhat prepare-accounts && npx hardhat transfer-ownership --network bsc",
