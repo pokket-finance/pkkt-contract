@@ -3,7 +3,7 @@ import { assert, expect } from "chai";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { deployContract } from "./utilities/deploy";
 import { OptionPair, OptionSetting, packOptionParameter } from "./utilities/optionPair";
-import { HodlBoosterOption, ERC20Mock } from "../typechain";
+import { HodlBoosterOption, ERC20Mock, HodlBoosterOptionStatic } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {  GWEI, USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, USDC_MULTIPLIER } from "../constants/constants";
 import { Table } from 'console-table-printer';
@@ -81,7 +81,7 @@ describe.only("BSC Hodl Booster", async function () {
           names[eth.address] = "eth";
           names[wbtc.address] = "wbtc";
           vault = await deployContract(
-            "HodlBoosterOption",
+            "HodlBoosterOptionStatic",
             {
               signer: deployer as Signer,
               libraries: {
@@ -664,20 +664,21 @@ describe.only("BSC Hodl Booster", async function () {
         });
 
         it("hacker perspective", async function () { 
+          const admin = vault as  HodlBoosterOptionStatic;
           await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
           await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!settler");   
           await expect(vault.connect(alice as Signer).settle([])).to.be.revertedWith("!settler");  
           await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, usdt.address)).to.be.revertedWith("!settler");  
           await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [usdt.address])).to.be.revertedWith("!settler");  
-          await expect(vault.connect(bob as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await expect(vault.connect(settler as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await expect(vault.connect(settler as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await vault.connect(deployer as Signer).transferOwnership(alice.address);
-          await expect(vault.connect(deployer as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await vault.connect(alice as Signer).setSettler(bob.address);
+          await expect(admin.connect(bob as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(admin.connect(settler as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(admin.connect(settler as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await admin.connect(owner as Signer).transferOwnership(alice.address);
+          await expect(admin.connect(owner as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await admin.connect(alice as Signer).setSettler(bob.address);
           await vault.connect(bob as Signer).initiateSettlement(); 
-          await vault.connect(alice as Signer).transferOwnership(deployer.address);
-          await vault.connect(deployer as Signer).setSettler(settler.address);
+          await admin.connect(alice as Signer).transferOwnership(deployer.address);
+          await admin.connect(deployer as Signer).setSettler(settler.address);
           await expect(vault.connect(bob as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
 
         });

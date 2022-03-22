@@ -37,7 +37,8 @@ const main = async ({
       args: USDC_ARGS,
       
   } );
-  usdcAddress = USDC.address;
+  usdcAddress = USDC.address; 
+  
   console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
   try{ 
     await run("verify:verify", {

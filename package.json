@@ -55,9 +55,7 @@
     "underscore": "^1.9.0"
   },
   "scripts": {
-    "start": "ts-node .",
-    "test": "npx hardhat test test/*.ts test/libraries/*.ts",
-    "test:integration": "npx hardhat test test/integration/*.ts",
+    "start": "ts-node .", 
     "compile": "npx hardhat compile",
     "prepare:dev": "cp -n data.empty.json data.json",
     "prepare:qa": "cp .env.qa .env && cp -n data.empty.json data.json",
