@@ -1,11 +1,11 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { BSC_ETH_ADDRESS, BSC_USDC_ADDRESS, BSC_WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER} from "../../constants/constants"; 
+import { BSC_ETH_ADDRESS, BSC_BUSD_ADDRESS, BSC_WBTC_ADDRESS, BUSD_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,BUSD_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER} from "../../constants/constants"; 
 import { BigNumber, BigNumberish, Contract,ContractFactory } from "ethers";
 import { ethers } from "hardhat"; 
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
-import {deployUpgradeableContract} from '../helper/deployUpgradable';
+import {deployUpgradeableContract, postDeployment} from '../helper/deployHelper';
 import { HodlBoosterOptionUpgradeable } from "../../typechain";
 
 dotenv.config();   
@@ -25,36 +25,25 @@ const main = async ({
   }   
   const emailer = await getEmailer();
   const isMainnet = network.name === "bsc" ; 
-  var usdcAddress = isMainnet ? BSC_USDC_ADDRESS : process.env.USDC_ADDRESS;
+  var busdAddress = isMainnet ? BSC_BUSD_ADDRESS : process.env.BUSD_ADDRESS;
   var wbtcAddress = isMainnet? BSC_WBTC_ADDRESS : process.env.WBTC_ADDRESS;
   var ethAddress = isMainnet? BSC_ETH_ADDRESS : process.env.ETH_ADDRESS;
   
   //deploy mock usdc, wbtc and eth
-  if (!usdcAddress && !isMainnet){
-    const USDC_ARGS = [
-      "Pegged USDC",
-      "USDC",
-      BigNumber.from(100000000).mul(USDC_MULTIPLIER),
-      USDC_DECIMALS,
+  if (!busdAddress && !isMainnet){
+    const BUSD_ARGS = [
+      "Binance-Peg BSC-USD",
+      "BUSD",
+      BigNumber.from(100000000).mul(BUSD_MULTIPLIER),
+      BUSD_DECIMALS,
   ];
-     const USDC = await deploy("USDC", {
+     const BUSD = await deploy("BUSD", {
       contract: "ERC20Mock",
       from: deployer,
-      args: USDC_ARGS, 
+      args: BUSD_ARGS, 
     } );
-    usdcAddress = USDC.address;
-    console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
-    try{ 
-      await run("verify:verify", {
-        address: usdcAddress,
-        constructorArguments:USDC_ARGS 
-      });
-      console.log(`Verified USDC on etherscan for ${network.name}`);
-    }
-    catch (e) {
-      console.error(e);
-      //exit(-1);
-    }
+    busdAddress = BUSD.address;
+    await postDeployment(BUSD, run, "BUSD", network.name, BUSD_ARGS);
   } 
    
   if (!wbtcAddress && !isMainnet){
@@ -70,19 +59,7 @@ const main = async ({
         args: WBTC_ARGS,
     });
     
-    console.log(`Deployed WBTC at ${WBTC.address} on ${network.name}`);
-    wbtcAddress = WBTC.address;
-    try{ 
-      await run("verify:verify", {
-        address: wbtcAddress,
-        constructorArguments: WBTC_ARGS
-      });
-      console.log(`Verified WBTC on etherscan for ${network.name}`);
-    }
-    catch (e) {
-      console.error(e);
-      //exit(-1);
-    }
+    await postDeployment(WBTC, run, "WBTC", network.name, WBTC_ARGS); 
  }
 
  if (!ethAddress && !isMainnet){
@@ -98,51 +75,29 @@ const main = async ({
     args: ETH_ARGS,
   });
 
-  console.log(`Deployed ETH at ${ETH.address} on ${network.name}`);
-  ethAddress = ETH.address;
-  try{ 
-    await run("verify:verify", {
-      address: ethAddress,
-      constructorArguments: ETH_ARGS
-    });
-    console.log(`Verified ETH on etherscan for ${network.name}`);
-  }
-  catch (e) {
-    console.error(e);
-    //exit(-1);
-  }
+  await postDeployment(ETH, run, "ETH", network.name, ETH_ARGS);  
 
-} 
-  console.log(`04 - Deploying BSC HodlBoosterOption on ${network.name} from ${deployer}`); 
+}  
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer, 
   });
-  console.log(`Deployed OptionLifecycle at ${optionLifecycle.address} on ${network.name}`);
-  try {
-    await run("verify:verify", {
-      address: optionLifecycle.address,
-    });
-    console.log(`Verified OptionLifecycle on etherscan ${network.name}`);
-  } catch (e) {
-    console.error(e);
-    //exit(-1);
-  }
-
+  
+  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);   
   const HODLBOOSTER_ARGS = [owner, settler, [
     { 
       depositAssetAmountDecimals: ETH_DECIMALS,
-      counterPartyAssetAmountDecimals: USDC_DECIMALS,
+      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
       depositAsset: ethAddress,
-      counterPartyAsset: usdcAddress,
+      counterPartyAsset: busdAddress,
       callOptionId: 0,
       putOptionId: 0
     
     },
     { 
       depositAssetAmountDecimals: WBTC_DECIMALS,
-      counterPartyAssetAmountDecimals: USDC_DECIMALS,
+      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
       depositAsset: wbtcAddress,
-      counterPartyAsset: usdcAddress,
+      counterPartyAsset: busdAddress,
       callOptionId: 0,
       putOptionId: 0
     
@@ -157,17 +112,7 @@ const main = async ({
     }, 
   }); 
 
-  console.log(`Deployed BSC HodlBoosterOption Logic on ${network.name} to ${optionVaultLogic.address}`);
-  try {
-    await run("verify:verify", {
-      address: optionVaultLogic.address,
-      libraries: { OptionLifecycle: optionLifecycle.address },
-    });
-    console.log(`Verified HodlBoosterOption Logic on etherscan for ${network.name}`);
-  } catch (e) {
-    console.error(e); 
-  }
-
+  await postDeployment(optionVaultLogic, run, "HodlBoosterOption", network.name);    
   
   const optionVault = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
     libraries: {

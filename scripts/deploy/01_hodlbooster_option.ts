@@ -3,6 +3,7 @@ import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS,
 import { BigNumber, BigNumberish, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { HodlBoosterOptionStatic} from "../../typechain";
+import {postDeployment} from "../helper/deployHelper";
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
@@ -38,19 +39,7 @@ const main = async ({
       
   } ); 
   usdcAddress = USDC.address; 
-  
-  console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);
-  try{ 
-    await run("verify:verify", {
-      address: usdcAddress,
-      constructorArguments:USDC_ARGS 
-    });
-    console.log(`Verified USDC on etherscan for ${network.name}`);
-  }
-  catch (e) {
-    console.error(e);
-    //exit(-1);
-  }
+  await postDeployment(USDC, run, "USDC", network.name, USDC_ARGS); 
 }
    
   if (!wbtcAddress && !isMainnet){
@@ -66,38 +55,16 @@ const main = async ({
         args: WBTC_ARGS,
     });
     
-    console.log(`Deployed WBTC at ${WBTC.address} on ${network.name}`);
-    wbtcAddress = WBTC.address;
-    try{ 
-      await run("verify:verify", {
-        address: wbtcAddress,
-        constructorArguments: WBTC_ARGS
-      });
-      console.log(`Verified WBTC on etherscan for ${network.name}`);
-    }
-    catch (e) {
-      console.error(e);
-      //exit(-1);
-    }
+  await postDeployment(WBTC, run, "WBTC", network.name, WBTC_ARGS);  
 
  }
 
-
-  console.log(`Deploying HodlBoosterOption on ${network.name} from ${deployer}`); 
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer, 
   });
   
-  console.log(`Deployed OptionLifecycle at ${optionLifecycle.address} on ${network.name}`);
-  try {
-    await run("verify:verify", {
-      address: optionLifecycle.address,
-    });
-    console.log(`Verified OptionLifecycle on etherscan ${network.name}`);
-  } catch (e) {
-    console.error(e);
-    //exit(-1);
-  }
+  
+  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);    
 
   const HODLBOOSTER_ARGS = [owner, settler, [
     { 
@@ -127,17 +94,9 @@ const main = async ({
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
-  console.log(`Deployed HodlBoosterOption on ${network.name} to ${optionVault.address}`);
-  try {
-    await run("verify:verify", {
-      address: optionVault.address,
-      constructorArguments: HODLBOOSTER_ARGS,
-      libraries: { OptionLifecycle: optionLifecycle.address },
-    });
-    console.log(`Verified HodlBoosterOption on etherscan for ${network.name}`);
-  } catch (e) {
-    console.error(e); 
-  }
+
+  
+  await postDeployment(optionVault, run, "HodlBoosterOption", network.name, HODLBOOSTER_ARGS);     
 
   const emailContent = { 
     to: emailer.emailTos, 
