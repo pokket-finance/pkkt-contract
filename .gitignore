@@ -7,7 +7,6 @@ artifacts
 .env
 coverage.json
 coverage/
-typechain
 
 # Openzeppelin local project deployment files
 .openzeppelin/unknown-*.json
