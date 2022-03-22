@@ -6,6 +6,7 @@ import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
 import {deployUpgradeableContract} from '../helper/deployUpgradable';
+import { HodlBoosterOptionUpgradeable } from "../../typechain";
 
 dotenv.config();   
 const main = async ({
@@ -197,7 +198,9 @@ const main = async ({
     console.log(error);
   } */
   
-  const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS);
+  const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS, admin) as HodlBoosterOptionUpgradeable;
+  
+  console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
  
 
   const emailContent = { 
