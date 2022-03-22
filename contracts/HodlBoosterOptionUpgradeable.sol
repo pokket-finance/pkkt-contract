@@ -12,6 +12,7 @@ contract HodlBoosterOptionUpgradeable is OwnableUpgradeable, HodlBoosterOption {
          StructureData.OptionPairDefinition[] memory _optionPairDefinitions
     ) external initializer { 
  
+        locked = 0;
         __Ownable_init();
         
         require(_owner != address(0));

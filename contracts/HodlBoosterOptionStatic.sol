@@ -14,6 +14,7 @@ contract HodlBoosterOptionStatic is Ownable, HodlBoosterOption {
         
         require(_owner != address(0));
         require(_settler != address(0));
+        locked = 0;
         transferOwnership(_owner);
         settlerRoleAddress = _settler;
         addOptionPairsInternal(_optionPairDefinitions);  

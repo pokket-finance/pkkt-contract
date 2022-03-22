@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { BSC_ETH_ADDRESS, BSC_USDC_ADDRESS, BSC_WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER} from "../../constants/constants"; 
-import { BigNumber, BigNumberish, Contract } from "ethers";
+import { BigNumber, BigNumberish, Contract,ContractFactory } from "ethers";
 import { ethers } from "hardhat"; 
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
@@ -179,7 +179,7 @@ const main = async ({
     HODLBOOSTER_ARGS
   );
 
-  const proxy = await deploy("RibbonThetaVaultETHCall", {
+  const proxy = await deploy("HodlBoosterOptionProxy", {
     contract: "AdminUpgradeabilityProxy",
     from: deployer,
     args: [optionVaultLogic.address, admin, initData],
@@ -194,11 +194,10 @@ const main = async ({
     });
   } catch (error) {
     console.log(error);
-  }
+  } 
   
- /* const proxyContract = await deployUpgradeableContract("HodlBoosterOption",deployer, HODLBOOSTER_ARGS,
-  { OptionLifecycle: optionLifecycle.address });*/
-  
+  //const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS);
+ 
 
   const emailContent = { 
     to: emailer.emailTos, 

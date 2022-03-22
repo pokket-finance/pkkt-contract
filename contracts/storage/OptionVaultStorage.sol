@@ -8,7 +8,7 @@ abstract contract OptionVaultStorageV1 {
     uint8 public optionPairCount;
     uint8 internal assetCount;
     address internal settlerRoleAddress;
-    uint256 internal locked = 0;
+    uint256 internal locked;
 
     mapping(address => StructureData.SettlementCashflowResult)
         public settlementCashflowResult;
