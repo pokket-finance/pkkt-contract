@@ -174,7 +174,8 @@ const main = async ({
     },
   });
 
-  const initData = optionVault.interface.encodeFunctionData(
+  //this solution is not consistent with typechain generated class
+  /*const initData = optionVault.interface.encodeFunctionData(
     "initialize",
     HODLBOOSTER_ARGS
   );
@@ -194,9 +195,9 @@ const main = async ({
     });
   } catch (error) {
     console.log(error);
-  } 
+  } */
   
-  //const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS);
+  const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS);
  
 
   const emailContent = { 

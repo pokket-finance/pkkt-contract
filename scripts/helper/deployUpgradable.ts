@@ -1,11 +1,6 @@
 import { Contract, ContractFactory } from "ethers";
 import { ethers, upgrades } from "hardhat";
-import { Signer } from "ethers";
-import { Libraries } from "hardhat-deploy/dist/types";
-import {
-  FactoryOptions,
-  HardhatEthersHelpers as HardhatEthersHelpersBase,
-} from "@nomiclabs/hardhat-ethers/types";
+import { Signer } from "ethers";  
  
 
 export async function deployUpgradeableContract (factory: ContractFactory, args?: Array<any>): Promise<Contract> { 
@@ -14,7 +9,7 @@ export async function deployUpgradeableContract (factory: ContractFactory, args?
       unsafeAllow: ['delegatecall'], 
       unsafeAllowLinkedLibraries: true, 
      });
-    //await ctr.deployed();
+    await ctr.deployed();
     return ctr;
 }
  

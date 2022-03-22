@@ -19,10 +19,10 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     using Utils for uint256;
     using OptionLifecycle for StructureData.UserState;
  
-  
 
-    function validateOptionById(uint8 _optionId) private view {
+    modifier validateOptionById(uint8 _optionId) {
         require(_optionId != 0 && _optionId <= optionPairCount * 2);
+        _;
     }
 
     function getAccountBalance(uint8 _optionId)
@@ -56,11 +56,11 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
 
     function initiateWithraw(uint8 _optionId, uint256 _assetToTerminate)
         external
-        override
+        override 
+        validateOptionById(_optionId)
     {
         //require(_assetToTerminate > 0 , "!_assetToTerminate");
-        //require(currentRound > 1, "No on going");
-        validateOptionById(_optionId);
+        //require(currentRound > 1, "No on going"); 
         OptionLifecycle.initiateWithrawStorage(
             optionData[_optionId],
             msg.sender,
@@ -73,10 +73,10 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     function cancelWithdraw(uint8 _optionId, uint256 _assetToTerminate)
         external
         override
+        validateOptionById(_optionId)
     {
         //require(_assetToTerminate > 0 , "!_assetToTerminate");
-        //require(currentRound > 1, "No on going");
-        validateOptionById(_optionId);
+        //require(currentRound > 1, "No on going"); 
 
         OptionLifecycle.cancelWithdrawStorage(
             optionData[_optionId],
@@ -91,10 +91,9 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
         uint8 _optionId,
         uint256 _amount,
         address _asset
-    ) external override {
-        //require(_amount > 0, "!amount");
-
-        validateOptionById(_optionId);
+    ) external override 
+        validateOptionById(_optionId){
+        //require(_amount > 0, "!amount"); 
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
         ];
@@ -112,11 +111,11 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     }
 
     //deposit eth
-    function depositETH(uint8 _optionId) external payable override {
+    function depositETH(uint8 _optionId) external payable override 
+        validateOptionById(_optionId){
         require(currentRound > 0, "!Started");
         require(msg.value > 0, "no value");
-
-        validateOptionById(_optionId);
+ 
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
         ];
@@ -141,10 +140,10 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint8 _optionId, uint256 _amount) external override {
+    function deposit(uint8 _optionId, uint256 _amount) external override 
+        validateOptionById(_optionId){
         require(currentRound > 0, "!Started");
-        require(_amount > 0, "!amount");
-        validateOptionById(_optionId);
+        require(_amount > 0, "!amount"); 
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
         ];

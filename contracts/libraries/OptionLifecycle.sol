@@ -51,7 +51,7 @@ library OptionLifecycle {
         uint256 _amount,
         address _contractAddress
     ) external {
-        require(_amount > 0);
+        require(_amount > 0, "!_amount");
         if (_contractAddress == address(0)) {
             payable(_target).transfer(_amount);
         } else {

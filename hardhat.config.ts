@@ -13,7 +13,7 @@ import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
-import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
+/*import deployDummyContracts from "./scripts/tasks/backend/deployDummyContracts";
 import generateSubgraphManifest from "./scripts/tasks/backend/generateSubgraphManifest";
 import initializeUsers from "./scripts/tasks/backend/initializeUsers";
 import generateOptionData from "./scripts/tasks/backend/generateOptionData";
@@ -22,7 +22,7 @@ import transferOwnerShip from './scripts/tasks/transferOwnerShip';
 import verifyContracts from './scripts/tasks/verifyContracts';
 import prepareAccounts from './scripts/tasks/prepareAccounts';
 import initiateSettlement from './scripts/tasks/initiateSettlement';
-import setSettler from './scripts/tasks/setSettler';
+import setSettler from './scripts/tasks/setSettler';*/
 
 dotenv.config();
  
@@ -142,7 +142,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("prepare-accounts", "Prepare accounts", prepareAccounts)
+/*task("prepare-accounts", "Prepare accounts", prepareAccounts)
 .addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
 
@@ -178,3 +178,4 @@ task("generate-dummy-data", "Generates dummy option data for various purposes", 
 
 task("generate-subgraph-manifest", "Adds necessary information to the subgraph manifest (subgraph.yaml)", generateSubgraphManifest)
   .addOptionalParam("startBlock", "startblock for subgraph to begin indexing at, does not need to be set for local network");
+*/

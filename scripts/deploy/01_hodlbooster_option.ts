@@ -36,7 +36,7 @@ const main = async ({
       from: deployer,
       args: USDC_ARGS,
       
-  } );
+  } ); 
   usdcAddress = USDC.address; 
   
   console.log(`Deployed USDC at ${USDC.address} on ${network.name}`);

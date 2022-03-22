@@ -1,13 +1,13 @@
-import { ethers } from "hardhat";
 import { assert, expect } from "chai";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { deployContract } from "./utilities/deploy";
 import { OptionPair, OptionSetting, packOptionParameter } from "./utilities/optionPair";
-import { HodlBoosterOption, ERC20Mock, HodlBoosterOptionStatic } from "../typechain";
+import { HodlBoosterOption, ERC20Mock, HodlBoosterOptionStatic, HodlBoosterOptionUpgradeable } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {  GWEI, USDT_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, USDC_MULTIPLIER } from "../constants/constants";
 import { Table } from 'console-table-printer';
-   
+import { Contract, ContractFactory } from "ethers";
+import { ethers, upgrades } from "hardhat";   
    
 const USDTMultiplier = BigNumber.from(10).pow(USDT_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
@@ -25,6 +25,7 @@ describe.only("BSC Hodl Booster", async function () {
     let deployer: SignerWithAddress;
     let owner: SignerWithAddress;
     let settler: SignerWithAddress;
+    let admin: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
     let carol: SignerWithAddress;
@@ -38,7 +39,7 @@ describe.only("BSC Hodl Booster", async function () {
     let names: {};
 
     before(async function () {
-      [deployer, owner, settler, alice, bob, carol, trader] = await ethers.getSigners();
+      [deployer, owner, settler, admin, alice, bob, carol, trader] = await ethers.getSigners();
     });
 
     context("operations", function () {
@@ -80,35 +81,42 @@ describe.only("BSC Hodl Booster", async function () {
           names[usdt.address] = "usdt";
           names[eth.address] = "eth";
           names[wbtc.address] = "wbtc";
-          vault = await deployContract(
-            "HodlBoosterOptionStatic",
+          const vaultLogic = await deployContract(
+            "HodlBoosterOptionUpgradeable",
             {
               signer: deployer as Signer,
               libraries: {
                 OptionLifecycle: optionLifecycle.address,
               }
-            },
-            [
-              owner.address,
-              settler.address, [
-              {
-                depositAssetAmountDecimals: ETH_DECIMALS,
-                counterPartyAssetAmountDecimals: USDT_DECIMALS,
-                depositAsset: eth.address,
-                counterPartyAsset: usdt.address,
-                callOptionId: 0,
-                putOptionId: 0
-              }, {
-                depositAssetAmountDecimals: WBTC_DECIMALS,
-                counterPartyAssetAmountDecimals: USDT_DECIMALS,
-                depositAsset: wbtc.address,
-                counterPartyAsset: usdt.address,
-                callOptionId: 0,
-                putOptionId: 0
-              }
-            ]
+            }) as HodlBoosterOption;
+
+          const initArgs = [
+            owner.address,
+            settler.address, [
+            {
+              depositAssetAmountDecimals: ETH_DECIMALS,
+              counterPartyAssetAmountDecimals: USDT_DECIMALS,
+              depositAsset: eth.address,
+              counterPartyAsset: usdt.address,
+              callOptionId: 0,
+              putOptionId: 0
+            }, {
+              depositAssetAmountDecimals: WBTC_DECIMALS,
+              counterPartyAssetAmountDecimals: USDT_DECIMALS,
+              depositAsset: wbtc.address,
+              counterPartyAsset: usdt.address,
+              callOptionId: 0,
+              putOptionId: 0
+            }
           ]
-          ) as HodlBoosterOption;
+        ];
+        const optionVault = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+          libraries: {
+            OptionLifecycle: optionLifecycle.address,
+          },
+        }) as ContractFactory;
+
+        vault = await deployUpgradeableContract(optionVault, initArgs) as HodlBoosterOption;
           optionSettings = [];
           const ethOption = await vault.optionPairs(0);
           const wbtcOption = await vault.optionPairs(1);
@@ -664,7 +672,7 @@ describe.only("BSC Hodl Booster", async function () {
         });
 
         it("hacker perspective", async function () { 
-          const admin = vault as  HodlBoosterOptionStatic;
+          const admin = vault as  HodlBoosterOptionUpgradeable; 
           await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
           await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!settler");   
           await expect(vault.connect(alice as Signer).settle([])).to.be.revertedWith("!settler");  
@@ -859,7 +867,15 @@ describe.only("BSC Hodl Booster", async function () {
         p.addRow(option);
            
       }
-      
+      async function deployUpgradeableContract (factory: ContractFactory, args?: Array<any>): Promise<Contract> { 
+        const ctr: Contract = await upgrades.deployProxy(factory, [...(args || [])], 
+        { 
+          unsafeAllow: ['delegatecall'], 
+          unsafeAllowLinkedLibraries: true, 
+         });
+        await ctr.deployed();
+        return ctr;
+    }
   });
 
   
