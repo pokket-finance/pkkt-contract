@@ -1,5 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { BSC_ETH_ADDRESS, BSC_BUSD_ADDRESS, BSC_WBTC_ADDRESS, BUSD_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,BUSD_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER} from "../../constants/constants"; 
+import { BSC_ETH_ADDRESS, BSC_BUSD_ADDRESS, BSC_WBTC_ADDRESS, CMI_ADDRESS, BUSD_DECIMALS, 
+  WBTC_DECIMALS, ETH_DECIMALS, CMI_DECIMALS, BUSD_MULTIPLIER, WBTC_MULTIPLIER, ETH_MULTIPLIER, CMI_MULTIPLIER
+  } from "../../constants/constants"; 
 import { BigNumber, BigNumberish, Contract,ContractFactory } from "ethers";
 import { ethers } from "hardhat"; 
 import {getEmailer} from '../helper/emailHelper';
@@ -28,6 +30,7 @@ const main = async ({
   var busdAddress = isMainnet ? BSC_BUSD_ADDRESS : process.env.BUSD_ADDRESS;
   var wbtcAddress = isMainnet? BSC_WBTC_ADDRESS : process.env.WBTC_ADDRESS;
   var ethAddress = isMainnet? BSC_ETH_ADDRESS : process.env.ETH_ADDRESS;
+  var cmiAddress = isMainnet ? CMI_ADDRESS: process.env.CMI_ADDRESS;
   
   //deploy mock usdc, wbtc and eth
   if (!busdAddress && !isMainnet){
@@ -97,6 +100,15 @@ const main = async ({
       depositAssetAmountDecimals: WBTC_DECIMALS,
       counterPartyAssetAmountDecimals: BUSD_DECIMALS,
       depositAsset: wbtcAddress,
+      counterPartyAsset: busdAddress,
+      callOptionId: 0,
+      putOptionId: 0
+    
+    },
+    { 
+      depositAssetAmountDecimals: CMI_DECIMALS,
+      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
+      depositAsset: cmiAddress,
       counterPartyAsset: busdAddress,
       callOptionId: 0,
       putOptionId: 0

@@ -1,5 +1,5 @@
 import { Contract, ContractFactory } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { Signer } from "ethers";
 import {
   FactoryOptions,
@@ -13,5 +13,14 @@ export async function deployContract (name: string, signerOrOptions?: Signer | F
     await ctr.deployed();
 
     return ctr;
+}      
+export async function deployUpgradeableContract (factory: ContractFactory, args?: Array<any>): Promise<Contract> { 
+  const ctr: Contract = await upgrades.deployProxy(factory, [...(args || [])], 
+  { 
+    unsafeAllow: ['delegatecall'], 
+    unsafeAllowLinkedLibraries: true, 
+   });
+  await ctr.deployed();
+  return ctr;
 }
  
