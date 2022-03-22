@@ -60,8 +60,8 @@ const main = async ({ forcesettlerkey }, {
       schema["properties"]["adminAddress"] = {
         name: "Proxy Admin Address",
         pattern: /^0x[0-9A-Fa-f]{40}$/,
-        message: 'Must be a hex starts with 0x',
-        required: true
+        message: 'Must be a hex starts with 0x, and should be a multisig wallet address that support openzeppelin proxy, take GnosisSafe wallet address.',
+        required: false
       }
     }
     var schema2 = {
@@ -83,17 +83,14 @@ const main = async ({ forcesettlerkey }, {
     var deployerAddress = await fileStorage.readValue("deployerAddress");
     var ownerAddress = await fileStorage.readValue("ownerAddress");
     var settlerAddress = await fileStorage.readValue("settlerAddress");
-    var adminAddress = await fileStorage.readValue("adminAddress");
+    var adminAddress = process.env.USE_PROXY ? await fileStorage.readValue("adminAddress") : null;
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
-    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey && 
-      (!process.env.USE_PROXY || adminAddress)){ 
-      if (!process.env.USE_PROXY) {
-        console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`);
-      }
-      else{
-        console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}; Proxy Admin Address: ${adminAddress}`);
-
-      }
+    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey){
+      let message = `Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`;
+      if (adminAddress && adminAddress != deployerAddress) {
+        message += `; Proxy Admin Address: ${adminAddress}`;
+      } 
+      console.log(message); 
       if (!forcesettlerkey){
         return;
       }
@@ -110,7 +107,7 @@ const main = async ({ forcesettlerkey }, {
     }
 
     result = await promptHelper(schema);   
-    if (!process.env.USE_PROXY) {
+    if (!result.adminAddress && result.adminAddress != result.deployerAddress) {
       console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}`); 
     }
     else{
@@ -123,6 +120,9 @@ const main = async ({ forcesettlerkey }, {
     await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey); 
     if(result.adminAddress){ 
       await fileStorage.writeValue("adminAddress", result.adminAddress);
+    }
+    else if (process.env.USE_PROXY) { 
+      await fileStorage.writeValue("adminAddress", result.deployerAddress);
     }
     if (result.settlerPrivateKey) { 
       console.log(`Settler private key written to secured storage`); 

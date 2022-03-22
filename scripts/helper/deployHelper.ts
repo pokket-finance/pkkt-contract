@@ -11,7 +11,8 @@ export async function deployUpgradeableContract (factory: ContractFactory,  args
       unsafeAllowLinkedLibraries: true, 
      });
     await ctr.deployed();
-    if (newAdmin){
+    if (newAdmin && newAdmin != await factory.signer.getAddress()){
+      console.log("a")
       await upgrades.admin.changeProxyAdmin(ctr.address, newAdmin);
     }
     return ctr;

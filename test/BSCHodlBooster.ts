@@ -2,7 +2,7 @@ import { assert, expect } from "chai";
 import { BigNumber, BigNumberish, Signer } from "ethers";
 import { deployContract,deployUpgradeableContract } from "./utilities/deploy";
 import { OptionPair, OptionSetting, packOptionParameter } from "./utilities/optionPair";
-import { HodlBoosterOption, ERC20Mock, HodlBoosterOptionUpgradeable } from "../typechain";
+import { HodlBoosterOption, ERC20Mock, HodlBoosterOptionUpgradeable, HodlBoosterOptionUpgradeableV2 } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {  GWEI, BUSD_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, BUSD_MULTIPLIER } from "../constants/constants";
 import { Table } from 'console-table-printer';
@@ -37,6 +37,7 @@ describe.only("BSC Hodl Booster", async function () {
     let optionPairs: OptionPair[];
     let optionSettings: OptionSetting[];
     let names: {};
+    let optionLifecycleAddress: string;
 
     before(async function () {
       [deployer, owner, settler, admin, alice, bob, carol, trader] = await ethers.getSigners();
@@ -110,9 +111,10 @@ describe.only("BSC Hodl Booster", async function () {
             }
           ]
         ];
+        optionLifecycleAddress = optionLifecycle.address;
         const optionVault = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
           libraries: {
-            OptionLifecycle: optionLifecycle.address,
+            OptionLifecycle: optionLifecycleAddress,
           },
         }) as ContractFactory;
 
@@ -199,13 +201,13 @@ describe.only("BSC Hodl Booster", async function () {
 
           var ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId);
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(5).mul(ETHMultiplier).toString());
-          var usdcEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
-          assert.equal(usdcEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
+          var busdEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
 
           var wbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId);
           assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2).mul(WBTCMultiplier).toString());
-          var usdcWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
-          assert.equal(usdcWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
+          var busdWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
 
 
 
@@ -229,13 +231,13 @@ describe.only("BSC Hodl Booster", async function () {
 
           var ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId);
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
-          var usdcEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
-          assert.equal(usdcEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(BUSDMultiplier).toString());
+          var busdEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(BUSDMultiplier).toString());
 
           var wbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId);
           assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(4).mul(WBTCMultiplier).toString());
-          var usdcWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
-          assert.equal(usdcWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(BUSDMultiplier).toString());
+          var busdWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2000).mul(BUSDMultiplier).toString());
 
         });
 
@@ -397,7 +399,7 @@ describe.only("BSC Hodl Booster", async function () {
               packOptionParameter(btcPrice, 0.02 * RatioMultipler),
               ]);
 
-              //alice got the 2*4000*1.02 executed usdc
+              //alice got the 2*4000*1.02 executed busd
               available = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId ); 
               assert.equal(available.releasedCounterPartyAssetAmount.toString(), (BigNumber.from(8160).mul(BUSDMultiplier)).toString());
               assert.equal(available.releasedDepositAssetAmount.toString(), "0");
@@ -672,7 +674,72 @@ describe.only("BSC Hodl Booster", async function () {
           }
            
         });
+        it("old upgrader perspecitve", async function () {
+          await vault.connect(settler as Signer).initiateSettlement();
+
+          // user can deposit
+          await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
+          await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER));
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId, BigNumber.from(2).mul(WBTCMultiplier));
+          await vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER));
+
+          var ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId);
+          assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(5).mul(ETHMultiplier).toString());
+          var busdEthOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
+
+          var wbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId);
+          assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2).mul(WBTCMultiplier).toString());
+          var busdWbtcOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
+          assert.equal(busdWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
+
+          
+          const proxyAddress = vault.address; 
+          const optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", {
+            libraries: {
+              OptionLifecycle: optionLifecycleAddress
+            },
+          }) as ContractFactory;
+          console.log("Upgrading HodlBoosterOption");
+          var v2 = await upgrades.upgradeProxy(proxyAddress, optionVaultV2, { 
+            unsafeAllow: ['delegatecall'], 
+            unsafeAllowLinkedLibraries: true, 
+           }) as HodlBoosterOptionUpgradeableV2; 
+
+           ethOptionBalance = await v2.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId);
+           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(5).mul(ETHMultiplier).toString());
+           busdEthOptionBalance = await v2.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].putOptionId);
+           assert.equal(busdEthOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
  
+           wbtcOptionBalance = await v2.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId);
+           assert.equal(wbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(2).mul(WBTCMultiplier).toString());
+           busdWbtcOptionBalance = await v2.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
+           assert.equal(busdWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
+          
+            await v2.connect(owner as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
+              [BigNumber.from(100).mul(WBTCMultiplier), BigNumber.from(100000).mul(BUSDMultiplier),
+               BigNumber.from(1000).mul(ETHMultiplier)]);  
+
+          console.log("HodlBoosterOption upgraded successfully");
+        })
+
+        it("new upgrader perspecitve", async function () {          
+          const proxyAddress = vault.address; 
+          //new admin address should be gnosis safe address
+          await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
+          const optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", {
+            libraries: {
+              OptionLifecycle: optionLifecycleAddress
+            },
+          }) as ContractFactory;
+          console.log("Upgrading HodlBoosterOption");
+          var v2ImplAddress = await upgrades.prepareUpgrade(proxyAddress, optionVaultV2, { 
+            unsafeAllow: ['delegatecall'], 
+            unsafeAllowLinkedLibraries: true, 
+           });  
+
+          console.log("New v2 implementAddress " + v2ImplAddress + " please approve in gnosis safe");
+        })
         it("hacker perspective", async function () { 
           const admin = vault as  HodlBoosterOptionUpgradeable; 
           await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!settler");  

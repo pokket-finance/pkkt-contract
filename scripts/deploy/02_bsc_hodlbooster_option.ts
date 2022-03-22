@@ -9,6 +9,7 @@ import * as dotenv from "dotenv";
 import {CHAINID} from "../../constants/constants"
 import {deployUpgradeableContract, postDeployment} from '../helper/deployHelper';
 import { HodlBoosterOptionUpgradeable } from "../../typechain";
+import { getFileStorage } from "../helper/storageHelper";
 
 dotenv.config();   
 const main = async ({
@@ -155,16 +156,29 @@ const main = async ({
     console.log(error);
   } */
   
-  const proxy = await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS, admin) as HodlBoosterOptionUpgradeable;
+  const useNewAdmin = admin && admin != deployer;
+  const proxy = 
+  useNewAdmin ?
+  await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS, admin) as HodlBoosterOptionUpgradeable:
+  await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS) as HodlBoosterOptionUpgradeable;
   
-  console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
- 
+  if (useNewAdmin) {
+    console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
+  }
+  else {
+    console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address}`);
+    //we need to empty out deployerPrivateKey in the json file, since the proxy admin is persisted in this way
+    var storage = await getFileStorage();
+    await storage.writeValue("deployerPrivateKey", "");
+  }
+
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3><h3>Proxy Admin Address: ${admin}</h3>` + 
+    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` + 
+    (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : "") + 
     `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
     isHtml: true
 }

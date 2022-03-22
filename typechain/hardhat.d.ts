@@ -81,6 +81,22 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.OptionVaultStorageV1__factory>;
     getContractFactory(
+      name: "HodlBoosterOptionUpgradeableV2",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.HodlBoosterOptionUpgradeableV2__factory>;
+    getContractFactory(
+      name: "HodlBoosterOptionV2",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.HodlBoosterOptionV2__factory>;
+    getContractFactory(
+      name: "OptionVaultBaseV2",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.OptionVaultBaseV2__factory>;
+    getContractFactory(
+      name: "OptionVaultStorageV2",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.OptionVaultStorageV2__factory>;
+    getContractFactory(
       name: "AdminUpgradeabilityProxy",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.AdminUpgradeabilityProxy__factory>;
@@ -178,6 +194,26 @@ declare module "hardhat/types/runtime" {
       address: string,
       signer?: ethers.Signer
     ): Promise<Contracts.OptionVaultStorageV1>;
+    getContractAt(
+      name: "HodlBoosterOptionUpgradeableV2",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.HodlBoosterOptionUpgradeableV2>;
+    getContractAt(
+      name: "HodlBoosterOptionV2",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.HodlBoosterOptionV2>;
+    getContractAt(
+      name: "OptionVaultBaseV2",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.OptionVaultBaseV2>;
+    getContractAt(
+      name: "OptionVaultStorageV2",
+      address: string,
+      signer?: ethers.Signer
+    ): Promise<Contracts.OptionVaultStorageV2>;
     getContractAt(
       name: "AdminUpgradeabilityProxy",
       address: string,
