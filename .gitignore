@@ -6,6 +6,7 @@ artifacts
 .vscode
 .env
 coverage.json
+package-lock.json
 coverage/
 
 # Openzeppelin local project deployment files
