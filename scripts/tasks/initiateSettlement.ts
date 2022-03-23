@@ -1,6 +1,7 @@
  
 import { getStorage } from "../helper/storageHelper";
 import {getEmailer} from '../helper/emailHelper';
+import { HodlBoosterOptionUpgradeable, HodlBoosterOptionStatic } from "../../typechain";
 
 const main = async ({}, {
   network,
@@ -21,6 +22,10 @@ const main = async ({}, {
 
     const hodlBoosterOption = await deployments.get("HodlBoosterOption"); 
     const hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address);
+    if (process.env.USE_PROXY) {
+      (hodlBoosterOptionContract as HodlBoosterOptionUpgradeable).attach(process.env.PROXY_ADDRESS!);
+    }
+
     const previousRound = await hodlBoosterOptionContract.currentRound();
     console.log(`HodlBoosterOption is currently under ${previousRound} epoch`);
     await hodlBoosterOptionContract.connect(settlerWallet).initiateSettlement();
