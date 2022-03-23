@@ -11,7 +11,7 @@ const main = async ({}, {
 }) => { 
   
     const { settler } = await getNamedAccounts(); 
-    var storage = getStorage(); 
+    var storage = getStorage();  
     var privateKey =  (await storage.readValue("SETTLER_PRIVATE_KEY")) as string;
     if (!privateKey) {
         console.error("Failed to find SETTLER_PRIVATE_KEY");
@@ -19,13 +19,23 @@ const main = async ({}, {
     }
     privateKey = privateKey.startsWith("0x") ? privateKey : ("0x" + privateKey);  
     var settlerWallet = new ethers.Wallet(privateKey, ethers.provider);
-
-    const hodlBoosterOption = await deployments.get("HodlBoosterOption"); 
-    const hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address);
-    if (process.env.USE_PROXY) {
-      (hodlBoosterOptionContract as HodlBoosterOptionUpgradeable).attach(process.env.PROXY_ADDRESS!);
+    let hodlBoosterOptionContract;
+    if (!process.env.USE_PROXY) {
+      const hodlBoosterOption = await deployments.get("HodlBoosterOption");  
+      hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address); 
     }
-
+    else{
+      const optionLifecycle = await deployments.get("OptionLifecycle");
+      var hodlBoosterOptionContractFactory = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+        libraries: {
+          OptionLifecycle: optionLifecycle.address,
+        }
+      });
+      hodlBoosterOptionContract = await hodlBoosterOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
+    }
+  
+    const owner = await hodlBoosterOptionContract.owner();
+    console.log("owner", owner);
     const previousRound = await hodlBoosterOptionContract.currentRound();
     console.log(`HodlBoosterOption is currently under ${previousRound} epoch`);
     await hodlBoosterOptionContract.connect(settlerWallet).initiateSettlement();

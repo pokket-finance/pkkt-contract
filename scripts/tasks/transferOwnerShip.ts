@@ -17,8 +17,20 @@ const main = async ({}, {
       };
 
     var  result = await promptHelper(schema); 
-    const hodlBoosterOption = await deployments.get("HodlBoosterOption"); 
-    const hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address);
+    let hodlBoosterOptionContract;
+    if (!process.env.USE_PROXY) {
+      const hodlBoosterOption = await deployments.get("HodlBoosterOption");  
+      hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address); 
+    }
+    else{
+      const optionLifecycle = await deployments.get("OptionLifecycle");
+      var hodlBoosterOptionContractFactory = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+        libraries: {
+          OptionLifecycle: optionLifecycle.address,
+        }
+      });
+      hodlBoosterOptionContract = await hodlBoosterOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
+    }
     await hodlBoosterOptionContract.transferOwnership(result.ownerAddress);
     var fileStorage = getFileStorage();
     await fileStorage.writeValue("ownerAddress", result.ownerAddress);
