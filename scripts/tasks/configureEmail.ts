@@ -2,7 +2,8 @@
 import { getStorage } from "../helper/storageHelper";
 import {getEmailer} from '../helper/emailHelper';
 import promptHelper from '../helper/promptHelper';
- 
+import {MAILSERVICE_CONFIG} from "@pokket-finance/infrastructure";
+
 const main = async ({ forcesettlerkey }, {
     network,
     deployments,
@@ -26,7 +27,7 @@ const main = async ({ forcesettlerkey }, {
     const result = await promptHelper(schema);     
     if (result.mailServerConfig) {  
       console.log(`Mail Server Config written to secured storage`); 
-      await storage.writeValue("MAILSERVICE_CONFIG", result.mailServerConfig); 
+      await storage.writeValue(MAILSERVICE_CONFIG, result.mailServerConfig); 
       
         var emailer = await getEmailer();
         const emailContent = { 
