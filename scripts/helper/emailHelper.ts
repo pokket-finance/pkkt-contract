@@ -1,5 +1,6 @@
 
-import {emailerCreator, emailer, emailerType} from "@pokket-finance/infrastructure"
+import {emailerCreator, emailer, emailerType} from "@pokket-finance/infrastructure";
+import { getStorage } from "./storageHelper";
 import * as dotenv from "dotenv"; 
 dotenv.config(); 
  
@@ -27,7 +28,14 @@ export async function getEmailer(): Promise<{emailSender: emailer, emailTos: str
         }
     }
     else{
-        emailSender = await creator.createEmailer(emailerType.nodemailer, {});
+
+        let storage = await getStorage();
+        let configContent = await storage.readValue("MAILSERVICE_CONFIG"); 
+        let config:any = {};
+        if (configContent) {
+            config = JSON.parse(configContent);
+        }
+        emailSender = await creator.createEmailer(emailerType.nodemailer, config);
     }
     emailTos = process.env.EMAIL_TO?.split(";") ?? [];
     if (emailTos.length == 0 ){

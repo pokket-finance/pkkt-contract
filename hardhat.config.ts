@@ -18,6 +18,7 @@ import transferOwnerShip from './scripts/tasks/transferOwnerShip';
 import prepareAccounts from './scripts/tasks/prepareAccounts';
 import initiateSettlement from './scripts/tasks/initiateSettlement';
 import setSettler from './scripts/tasks/setSettler';
+import configureEmail from './scripts/tasks/configureEmail';
 
 dotenv.config();
  
@@ -158,3 +159,4 @@ task("send-coins", "Send test coins to specific address", sendUserCoins)
 .addParam("target", "target address");
 
 task("set-settler", "Reset the settler", setSettler);
+task("configure-email", "Configure the email server", configureEmail);
