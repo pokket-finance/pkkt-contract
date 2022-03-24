@@ -12,7 +12,6 @@ export async function deployUpgradeableContract (factory: ContractFactory,  args
      });
     await ctr.deployed();
     if (newAdmin && newAdmin != await factory.signer.getAddress()){
-      console.log("a")
       await upgrades.admin.changeProxyAdmin(ctr.address, newAdmin);
     }
     return ctr;
@@ -22,9 +21,9 @@ export async function postDeployment(result:DeployResult, run:RunTaskFunction,
   contractName: string, networkName:string, constructorArguments?:any) { 
   if (result.newlyDeployed) {
     console.log(`Deployed ${contractName} at ${result.address} on ${networkName}`);
-    const optionLifecycleContract = await ethers.getContractAt(contractName, result.address);
+    const contract = await ethers.getContractAt(contractName, result.address);
     if (!result.receipt?.confirmations || result.receipt.confirmations == 0) { 
-      await optionLifecycleContract.deployed();
+      await contract.deployed();
     } 
   }
   else{ 

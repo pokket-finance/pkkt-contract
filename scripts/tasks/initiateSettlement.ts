@@ -34,8 +34,6 @@ const main = async ({}, {
       hodlBoosterOptionContract = await hodlBoosterOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
     }
   
-    const owner = await hodlBoosterOptionContract.owner();
-    console.log("owner", owner);
     const previousRound = await hodlBoosterOptionContract.currentRound();
     console.log(`HodlBoosterOption is currently under ${previousRound} epoch`);
     await hodlBoosterOptionContract.connect(settlerWallet).initiateSettlement();
