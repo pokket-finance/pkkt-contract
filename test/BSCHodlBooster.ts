@@ -726,19 +726,34 @@ describe.only("BSC Hodl Booster", async function () {
         it("new upgrader perspecitve", async function () {          
           const proxyAddress = vault.address; 
           //new admin address should be gnosis safe address
-          await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
+          let adminInstance = await upgrades.admin.getInstance();
+          console.log(`Admin instance owner: ${await adminInstance.owner()}`);
+          //await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
+          await upgrades.admin.transferProxyAdminOwnership(admin.address);
+          adminInstance = await upgrades.admin.getInstance();
+          console.log(`Admin instance owner: ${await adminInstance.owner()}`);
           const optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", {
+            signer: admin as Signer,
             libraries: {
               OptionLifecycle: optionLifecycleAddress
             },
           }) as ContractFactory;
           console.log("Upgrading HodlBoosterOption");
-          var v2ImplAddress = await upgrades.prepareUpgrade(proxyAddress, optionVaultV2, { 
+          // var v2ImplAddress = await upgrades.prepareUpgrade(proxyAddress, optionVaultV2, { 
+          //   unsafeAllow: ['delegatecall'], 
+          //   unsafeAllowLinkedLibraries: true, 
+          //  });
+          let v2 = await upgrades.upgradeProxy(proxyAddress, optionVaultV2, { 
             unsafeAllow: ['delegatecall'], 
             unsafeAllowLinkedLibraries: true, 
-           });  
+           }) as HodlBoosterOptionUpgradeableV2; 
 
-          console.log("New v2 implementAddress " + v2ImplAddress + " please approve in gnosis safe");
+          console.log("New v2 implementAddress " + v2.address);
+          await v2.connect(owner as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
+            [BigNumber.from(100).mul(WBTCMultiplier), BigNumber.from(100000).mul(BUSDMultiplier),
+             BigNumber.from(1000).mul(ETHMultiplier)]);  
+
+        console.log("HodlBoosterOption upgraded successfully");
         })
         it("hacker perspective", async function () { 
           const admin = vault as  HodlBoosterOptionUpgradeable; 
