@@ -417,10 +417,8 @@ describe.only("BSC Hodl Booster", async function () {
               } 
               var busdBalance = await busd.connect(alice as Signer).balanceOf(alice.address); 
               await vault.connect(alice as Signer).withdraw(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, available.releasedCounterPartyAssetAmount, busd.address );
-              var busdBalance2 = await busd.connect(alice as Signer).balanceOf(alice.address);
-              console.log("abc");
+              var busdBalance2 = await busd.connect(alice as Signer).balanceOf(alice.address); 
               assert.equal(busdBalance2.sub(busdBalance).toString(), available.releasedCounterPartyAssetAmount.toString()); 
-              console.log("efg");
               available = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId );
               assert.equal(available.releasedCounterPartyAssetAmount.toString(), "0");
               assert.equal(available.releasedDepositAssetAmount.toString(), "0");  
@@ -724,31 +722,34 @@ describe.only("BSC Hodl Booster", async function () {
         })
 
         it("new upgrader perspecitve", async function () {          
-          const proxyAddress = vault.address; 
-          //new admin address should be gnosis safe address
-          let adminInstance = await upgrades.admin.getInstance();
-          console.log(`Admin instance owner: ${await adminInstance.owner()}`);
-          //await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
-          await upgrades.admin.transferProxyAdminOwnership(admin.address);
-          adminInstance = await upgrades.admin.getInstance();
-          console.log(`Admin instance owner: ${await adminInstance.owner()}`);
-          const optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", {
+          const proxyAddress = vault.address;  
+          await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
+          /*
+          let optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", { 
+            libraries: {
+              OptionLifecycle: optionLifecycleAddress
+            },
+          }) as ContractFactory; 
+           await expect(function(){
+            upgrades.upgradeProxy(proxyAddress, optionVaultV2, { 
+              unsafeAllow: ['delegatecall'], 
+              unsafeAllowLinkedLibraries: true, 
+             })
+           }).to.throw(); */
+ 
+           let optionVaultV2 = await ethers.getContractFactory("HodlBoosterOptionUpgradeableV2", {
             signer: admin as Signer,
             libraries: {
               OptionLifecycle: optionLifecycleAddress
             },
           }) as ContractFactory;
           console.log("Upgrading HodlBoosterOption");
-          // var v2ImplAddress = await upgrades.prepareUpgrade(proxyAddress, optionVaultV2, { 
-          //   unsafeAllow: ['delegatecall'], 
-          //   unsafeAllowLinkedLibraries: true, 
-          //  });
           let v2 = await upgrades.upgradeProxy(proxyAddress, optionVaultV2, { 
             unsafeAllow: ['delegatecall'], 
             unsafeAllowLinkedLibraries: true, 
            }) as HodlBoosterOptionUpgradeableV2; 
 
-          console.log("New v2 implementAddress " + v2.address);
+          console.log("New v2 implement proxy Address " + v2.address);
           await v2.connect(owner as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
             [BigNumber.from(100).mul(WBTCMultiplier), BigNumber.from(100000).mul(BUSDMultiplier),
              BigNumber.from(1000).mul(ETHMultiplier)]);  

@@ -21,7 +21,7 @@ const StrikePriceDecimals = 4;
 const ethPrice = 4000 * (10 ** PricePrecision);
 const btcPrice = 50000 * (10 ** PricePrecision);
 
-describe.skip("Hodl Booster", async function () {
+describe.only("Hodl Booster", async function () {
     let deployer: SignerWithAddress;
     let owner: SignerWithAddress;
     let settler: SignerWithAddress;
