@@ -9,7 +9,9 @@ phases:
       - echo "Restore the dependencies..."
       - envsubst < .npmrc > dest.npmrc && mv -f dest.npmrc .npmrc
       - npm install
-
+  post_build:
+    commands:
+      - printf "%s.%s" $VERSION $CODEBUILD_BUILD_NUMBER > "VERSION"
 artifacts:
   files:
     - '**/*'
