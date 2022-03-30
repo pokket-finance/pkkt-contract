@@ -1,0 +1,15 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Install nodejs 16..."
+      - curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+      - sudo apt-get install -y nodejs
+      - echo "Restore the dependencies..."
+      - envsubst < .npmrc > dest.npmrc && mv -f dest.npmrc .npmrc
+      - npm install
+
+artifacts:
+  files:
+    - '**/*'
