@@ -4,7 +4,7 @@ pragma solidity =0.8.4;
 import {StructureData} from "../libraries/StructureData.sol"; 
 abstract contract OptionVaultStorageV1 { 
     uint256 internal locked;
-    address internal settlerRoleAddress;
+    address public settlerRoleAddress;
     uint8 public optionPairCount;
     uint8 internal assetCount;
     uint16 public currentRound;

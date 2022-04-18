@@ -73,28 +73,28 @@ var accounts = data.deployerPrivateKey ?
   },
   namedAccounts: {
     deployer: {
-      default: data.deployerAddress ? data.deployerAddress : 0,
+      default: data.deployerAddress ?? 0,
       //ropsten
-      3: data.deployerAddress ? data.deployerAddress : 0,
+      3: data.deployerAddress ?? 0,
       //main
-      1: data.deployerAddress ? data.deployerAddress : 0,
+      1: data.deployerAddress ?? 0,
       //bscmain
-      56: data.deployerAddress ? data.deployerAddress : 0,
+      56: data.deployerAddress ?? 0,
       //bsctest
-      97: data.deployerAddress ? data.deployerAddress : 0
+      97: data.deployerAddress ?? 0
     },
     owner: { 
-      default: data.ownerAddress ? data.ownerAddress : 1,
+      default: data.ownerAddress ?? 1,
     },
     settler: { 
-      default: data.settlerAddress ? data.settlerAddress : 2,
+      default: data.settlerAddress ?? 2,
     },
     admin : {
       default: 3,
       //bscmain
-      56: data.adminAddress ? data.adminAddress : 3,
+      56: data.adminAddress ?? 3,
       //bsctest
-      97: data.adminAddress ? data.adminAddress : 3
+      97: data.adminAddress ?? 3
       
     },
     alice: {

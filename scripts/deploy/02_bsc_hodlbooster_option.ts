@@ -167,11 +167,15 @@ const main = async ({
   }
   else {
     console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address}`);
-    //we need to empty out deployerPrivateKey in the json file, since the proxy admin is persisted in this way
-    var storage = await getFileStorage();
-    await storage.writeValue("deployerPrivateKey", "");
   }
 
+  if (process.env.FROM_SECURE_STORAGE) { 
+    var storage = await getFileStorage();
+    await storage.writeValue("ownerAddress", "");
+    await storage.writeValue("deployerPrivateKey", "");
+    await storage.writeValue("adminAddress", "");
+    await storage.writeValue("settlerPrivateKey", "");
+  }
 
   const emailContent = { 
     to: emailer.emailTos, 

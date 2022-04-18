@@ -11,6 +11,36 @@ const main = async ({ forcesettlerkey }, {
     ethers
   }) => { 
 
+    if (process.env.FROM_SECURE_STORAGE) {
+
+      var storage = getStorage();
+      var fileStorage = getFileStorage();
+ 
+      var ownerAddress = await fileStorage.readValue("ownerAddress");
+      var settlerPrivateKey = await storage.readValue("settlerPrivateKey");
+      var adminAddress = process.env.USE_PROXY ? await storage.readValue("adminAddress") : null;
+      var deployerPrivateKey = await storage.readValue("deployerPrivateKey"); 
+      var deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, network.provider)).getAddress() : null;
+      var settlerAddress = settlerPrivateKey ? (await new ethers.Wallet(settlerPrivateKey, network.provider)).getAddress() : null;
+      if (!deployerAddress) {
+        console.error('deployerPrivateKey missing')
+        return;
+      } 
+      if (!settlerAddress) {
+        console.error('settlerPrivateKey missing')
+        return;
+      }
+       
+      if (ownerAddress) { 
+        await fileStorage.writeValue("ownerAddress", ownerAddress);
+      }
+      if (adminAddress) { 
+        await fileStorage.writeValue("adminAddress", adminAddress);
+      }
+      await fileStorage.writeValue("settlerPrivateKey", settlerPrivateKey!);
+      await fileStorage.writeValue("deployerPrivateKey", deployerPrivateKey!); 
+      return;
+    }
   
     var schema = {
       properties: {
