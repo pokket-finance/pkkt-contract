@@ -114,7 +114,7 @@ contract HodlBoosterOption is OptionVaultBase, IPKKTStructureOption {
     function depositETH(uint8 _optionId) external payable override 
         validateOptionById(_optionId){
         require(currentRound > 0, "!Started");
-        require(msg.value > 0, "!value");
+        require(msg.value > 0, "no value");
  
         StructureData.OptionPairDefinition storage pair = optionPairs[
             (_optionId - 1) / 2
