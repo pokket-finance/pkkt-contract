@@ -1,6 +1,10 @@
 
+<<<<<<< HEAD
 import {emailerCreator, emailer, emailerType, 
     MAILSERVICE_CONFIG,EMAIL_TO, EMAIL_CC} from "@pokket-finance/infrastructure";
+=======
+import {emailerCreator, emailer, emailerType, MAILSERVICE_CONFIG, storageCreator, EMAIL_TO, EMAIL_CC} from "@pokket-finance/infrastructure";
+>>>>>>> parent of 665a2dc (Revert "Merge branch 'teragon-qa'")
 import { getStorage } from "./storageHelper";
 import * as dotenv from "dotenv"; 
 dotenv.config(); 

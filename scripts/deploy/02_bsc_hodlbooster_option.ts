@@ -183,7 +183,7 @@ const main = async ({
     subject:`HodlBoosterOption deployed on ${network.name}`,
     content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` + 
     (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : "") + 
-    `<ol><li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li>`+
+    `<ol><li>Please run "npm run new-epoch" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li>`+
     `<li>Please set the value of VAULT_ADDRESS to ${proxy.address} in .env at backend</li></ol>`,
     isHtml: true
 }
