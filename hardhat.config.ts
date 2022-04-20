@@ -50,21 +50,21 @@ var accounts = data.deployerPrivateKey ?
       chainId: 1
     },
     ropsten: {
-      url: process.env.ROPSTEN_RPC_URL || `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      url: process.env.ROPSTEN_RPC_URL ?? `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 20e9,
       chainId: 3
     }, 
     bsctest: { 
-      url: process.env.BSCTEST_RPC_URL || `https://data-seed-prebsc-1-s1.binance.org:8545`,
+      url: process.env.BSCTEST_RPC_URL ?? `https://data-seed-prebsc-1-s1.binance.org:8545`,
       gas: 2100000,
       gasPrice: 20e9,
       accounts: accounts,
       chainId: 97
     },
     bsc: { 
-      url: process.env.BSC_RPC_URL || `https://bsc-dataseed.binance.org`,
+      url: process.env.BSC_RPC_URL ?? `https://bsc-dataseed.binance.org`,
       gas: 2100000,
       gasPrice: 5e9,
       accounts: accounts,
@@ -73,28 +73,28 @@ var accounts = data.deployerPrivateKey ?
   },
   namedAccounts: {
     deployer: {
-      default: data.deployerAddress || 0,
+      default: data.deployerAddress ?? 0,
       //ropsten
-      3: data.deployerAddress || 0,
+      3: data.deployerAddress ?? 0,
       //main
-      1: data.deployerAddress || 0,
+      1: data.deployerAddress ?? 0,
       //bscmain
-      56: data.deployerAddress || 0,
+      56: data.deployerAddress ?? 0,
       //bsctest
-      97: data.deployerAddress || 0
+      97: data.deployerAddress ?? 0
     },
     owner: { 
-      default: data.ownerAddress || 1,
+      default: data.ownerAddress ?? 1,
     },
     settler: { 
-      default: data.settlerAddress || 2,
+      default: data.settlerAddress ?? 2,
     },
     admin : {
       default: 3,
       //bscmain
-      56: data.adminAddress || 3,
+      56: data.adminAddress ?? 3,
       //bsctest
-      97: data.adminAddress || 3
+      97: data.adminAddress ?? 3
       
     },
     alice: {
