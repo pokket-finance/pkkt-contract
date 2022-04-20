@@ -38,11 +38,11 @@ export async function getEmailer(): Promise<{emailSender: emailer, emailTos: str
         }
         emailSender = await creator.createEmailer(emailerType.nodemailer, config);
     }
-    emailTos = ((await storage.readValue(EMAIL_TO)) ?? process.env.EMAIL_TO)?.split(";") ?? [];
+    emailTos = ((await storage.readValue(EMAIL_TO)) || process.env.EMAIL_TO)?.split(";") ?? [];
     if (emailTos.length == 0 ){
         console.error("EMAIL_TO not specified");
     }
-    emailCcs = ((await storage.readValue(EMAIL_CC)) ?? process.env.EMAIL_CC)?.split(";") ?? []; 
+    emailCcs = ((await storage.readValue(EMAIL_CC)) || process.env.EMAIL_CC)?.split(";") ?? []; 
     return {
         emailSender,
         emailTos,
