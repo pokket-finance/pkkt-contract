@@ -1,6 +1,7 @@
 
 import {emailerCreator, emailer, emailerType, 
-    MAILSERVICE_CONFIG,EMAIL_TO, EMAIL_CC} from "@pokket-finance/infrastructure";
+    MAILSERVICE_CONFIG,EMAIL_TO, EMAIL_CC, isEmptyAccounts} from "@pokket-finance/infrastructure";
+ 
 import { getStorage } from "./storageHelper";
 import * as dotenv from "dotenv"; 
 dotenv.config(); 
@@ -38,11 +39,13 @@ export async function getEmailer(): Promise<{emailSender: emailer, emailTos: str
         }
         emailSender = await creator.createEmailer(emailerType.nodemailer, config);
     }
-    emailTos = ((await storage.readValue(EMAIL_TO)) || process.env.EMAIL_TO)?.split(";") ?? [];
+    const emailTosFromStorage = await storage.readValue(EMAIL_TO);
+    emailTos = (isEmptyAccounts(emailTosFromStorage) ? process.env.EMAIL_TO : emailTosFromStorage)?.split(";") ?? [];
     if (emailTos.length == 0 ){
         console.error("EMAIL_TO not specified");
     }
-    emailCcs = ((await storage.readValue(EMAIL_CC)) || process.env.EMAIL_CC)?.split(";") ?? []; 
+    const emailCcsFromStorage = await storage.readValue(EMAIL_CC) 
+    emailCcs = (isEmptyAccounts(emailCcsFromStorage) ? process.env.EMAIL_CC : emailCcsFromStorage)?.split(";") ?? []; 
     return {
         emailSender,
         emailTos,
