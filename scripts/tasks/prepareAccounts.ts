@@ -39,6 +39,8 @@ const main = async ({ forcesettlerkey }, {
       }
       await fileStorage.writeValue("settlerPrivateKey", settlerPrivateKey!);
       await fileStorage.writeValue("deployerPrivateKey", deployerPrivateKey!); 
+      await fileStorage.writeValue("deployerAddress", deployerAddress!);
+      await fileStorage.writeValue("settlerAddress", settlerAddress!); 
       return;
     }
   
