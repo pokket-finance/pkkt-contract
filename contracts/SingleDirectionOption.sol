@@ -2,18 +2,16 @@
 pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {StructureData} from "./../libraries/StructureData.sol";
-import {Utils} from "./../libraries/Utils.sol";
-import {OptionLifecycle} from "./../libraries/OptionLifecycle.sol";
-import "./../interfaces/IPKKTStructureOption.sol";
-import "./OptionVaultBaseV2.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol"; 
+import {StructureData} from "./libraries/StructureData.sol";
+import {Utils} from "./libraries/Utils.sol";
+import {OptionLifecycle} from "./libraries/OptionLifecycle.sol";
+import "./interfaces/IDOVOption.sol";
+import "./OptionVaultManager.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-//In real case, this is untouched, since we can change OptionVaultStorage to inherit from OptionVaultStorageV2
-contract HodlBoosterOptionV2 is OptionVaultBaseV2, IPKKTStructureOption {
+contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using SafeMath for uint256;
@@ -22,7 +20,7 @@ contract HodlBoosterOptionV2 is OptionVaultBaseV2, IPKKTStructureOption {
  
 
     modifier validateOptionById(uint8 _optionId) {
-        require(_optionId != 0 && _optionId <= optionPairCount * 2);
+        require(_optionId != 0 && _optionId < optionCount);
         _;
     }
 
@@ -87,83 +85,56 @@ contract HodlBoosterOptionV2 is OptionVaultBaseV2, IPKKTStructureOption {
             currentRound
         );
     }
-
+    
+    //withdraw pending and expired amount
     function withdraw(
         uint8 _optionId,
-        uint256 _amount,
-        address _asset
+        uint256 _amount
     ) external override 
-        validateOptionById(_optionId){
-        //require(_amount > 0, "!amount"); 
-        StructureData.OptionPairDefinition storage pair = optionPairs[
-            (_optionId - 1) / 2
-        ];
-        //require(_asset == pair.depositAsset || _asset == pair.counterPartyAsset, "!asset");
+        validateOptionById(_optionId) lock{
+        address asset = optionDefinitions[_optionId].asset;  
         OptionLifecycle.withdrawStorage(
             optionData[_optionId],
             msg.sender,
-            _amount,
-            currentRound,
-            (_optionId == pair.callOptionId && _asset == pair.depositAsset) ||
-            (_optionId == pair.putOptionId && _asset == pair.counterPartyAsset)
-        );
-        clientWithdraw(msg.sender, _amount, _asset, false);
-        emit Withdraw(_optionId, msg.sender, _asset, _amount);
+            _amount);
+        OptionLifecycle.withdraw(msg.sender, _amount, asset);
     }
 
     //deposit eth
     function depositETH(uint8 _optionId) external payable override 
-        validateOptionById(_optionId){
-        require(currentRound > 0, "!Started");
-        require(msg.value > 0, "no value");
- 
-        StructureData.OptionPairDefinition storage pair = optionPairs[
-            (_optionId - 1) / 2
-        ];
-        require(!pair.manualDepositDisabled, "DepositDisabled");  
-        address depositAsset = pair.callOptionId == _optionId
-            ? pair.depositAsset
-            : pair.counterPartyAsset;
-        require(depositAsset == address(0));
+        validateOptionById(_optionId){ 
 
-        //todo: convert to weth
+        require(msg.value > 0, "no value"); 
+        address asset = optionDefinitions[_optionId].asset; 
+        require(asset == address(0), "!ETH");
+        StructureData.OptionData storage data = optionData[_optionId];
+        require(data.cutOffAt > 0, "!started");
+        
+        uint256 totalWithDepositedAmount = data.totalToSell.add(totalPending).add(msg.value); 
+        require(totalWithDepositedAmount <= data.maxCapacity, "Exceeds cap");  
         OptionLifecycle.depositFor(
-            optionData[_optionId],
+            data,
             msg.sender,
-            msg.value,
-            0,
-            currentRound,
-            true
-        );
-
-        emit Deposit(_optionId, msg.sender, currentRound, msg.value);
-        //payable(vaultAddress()).transfer(msg.value);
+            msg.value);
+  
     }
 
     //deposit other erc20 coin, take wbtc
     function deposit(uint8 _optionId, uint256 _amount) external override 
         validateOptionById(_optionId){
-        require(currentRound > 0, "!Started");
-        require(_amount > 0, "!amount"); 
-        StructureData.OptionPairDefinition storage pair = optionPairs[
-            (_optionId - 1) / 2
-        ];
-        require(!pair.manualDepositDisabled, "DepositDisabled");  
-        address depositAsset = pair.callOptionId == _optionId
-            ? pair.depositAsset
-            : pair.counterPartyAsset;
-        require(depositAsset != address(0));
+        require(msg.value > 0, "no value"); 
+        address asset = optionDefinitions[_optionId].asset; 
+        require(asset != address(0), "ETH");
+        StructureData.OptionData storage data = optionData[_optionId];
+        require(data.cutOffAt > 0, "!started");
+        
+        uint256 totalWithDepositedAmount = data.totalToSell.add(totalPending).add(msg.value); 
+        require(totalWithDepositedAmount <= data.maxCapacity, "Exceeds cap");  
 
         OptionLifecycle.depositFor(
-            optionData[_optionId],
-            msg.sender,
-            _amount,
-            0,
-            currentRound,
-            true
-        );
-        emit Deposit(_optionId, msg.sender, currentRound, _amount);
-        IERC20(depositAsset).safeTransferFrom(
+            data,
+            msg.sender); 
+        IERC20(asset).safeTransferFrom(
             msg.sender,
             address(this),
             _amount

@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.4;
+pragma solidity =0.8.4; 
 import {StructureData} from "../libraries/StructureData.sol";
+
+interface IDOVOption {
  
-interface IPKKTStructureOption {
- 
-     event Deposit(uint8 indexed optionId, address indexed account, uint16 indexed round, uint256 amount);
-     event Withdraw(uint8 indexed optionId, address indexed account, address indexed asset, uint256 amount);
-     //event CloseOption(uint8 indexed optionId, uint16 indexed round);
-     //event CommitOption(uint8 indexed optionId, uint16 indexed round);
-     //event OpenOption(uint8 indexed optionId, uint16 indexed round);
-     //event OptionCreated(uint8 indexed optionId, string name);
-     //event OptionTransfer(uint8 indexed optionId, address indexed account, uint16 premium, uint16 round);
+     //event Deposit(uint8 indexed optionId, address indexed account, uint16 indexed round, uint256 amount);
+    // event Withdraw(uint8 indexed optionId, address indexed account, address indexed asset, uint256 amount); 
 
     function getAccountBalance(uint8 _optionId) external view returns (StructureData.UserBalance memory); 
 

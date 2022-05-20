@@ -4,23 +4,15 @@ pragma solidity =0.8.4;
 import {StructureData} from "../libraries/StructureData.sol"; 
 abstract contract OptionVaultStorageV1 { 
     uint256 internal locked;
-    address public settlerRoleAddress;
-    uint8 public optionPairCount;
-    uint8 internal assetCount;
+    address public managerRoleAddress;
+    uint8 internal optionCount;
     uint16 public currentRound;
     bool public underSettlement;
-
-    mapping(address => StructureData.SettlementCashflowResult)
-        public settlementCashflowResult; 
-    mapping(address => StructureData.AssetData) internal assetData;
-
-    mapping(uint8 => StructureData.OptionPairDefinition) public optionPairs;
-
-    mapping(uint8 => StructureData.OptionPairExecutionAccountingResult)
-        public executionAccountingResult; 
-
-    mapping(uint8 => StructureData.OptionData) internal optionData;
-    mapping(uint8 => address) internal asset;
+ 
+    mapping(uint8 => StructureData.OptionDefinition) public optionDefinitions;
+ 
+    mapping(uint8 => StructureData.OptionState) internal optionData;
+    mapping(address => StructureData.OptionBuyerState) internal buyerData;
     
 }
 
