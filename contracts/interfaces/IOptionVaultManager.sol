@@ -5,8 +5,8 @@ import {StructureData} from "../libraries/StructureData.sol";
 interface IOptionVaultManager {
          
     function kickOffOptions(StructureData.KickOffOptionParameters[] memory _kickoffs) external;
-    function sellOptions(StructureData.CutOffOptionParameters[] memory _cutoff) external;
-    function buyOptions(uint8[] memory _optionIds) payable external;
     function expireOptions(StructureData.ExpiredOptionParameters[] memory _expired) external;
     function collectOptionHolderValues() external;
+    function sellOptions(StructureData.CutOffOptionParameters[] memory _cutoff) external;
+    function buyOptions(uint8[] memory _optionIds) payable external;
 }

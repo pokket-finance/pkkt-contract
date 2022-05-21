@@ -23,8 +23,6 @@ abstract contract OptionVaultManager is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    /// @notice 7 day period between each options sale.
-    uint256 public constant PERIOD = 7 days;
   
     function setManagerInternal(address _mananger) internal { 
         managerRoleAddress = _mananger; 
@@ -54,7 +52,6 @@ abstract contract OptionVaultManager is
              //todo: number manuipulation
              
              data.cutOffAt = block.timestamp + PERIOD;
-             data.currentRound = 1;
              //todo: do we need to check 0?
              data.maxCapacity = _kickoff.maxCapacity;
          }
@@ -62,17 +59,18 @@ abstract contract OptionVaultManager is
  
     //parameters for option to sell, todo: whitelist
     function sellOptions(StructureData.CutOffOptionParameters[] memory _cutoff) 
-    external override managerOnly{
         for (uint8 i = 0; i < _cutoff.length; i++){
              StructureData.CutOffOptionParameters cutoff = _cutoff[i];
              require(cutoff.premiumRate > 0, "!premium");
              require(cutoff.strike > 0, "!strike"); 
-             StructureData.OptionData storage data = optionData[cutoff.optionId]; 
-             require(data.strike == 0, "already been cut off"); 
-             data.strike = cutoff.strike;
+             StructureData.OptionData storage data = optionData[cutoff.optionId];  
+             OptionLifecycle.rollToNextRoundIfNeeded(data); 
+             require(data.strike == 0, "already cut off or has pending expire"); 
+             data.strike = cutoff.strike; 
              data.premiumRate = cutoff.premiumRate;
          }
     }  
+
     function buyOptions(uint8[] memory _optionIds) payable external override lock{
         uint256 ethToSend = 0;
         for (uint8 i = 0; i < _optionIds.length; i++){
@@ -107,18 +105,25 @@ abstract contract OptionVaultManager is
         for (uint8 i = 0; i < _expired.length; i++){
              StructureData.ExpiredOptionParameters expired = _expired[i];
              StructureData.OptionData storage data = optionData[_expired.optionId];
+             require(expired.expiryLevel > 0, "No expiryLevel"); 
+             require(data.totalToExpire > 0, "Nothing to expire");
              require(data.strike > 0, "No strike");
-             require(expired.expiryLevel > 0, "No expiryLevel");
-
-             
+             OptionLifecycle.rollToNextRoundIfNeeded(data);
              uint256 diff = data.callOrPut ? 
              (expired.expiryLevel > data.strike ?  expired.expiryLevel - data.strike : 0) : 
               (data.strike > expired.expiryLevel ? data.strike - expired.expiryLevel : 0);
-             data.buyerAddress = address(0);
              
               //can be withdrawn by trader 
              StructureData.OptionBuyerState buyerState = buyerData[data.buyerAddress];
-             buyerState[data.asset] = buyerState[data.asset].add(data.totalToExpire.mul(diff).div(expired.expiryLevel));
+             uint optionHolderValue = data.totalToExpire.mul(diff).div(expired.expiryLevel);
+             buyerState[data.asset] = buyerState[data.asset].add(optionHolderValue);
+
+             
+             data.totalToSell = data.totalToSell.add(data.totalToExpire.withPremium(data.premiumRate).sub(optionHolderValue));
+             data.totalToExpire = 0;
+             data.strike = 0;
+             data.premiumRate = 0;
+             data.buyerAddress = address(0);
          }
         
     }

@@ -46,11 +46,13 @@ library StructureData {
         uint128 totalToExpire;
         //t+1 round
         uint128 totalToSell;
-        uint128 totalTerminate;
+        //amount to terminate at expiry
+        uint128 totalTerminating;
+        //amount to terminate at next expiry
+        uint128 totalToTerminate;
         //t round
         uint128 totalPending; 
-        uint32 cutOffAt;
-        uint16 currentRound;
+        uint32 cutOffAt; 
         uint128 strike;
         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4 
         uint256 maxCapacity;  
@@ -66,8 +68,10 @@ library StructureData {
     struct UserState {
         uint128 pendingAsset;  
         uint128 assetToSell; 
-        uint128 assetToExpire; 
-        uint128 assetExpired; 
+        //amount to terminate at expiry
+        uint128 assetTerminating;
+        //amount to terminate at next expiry
+        uint128 assetToTerminate;
         bool hasState;
     }
 

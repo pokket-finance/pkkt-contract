@@ -16,6 +16,8 @@ library OptionLifecycle {
     using SafeMath for uint256;
     using SafeCast for uint256;
     using StructureData for StructureData.UserState;
+    /// @notice 7 day period between each options sale.
+    uint256 public constant PERIOD = 7 days;
 
     function deriveVirtualLocked(
         StructureData.UserState memory userState,
@@ -64,44 +66,9 @@ library OptionLifecycle {
         address _user,
         uint256 _assetToTerminate
     ) external {
+        
+        rollToNextRoundIfNeeded(_state);
         StructureData.UserState storage userState = _option.userStates[_user];
-        if (_underSettlement) {
-            uint256 newAssetToTerminate = uint256(userState
-                .assetToTerminateForNextRound)
-                .add(_assetToTerminate);
-            if (_currentRound == 2) {
-                require(newAssetToTerminate <= userState.tempLocked);
-                StructureData.OptionState storage previousOption = _option
-                    .optionStates[_currentRound - 1];
-                previousOption.totalTerminate = uint256(previousOption
-                    .totalTerminate)
-                    .add(_assetToTerminate).toUint128();
-            } else {
-                StructureData.OptionState storage onGoingOption = _option
-                    .optionStates[_currentRound - 2];
-                uint256 totalLocked = deriveVirtualLocked(
-                    userState,
-                    onGoingOption.premiumRate
-                );
-                require(newAssetToTerminate <= totalLocked);
-                //store temporarily
-                _option.assetToTerminateForNextRound = uint256(_option
-                    .assetToTerminateForNextRound)
-                    .add(_assetToTerminate).toUint128();
-            }
-            userState.assetToTerminateForNextRound = newAssetToTerminate.toUint128();
-        } else {
-            uint256 newAssetToTerminate = uint256(userState.assetToTerminate).add(
-                _assetToTerminate
-            );
-            require(newAssetToTerminate <= userState.ongoingAsset);
-            userState.assetToTerminate = newAssetToTerminate.toUint128();
-            StructureData.OptionState storage previousOption = _option
-                .optionStates[_currentRound - 1];
-            previousOption.totalTerminate = uint256(previousOption.totalTerminate).add(
-                _assetToTerminate
-            ).toUint128();
-        }
     }
 
     function cancelWithdrawStorage(
@@ -109,10 +76,18 @@ library OptionLifecycle {
         address _user,
         uint256 _assetToTerminate,
     ) external {
+        
+        rollToNextRoundIfNeeded(_state);
         StructureData.UserState storage userState = _option.userStates[_user];
+        //todo: check how much can be terminated
         if (_option.cutOffAt > block.timestamp) {
-           
+           //stop autorolling of the current selling amount
+           userState.totalToTerminate = userState.totalToTerminate.add(_assetToTerminate);
         } 
+        else{
+            //stop autorolling of the expiry amount
+           userState.totalTerminating = userState.totalTerminating.add(_assetToTerminate); 
+        }
     }
 
     function withdrawStorage(
@@ -120,7 +95,8 @@ library OptionLifecycle {
         address _user,
         uint256 _amount
     ) external {
-        //require(_amount > 0, "!amount");
+        
+      rollToNextRoundIfNeeded(_state);
         StructureData.UserState storage userState = _option.userStates[_user];
         uint totalAvailable = userState.assetExpired.add(userState.pendingAsset);
         require(totalAvailable >= _amount, "Not enough balance");
@@ -139,15 +115,21 @@ library OptionLifecycle {
         uint256 _amount
     ) external { 
 
+      rollToNextRoundIfNeeded(_state);
        StructureData.UserState storage userState = _state.userStates[_userAddress];
-       //still selling for the current round
-       if (_state.cutOffAt > block.timestamp) {
-           _state.totalToSell = _state.totalToSell.add(_amount); 
-          userState.assetToSell = userState.assetToSell.add(_amount);
-       }      
-       else {
-           _state.totalPending = _state.totalPending.add(_amount);
-           userState.pendingAsset = userState.pendingAsset.add(_amount);
+       _state.totalPending = _state.totalPending.add(_amount); 
+       userState.pendingAsset = userState.pendingAsset.add(_amount);  
+    }
+
+    //todo: rollToNextRound
+    function rollToNextRoundIfNeeded(StructureData.OptionData storage _state) {
+       if (_state.cutOffAt > block.timestamp) { 
+           return;
        }
+         _state.totalToSell = _state.totalPending;
+         _state.cutOffAt = _state.cutOffAt.add(PERIOD);
+         _state.totalToExpire = _state.totalToSell;
+         //todo: expiry?
+
     }
 }
