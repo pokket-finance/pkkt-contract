@@ -46,49 +46,10 @@ library OptionLifecycle {
 
         StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
         StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
-        uint128 lastRedeem = withdrawl.amount;
-        if (withdrawl.round < _vaultState.round && lastRedeem > 0) {
-            uint128 redeemmedAmountRoundMinus3 = withdrawal.redeemmedAmountRoundMinus3;
-            uint128 redeemmedAmountRoundMinus2 = withdrawal.redeemmedAmountRoundMinus2;
-            uint128 redeemmedAmountRoundMinus1 = withdrawal.redeemmedAmountRoundMinus1;
-             if (redeemmedAmountRoundMinus3 != 0 || redeemmedAmountRoundMinus2 != 0 || redeemmedAmountRoundMinus1 != 0) {
-                  for(uint i = withdrawal.round - 3; i < _vaultState.round - 3; i++){
-                    uint128 price = getRoundPrice(data, i);
-                    if (i == withdrawal.round - 2) {
-                        redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(redeemmedAmountRoundMinus2);
-                    }
-                    else if (i == withdrawal.round - 1) { 
-                        redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(redeemmedAmountRoundMinus1);
-                    }
-                    redeemmedAmountRoundMinus3 =  
-                    redeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
-                  }
-              }
-              withdrawal.redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(lastRedeem);
-              
-               //merge minus 3 and 2, move minus1-> minus2. move lastRedeem->minus1
-              if (withdrawl.round - _vault.round == 1) { 
-                withdrawl.redeemmedAmountRoundMinus2 = withdrawl.redeemmedAmountRoundMinus1;
-                withdrawl.redeemmedAmountRoundMinus1 = lastRedeem; 
-              }
-               //merge minus3,2,1, move lastRedeem -> minus2
-              else if (withdrawl.round - _vault.round == 2) { 
-                withdrawl.redeemmedAmountRoundMinus1  = 0;
-                withdrawl.redeemmedAmountRoundMinus2 = lastRedeem; 
-              }
-            //merge minus3,2,1,  
-              else{ 
-                withdrawl.redeemmedAmountRoundMinus1  = 0;
-                withdrawl.redeemmedAmountRoundMinus2 = 0; 
-              } 
-
- 
-           lastRedeem = 0;
-        }
-
-        
-       withdrawal.round = _vaultState.round;
-       withdrawal.amount = lastRedeem.add(_amountToRedeem); 
+        recalcDeposit(_vault, deposit);
+        recalcWithdrawal(_vault, withdrawal); 
+       withdrawal.amount = withdrawl.amount.add(_amountToRedeem); 
+       //todo: debit the deposit 
 
         _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
 
@@ -112,9 +73,31 @@ library OptionLifecycle {
         
         rollToNextRoundIfNeeded(_vaultState);
         
+        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
+        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
+        //recalc
+        recalcWithdrawal(_vaultState, withdrawal);
+        //withdraw before expiry
+
+        //withdraw after expiry
 
         //first withdraw the redeeemed
+        if (withdrawal.redeemedAmount >= _amount) {
+            withdrawal.redeemedAmount = withdrawal.redeemedAmount.sub(amount);
+            _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(amount);
+            return;
+        }
+        
         //then withdraw the pending
+        uint128 pendingAmountToWithdraw = amount.sub(withdrawal.redeemedAmount);
+        require(deposit.round == _vault.round, "No pending");
+        require(deposit.amount >= pendingAmountToWithdraw, "Not enough to withdraw");
+
+         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(withdrawal.redeemedAmount);
+         _vaultState.totalPending = _vault.state.totalPending.sub(pendingAmountToWithdraw);
+        withdrawal.redeemedAmount = 0; 
+        deposit.amount = deposit.amount.sub(pendingAmountToWithdraw);
+        
     }
  
     function getRoundPrice( StructureData.VaultState storage _vaultState, uint8 _round) view {
@@ -123,6 +106,78 @@ library OptionLifecycle {
            data.depositPriceAfterExpiryPerRound[deposit.round - 3] : 
            0;
         return price == 0 ? 10**ROUND_PRICE_DECIMALS : price;
+    }
+
+
+
+    function debitWithdrawal(StructureData.VaultState storage _vaultState, 
+      StructureData.Withdrawal storage _withdrawal,StructureData.DepositReceipt storage _deposit) {
+
+    }
+  
+    function recalcWithdrawal(StructureData.VaultState storage _vaultState, StructureData.Withdrawal storage _withdrawal) {
+        if (_withdrawal.round < _vaultState.round) {
+            //merge redeeming to redeemed
+            if (_withdrawal.redeemingAmount > 0) {
+               uint128 price = getRoundPrice(data, _withdrawal.round - 3);
+               _withdrawal.redeeemedAmount = withdrawal.redeeemedAmount.add(_withdrawal.redeemingAmount.mul(price).div(10**ROUND_PRICE_DECIMALS));
+            }
+             if (_withrawal.round - _vaultState.round >= 2) { 
+                 
+               uint128 price = getRoundPrice(data, _withdrawal.round - 2);
+                _withdrawal.redeeemedAmount =  withdrawal.redeeemedAmount.add( withdrawal.amount.mul(price).div(10**ROUND_PRICE_DECIMALS));
+             }
+             else{
+                 _withdrawal.redeemingAmount = _withdrawal.amount;
+             }
+           withdrawl.amount = 0;
+        }
+       _withdrawal.round = _vaultState.round;
+    }
+    function recalcDeposit( StructureData.VaultState storage _vaultState,  StructureData.DepositReceipt storage _deposit) {
+        
+        uint128 lastDeposit = _deposit.amount; 
+        
+        //last checked round is obsolete compared with new deposit round
+       if (_deposit.round < _vaultState.round) { 
+            uint128 unredeemmedAmountRoundMinus3 = _deposit.unredeemmedAmountRoundMinus3;
+            uint128 unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus2;
+            uint128 unredeemmedAmountRoundMinus1 = _deposit.unredeemmedAmountRoundMinus1;
+             if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
+                  for(uint i = _deposit.round - 3; i < _vaultState.round - 3; i++){
+                    uint128 price = getRoundPrice(data, i);
+                    if (i == _deposit.round - 2) {
+                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
+                    }
+                    else if (i == _deposit.round - 1) { 
+                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
+                    }
+                    unredeemmedAmountRoundMinus3 =  
+                    unredeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                  }
+              }
+              _deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
+              
+               //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
+              if (_deposit.round - _vault.round == 1) { 
+                _deposit.unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus1;
+                _deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
+              }
+               //merge minus3,2,1, move lastDeposit -> minus2
+              else if (_deposit.round - _vault.round == 2) { 
+                _deposit.unredeemmedAmountRoundMinus1  = 0;
+                _deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
+              }
+            //merge minus3,2,1,  
+              else{ 
+                _deposit.unredeemmedAmountRoundMinus1  = 0;
+                _deposit.unredeemmedAmountRoundMinus2 = 0; 
+              } 
+
+            _deposit.amount = 0;
+            _deposit.round = _vaultState.round;
+       }
+       
     }
 
    //for deposit we need to check the cap
@@ -134,51 +189,8 @@ library OptionLifecycle {
 
        rollToNextRoundIfNeeded(_vaultState); 
         StructureData.DepositReceipt storage deposit = data.userDeposits[msg.sender]; 
-        //last deposit happens in previous rounds
-        uint128 lastDeposit = deposit.amount; 
-        
-        //last checked round is obsolete compared with new deposit round
-       if (deposit.round < _vaultState.round && lastDeposit > 0) { 
-            uint128 unredeemmedAmountRoundMinus3 = deposit.unredeemmedAmountRoundMinus3;
-            uint128 unredeemmedAmountRoundMinus2 = deposit.unredeemmedAmountRoundMinus2;
-            uint128 unredeemmedAmountRoundMinus1 = deposit.unredeemmedAmountRoundMinus1;
-             if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
-                  for(uint i = deposit.round - 3; i < _vaultState.round - 3; i++){
-                    uint128 price = getRoundPrice(data, i);
-                    if (i == deposit.round - 2) {
-                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
-                    }
-                    else if (i == deposit.round - 1) { 
-                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
-                    }
-                    unredeemmedAmountRoundMinus3 =  
-                    unredeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
-                  }
-              }
-              deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
-              
-               //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
-              if (deposit.round - _vault.round == 1) { 
-                deposit.unredeemmedAmountRoundMinus2 = deposit.unredeemmedAmountRoundMinus1;
-                deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
-              }
-               //merge minus3,2,1, move lastDeposit -> minus2
-              else if (deposit.round - _vault.round == 2) { 
-                deposit.unredeemmedAmountRoundMinus1  = 0;
-                deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
-              }
-            //merge minus3,2,1,  
-              else{ 
-                deposit.unredeemmedAmountRoundMinus1  = 0;
-                deposit.unredeemmedAmountRoundMinus2 = 0; 
-              } 
-
- 
-           lastDeposit = 0;
-       }
-       
-       deposit.round = _vaultState.round;
-       deposit.amount = lastDeposit.add(_amount); 
+        recalcDeposit(_vaultState, deposit); 
+       deposit.amount = deposit.amount.add(_amount); 
        _vaultState.totalPending = _vaultState.totalPending.add(_amount);  
     }
 
