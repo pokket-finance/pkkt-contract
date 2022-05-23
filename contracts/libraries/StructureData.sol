@@ -77,9 +77,11 @@ library StructureData {
     }
 
     struct Withdrawal { 
-        uint16 round; 
-        uint128 amountToRedeemBeforeExpiry;
-        uint128 redeemedAmountAfterExpiry;
+        uint16 round;  
+        uint104 amount;
+        uint128 redeemedAmountRoundMinus3;
+        uint128 redeemedAmountRoundMinus2;
+        uint128 redeemedAmountRoundMinus1;
     }
 
  

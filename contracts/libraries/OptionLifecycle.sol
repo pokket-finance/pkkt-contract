@@ -35,6 +35,7 @@ library OptionLifecycle {
         }
     } 
 
+   //for withdraw we need to check the deposit
     function initiateWithrawStorage(
         StructureData.VaultState storage _vault,
         address _user,
@@ -42,6 +43,53 @@ library OptionLifecycle {
     ) external {
         
         rollToNextRoundIfNeeded(_vault);  
+
+        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
+        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
+        uint128 lastRedeem = withdrawl.amount;
+        if (withdrawl.round < _vaultState.round && lastRedeem > 0) {
+            uint128 redeemmedAmountRoundMinus3 = withdrawal.redeemmedAmountRoundMinus3;
+            uint128 redeemmedAmountRoundMinus2 = withdrawal.redeemmedAmountRoundMinus2;
+            uint128 redeemmedAmountRoundMinus1 = withdrawal.redeemmedAmountRoundMinus1;
+             if (redeemmedAmountRoundMinus3 != 0 || redeemmedAmountRoundMinus2 != 0 || redeemmedAmountRoundMinus1 != 0) {
+                  for(uint i = withdrawal.round - 3; i < _vaultState.round - 3; i++){
+                    uint128 price = getRoundPrice(data, i);
+                    if (i == withdrawal.round - 2) {
+                        redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(redeemmedAmountRoundMinus2);
+                    }
+                    else if (i == withdrawal.round - 1) { 
+                        redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(redeemmedAmountRoundMinus1);
+                    }
+                    redeemmedAmountRoundMinus3 =  
+                    redeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                  }
+              }
+              withdrawal.redeemmedAmountRoundMinus3 = redeemmedAmountRoundMinus3.add(lastRedeem);
+              
+               //merge minus 3 and 2, move minus1-> minus2. move lastRedeem->minus1
+              if (withdrawl.round - _vault.round == 1) { 
+                withdrawl.redeemmedAmountRoundMinus2 = withdrawl.redeemmedAmountRoundMinus1;
+                withdrawl.redeemmedAmountRoundMinus1 = lastRedeem; 
+              }
+               //merge minus3,2,1, move lastRedeem -> minus2
+              else if (withdrawl.round - _vault.round == 2) { 
+                withdrawl.redeemmedAmountRoundMinus1  = 0;
+                withdrawl.redeemmedAmountRoundMinus2 = lastRedeem; 
+              }
+            //merge minus3,2,1,  
+              else{ 
+                withdrawl.redeemmedAmountRoundMinus1  = 0;
+                withdrawl.redeemmedAmountRoundMinus2 = 0; 
+              } 
+
+ 
+           lastRedeem = 0;
+        }
+
+        
+       withdrawal.round = _vaultState.round;
+       withdrawal.amount = lastRedeem.add(_amountToRedeem); 
+
         _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
 
     }
@@ -63,9 +111,8 @@ library OptionLifecycle {
     ) external {
         
         rollToNextRoundIfNeeded(_vaultState);
-        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
-        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
         
+
         //first withdraw the redeeemed
         //then withdraw the pending
     }
@@ -78,6 +125,7 @@ library OptionLifecycle {
         return price == 0 ? 10**ROUND_PRICE_DECIMALS : price;
     }
 
+   //for deposit we need to check the cap
     function depositFor(
         StructureData.VaultState storage _vaultState,
         address _userAddress,
@@ -93,7 +141,7 @@ library OptionLifecycle {
        if (deposit.round < _vaultState.round && lastDeposit > 0) { 
             uint128 unredeemmedAmountRoundMinus3 = deposit.unredeemmedAmountRoundMinus3;
             uint128 unredeemmedAmountRoundMinus2 = deposit.unredeemmedAmountRoundMinus2;
-              uint128 unredeemmedAmountRoundMinus1 = deposit.unredeemmedAmountRoundMinus1;
+            uint128 unredeemmedAmountRoundMinus1 = deposit.unredeemmedAmountRoundMinus1;
              if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
                   for(uint i = deposit.round - 3; i < _vaultState.round - 3; i++){
                     uint128 price = getRoundPrice(data, i);
