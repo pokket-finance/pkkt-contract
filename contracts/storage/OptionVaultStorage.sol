@@ -5,15 +5,15 @@ import {StructureData} from "../libraries/StructureData.sol";
 abstract contract OptionVaultStorageV1 { 
     uint256 internal locked;
     address public managerRoleAddress;
-    uint8 internal optionCount;
-    uint16 public currentRound;
-    bool public underSettlement;
+    uint8 internal vaultCount;  
  
-    mapping(uint8 => StructureData.OptionDefinition) public optionDefinitions;
+    mapping(uint8 => StructureData.VaultDefinition) public vaultDefinitions;
+  
+    mapping(uint8 => StructureData.VaultState) internal vaultStates;
+
+    mapping(address => StructureData.OptionBuyerState) internal buyerStates;
  
-    mapping(uint8 => StructureData.OptionState) internal optionData;
-    mapping(address => StructureData.OptionBuyerState) internal buyerData;
-    
+     
 }
 
 abstract contract OptionVaultStorage is OptionVaultStorageV1 {

@@ -18,35 +18,9 @@ library OptionLifecycle {
     using StructureData for StructureData.UserState;
     /// @notice 7 day period between each options sale.
     uint256 public constant PERIOD = 7 days;
+    uint256 public constant ROUND_PRICE_DECIMALS = 12;
 
-    function deriveVirtualLocked(
-        StructureData.UserState memory userState,
-        uint16 premiumRate
-    ) internal pure returns (uint256) {
-        uint256 onGoing = uint256(userState.ongoingAsset);
-        if (onGoing == 0) {
-            return uint256(userState.tempLocked);
-        }
-        onGoing = (onGoing.sub(userState.assetToTerminate)).withPremium(
-            premiumRate
-        );
-        if (userState.tempLocked == 0) {
-            return onGoing;
-        }
-        return uint256(userState.tempLocked).add(onGoing);
-    }
-
-    function getAvailableBalance(address _asset, address _source)
-        external
-        view
-        returns (uint256)
-    {
-        if (_asset != address(0)) {
-            return IERC20(_asset).balanceOf(_source);
-        } else {
-            return _source.balance;
-        }
-    }
+  
 
     function withdraw(
         address _target,
@@ -62,74 +36,129 @@ library OptionLifecycle {
     } 
 
     function initiateWithrawStorage(
-        StructureData.OptionData storage _option,
+        StructureData.VaultState storage _vault,
         address _user,
-        uint256 _assetToTerminate
+        uint256 _amountToRedeem
     ) external {
         
-        rollToNextRoundIfNeeded(_state);
-        StructureData.UserState storage userState = _option.userStates[_user];
+        rollToNextRoundIfNeeded(_vault);  
+        _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
+
     }
 
     function cancelWithdrawStorage(
-        StructureData.OptionData storage _option,
+        StructureData.VaultState storage _vault,
         address _user,
-        uint256 _assetToTerminate,
+        uint256 _amountToRedeem,
     ) external {
         
-        rollToNextRoundIfNeeded(_state);
-        StructureData.UserState storage userState = _option.userStates[_user];
-        //todo: check how much can be terminated
-        if (_option.cutOffAt > block.timestamp) {
-           //stop autorolling of the current selling amount
-           userState.totalToTerminate = userState.totalToTerminate.add(_assetToTerminate);
-        } 
-        else{
-            //stop autorolling of the expiry amount
-           userState.totalTerminating = userState.totalTerminating.add(_assetToTerminate); 
-        }
+        rollToNextRoundIfNeeded(_vault); 
+        _vault.onGoing.queuedRedeemAmount =  _vault.onGoing.queuedRedeemAmount.sub(_amountToRedeem);
     }
 
     function withdrawStorage(
-        StructureData.OptionData storage _option,
+        StructureData.VaultState storage _vaultState,
         address _user,
         uint256 _amount
     ) external {
         
-      rollToNextRoundIfNeeded(_state);
-        StructureData.UserState storage userState = _option.userStates[_user];
-        uint totalAvailable = userState.assetExpired.add(userState.pendingAsset);
-        require(totalAvailable >= _amount, "Not enough balance");
-        if (userState.assetExpired >= _amount) {
-            userState.assetExpired = userState.assetExpired.sub(_amount);
-            return;
-        }
-        //todo: what if the buyer doesn't send the premium yet for the expired option, may it be 0 premium?
-        userState.assetExpired = 0;
-        userState.pendingAsset = userState.pendingAsset.sub(_amount.sub(userState.assetExpired));
+        rollToNextRoundIfNeeded(_vaultState);
+        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
+        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
+        
+        //first withdraw the redeeemed
+        //then withdraw the pending
+    }
+ 
+    function getRoundPrice( StructureData.VaultState storage _vaultState, uint8 _round) view {
+        
+        uint128 price = deposit.round - 3 > 0 ? 
+           data.depositPriceAfterExpiryPerRound[deposit.round - 3] : 
+           0;
+        return price == 0 ? 10**ROUND_PRICE_DECIMALS : price;
     }
 
     function depositFor(
-        StructureData.OptionData storage _state,
+        StructureData.VaultState storage _vaultState,
         address _userAddress,
         uint256 _amount
     ) external { 
 
-      rollToNextRoundIfNeeded(_state);
-       StructureData.UserState storage userState = _state.userStates[_userAddress];
-       _state.totalPending = _state.totalPending.add(_amount); 
-       userState.pendingAsset = userState.pendingAsset.add(_amount);  
+       rollToNextRoundIfNeeded(_vaultState); 
+        StructureData.DepositReceipt storage deposit = data.userDeposits[msg.sender]; 
+        //last deposit happens in previous rounds
+        uint128 lastDeposit = deposit.amount; 
+        
+        //last checked round is obsolete compared with new deposit round
+       if (deposit.round < _vaultState.round && lastDeposit > 0) { 
+            uint128 unredeemmedAmountRoundMinus3 = deposit.unredeemmedAmountRoundMinus3;
+            uint128 unredeemmedAmountRoundMinus2 = deposit.unredeemmedAmountRoundMinus2;
+              uint128 unredeemmedAmountRoundMinus1 = deposit.unredeemmedAmountRoundMinus1;
+             if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
+                  for(uint i = deposit.round - 3; i < _vaultState.round - 3; i++){
+                    uint128 price = getRoundPrice(data, i);
+                    if (i == deposit.round - 2) {
+                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
+                    }
+                    else if (i == deposit.round - 1) { 
+                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
+                    }
+                    unredeemmedAmountRoundMinus3 =  
+                    unredeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                  }
+              }
+              deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
+              
+               //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
+              if (deposit.round - _vault.round == 1) { 
+                deposit.unredeemmedAmountRoundMinus2 = deposit.unredeemmedAmountRoundMinus1;
+                deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
+              }
+               //merge minus3,2,1, move lastDeposit -> minus2
+              else if (deposit.round - _vault.round == 2) { 
+                deposit.unredeemmedAmountRoundMinus1  = 0;
+                deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
+              }
+            //merge minus3,2,1,  
+              else{ 
+                deposit.unredeemmedAmountRoundMinus1  = 0;
+                deposit.unredeemmedAmountRoundMinus2 = 0; 
+              } 
+
+ 
+           lastDeposit = 0;
+       }
+       
+       deposit.round = _vaultState.round;
+       deposit.amount = lastDeposit.add(_amount); 
+       _vaultState.totalPending = _vaultState.totalPending.add(_amount);  
     }
 
-    //todo: rollToNextRound
-    function rollToNextRoundIfNeeded(StructureData.OptionData storage _state) {
-       if (_state.cutOffAt > block.timestamp) { 
+    function rollToNextRoundIfNeeded(StructureData.VaultState storage _vaultState) { 
+       if (_vaultState.cutOffAt > block.timestamp) { 
            return;
        }
-         _state.totalToSell = _state.totalPending;
-         _state.cutOffAt = _state.cutOffAt.add(PERIOD);
-         _state.totalToExpire = _state.totalToSell;
-         //todo: expiry?
+       
+       StructureData.OptionState memory onGoing = _vaultState.onGoing;
+       
+       _vaultState.onGoing = StructureData.OptionState({
+           amount: _vaultState.totalPending,
+           queuedRedeemAmount: 0,
+           strike: 0,
+           premiumRate : 0,
+           buyer: new address(0)
+       });
+
+       //premium not sent, simply bring it to next round
+       if (_vaultState.expired.buyerAddress == address(0)) {
+            _vaultState.onGoing.amount = _vaultState.onGoing.amount.add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
+            _vaultState.totalRedeemed = _vaultState.totalRedeemed.add(_vaultState.expired.queuedRedeemAmount);
+            //we skip the price setting for the unsold round to save some gas
+       }
+       _vaultState.expired = onGoing;
+         _vaultState.totalPending = 0; 
+         _vaultState.cutOffAt = _vaultState.cutOffAt.add(PERIOD); 
+         _vaultState.currentRound = _vaultState.currentRound + 1; 
 
     }
 }

@@ -15,12 +15,11 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using SafeMath for uint256;
-    using Utils for uint256;
-    using OptionLifecycle for StructureData.UserState;
+    using Utils for uint256; 
  
 
-    modifier validateOptionById(uint8 _optionId) {
-        require(_optionId != 0 && _optionId < optionCount);
+    modifier validateVaultId(uint8 _vaultId) {
+        require(_vaultId != 0 && _vaultId < vaultCount);
         _;
     }
 
@@ -33,7 +32,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         //require(_assetToTerminate > 0 , "!_assetToTerminate");
         //require(currentRound > 1, "No on going"); 
         OptionLifecycle.initiateWithrawStorage(
-            optionData[_optionId],
+            optionStates[_optionId],
             msg.sender,
             _assetToTerminate,
             underSettlement,
@@ -50,7 +49,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         //require(currentRound > 1, "No on going"); 
 
         OptionLifecycle.cancelWithdrawStorage(
-            optionData[_optionId],
+            optionStates[_optionId],
             msg.sender,
             _assetToTerminate
         );
@@ -58,30 +57,29 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     
     //withdraw pending and expired amount
     function withdraw(
-        uint8 _optionId,
+        uint8 _vaultId,
         uint256 _amount
     ) external override 
-        validateOptionById(_optionId) lock{
-        address asset = optionDefinitions[_optionId].asset;  
+        validateVaultById(_vaultId) lock{ 
+
+        address asset = vaultDefinitions[_vaultId].asset; 
         OptionLifecycle.withdrawStorage(
-            optionData[_optionId],
+            optionStates[_optionId],
             msg.sender,
             _amount);
         OptionLifecycle.withdraw(msg.sender, _amount, asset);
     }
 
     //deposit eth
-    function depositETH(uint8 _optionId) external payable override 
-        validateOptionById(_optionId){ 
+    function depositETH(uint8 _vaultId) external payable override 
+        validateVaultById(_vaultId) lock{ 
 
         require(msg.value > 0, "no value"); 
-        address asset = optionDefinitions[_optionId].asset; 
+        address asset = vaultDefinitions[_vaultId].asset; 
         require(asset == address(0), "!ETH");
-        StructureData.OptionData storage data = optionData[_optionId];
+        StructureData.VaultState storage data = vaultStates[_vaultId];
         require(data.cutOffAt > 0, "!started");
-        
-        uint256 totalWithDepositedAmount = data.totalToSell.add(totalPending).add(msg.value); 
-        require(totalWithDepositedAmount <= data.maxCapacity, "Exceeds cap");  
+        //todo: check for cap
         OptionLifecycle.depositFor(
             data,
             msg.sender,
@@ -90,20 +88,18 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     }
 
     //deposit other erc20 coin, take wbtc
-    function deposit(uint8 _optionId, uint256 _amount) external override 
-        validateOptionById(_optionId){
+    function deposit(uint8 _vaultId, uint256 _amount) external override 
+        validateVaultById(_vaultId) lock{ 
         require(msg.value > 0, "no value"); 
-        address asset = optionDefinitions[_optionId].asset; 
+        address asset = vaultDefinitions[_vaultId].asset; 
         require(asset != address(0), "ETH");
-        StructureData.OptionData storage data = optionData[_optionId];
-        require(data.cutOffAt > 0, "!started");
-        
-        uint256 totalWithDepositedAmount = data.totalToSell.add(totalPending).add(msg.value); 
-        require(totalWithDepositedAmount <= data.maxCapacity, "Exceeds cap");  
+        StructureData.VaultState storage data = vaultStates[_vaultId];
+        require(data.cutOffAt > 0, "!started"); 
 
         OptionLifecycle.depositFor(
             data,
-            msg.sender); 
+            msg.sender,
+            _amount); 
         IERC20(asset).safeTransferFrom(
             msg.sender,
             address(this),

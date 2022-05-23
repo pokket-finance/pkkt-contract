@@ -28,26 +28,25 @@ abstract contract OptionVaultManager is
         managerRoleAddress = _mananger; 
     }  
 
-    function addOptionsInternal(
-        StructureData.OptionDefition[] memory _optionDefitions
+    function addVaultsInternal(
+        StructureData.VaultDefinition[] memory _vaultDefinitions
     ) internal { 
-        uint256 length = _optionDefitions.length;
-        uint8 optionCount_ = optionCount;
-        uint8 assetCount_ = assetCount;
+        uint256 length = _vaultDefinitions.length;
+        uint8 vaultCount_ = vaultCount; 
         for (uint256 i = 0; i < length; i++) {
-            StructureData.OptionDefition
-                memory option = _optionDefitions[i]; 
-            option.optionId = optionCount_;
-            options[optionCount_++] = option;
+            StructureData.VaultDefinition
+                memory vault = _vaultDefinitions[i]; 
+            vault.vaultId = vaultCount_;
+            vaultDefinitions[vaultCount_++] = vault;
         }
-        optionCount = optionCount_;
+        vaultCount = vaultCount_;
     }
 
    //only needed for the initial kick off
     function kickOffOptions(StructureData.KickOffOptionParameters[] memory _kickoffs) external override managerOnly {
          for (uint8 i = 0; i < _kickoffs.length; i++){
              StructureData.KickOffOptionParameters kickoff = _kickoffs[i];
-             StructureData.OptionData storage data = optionData[kickoff.optionId];
+             StructureData.VaultState storage data = vaultStates[kickoff.vaultId];
              require(data.cutOffAt <= block.timestamp, "already kicked off"); 
              //todo: number manuipulation
              
@@ -58,27 +57,32 @@ abstract contract OptionVaultManager is
     }
  
     //parameters for option to sell, todo: whitelist
-    function sellOptions(StructureData.CutOffOptionParameters[] memory _cutoff) 
-        for (uint8 i = 0; i < _cutoff.length; i++){
-             StructureData.CutOffOptionParameters cutoff = _cutoff[i];
-             require(cutoff.premiumRate > 0, "!premium");
-             require(cutoff.strike > 0, "!strike"); 
-             StructureData.OptionData storage data = optionData[cutoff.optionId];  
-             OptionLifecycle.rollToNextRoundIfNeeded(data); 
-             require(data.strike == 0, "already cut off or has pending expire"); 
-             data.strike = cutoff.strike; 
-             data.premiumRate = cutoff.premiumRate;
+    function sellOptions(StructureData.OnGoingOptionParameters[] memory _ongoingParameters) 
+        for (uint8 i = 0; i < _ongoingParameters.length; i++){
+             StructureData.OnGoingOptionParameters ongoingParameters = _ongoingParameters[i];
+             require(ongoingParameters.premiumRate > 0, "!premium");
+             require(ongoingParameters.strike > 0, "!strike"); 
+             StructureData.VaultState storage data = vaultStates[ongoingParameters.optionId];  
+             OptionLifecycle.rollToNextRoundIfNeeded(data);  
+             StructureData.OptionState storage onGoing = data.onGoing;
+             require(onGoing.buyerAddress == address(0), "Already sold"); 
+             onGoing.strike = ongoingParameters.strike; 
+             onGoing.premiumRate = ongoingParameters.premiumRate;
          }
     }  
 
-    function buyOptions(uint8[] memory _optionIds) payable external override lock{
+   //after buying by sending back the premium, the premium and strike can no longer be changed
+    function buyOptions(uint8[] memory _vaultIds) payable external override lock{
         uint256 ethToSend = 0;
-        for (uint8 i = 0; i < _optionIds.length; i++){
-             StructureData.OptionData storage data = optionData[_optionIds[i]];
-             require(data.totalToSell > 0, "Nothing to sell");
-             require(data.soldToAddress == address(0), "Already sold"); 
-             uint256 premium = data.totalToSell.premium(data.premiumRate); 
-             address asset = optionDefinitions[_optionIds[i]].asset;
+        for (uint8 i = 0; i < _vaultIds.length; i++){
+            uint8 vaultId = _vaultIds[i];
+             StructureData.VaultState storage data = vaultStates[vaultId];
+             OptionLifecycle.rollToNextRoundIfNeeded(data);  
+             StructureData.OptionState storage onGoing = data.onGoing;
+             require(onGoing.amount > 0, "Nothing to sell");
+             require(onGoing.buyerAddress == address(0), "Already sold"); 
+             uint256 premium = onGoing.amount.premium(onGoing.premiumRate); 
+             address asset = vaultDefinitions[vaultId].asset;
              if (asset == address(0)) {
                  ethToSend = ethToSend.add(premium);
              }
@@ -89,7 +93,7 @@ abstract contract OptionVaultManager is
                 address(this),
                 premium);
              }
-             data.buyerAddress = msg.sender; 
+             onGoing.buyerAddress = msg.sender;  
          }
          require(ethToSend >= msg.value, "Not enough eth");
          //transfer back extra
@@ -98,48 +102,57 @@ abstract contract OptionVaultManager is
          }
     }
 
-    function expireOptions(StructureData.ExpiredOptionParameters[] memory _expired)
+    function expireOptions(StructureData.ExpiredOptionParameters[] memory _expiryParameters)
         external override managerOnly
     { 
         
-        for (uint8 i = 0; i < _expired.length; i++){
-             StructureData.ExpiredOptionParameters expired = _expired[i];
-             StructureData.OptionData storage data = optionData[_expired.optionId];
-             require(expired.expiryLevel > 0, "No expiryLevel"); 
-             require(data.totalToExpire > 0, "Nothing to expire");
-             require(data.strike > 0, "No strike");
+        for (uint8 i = 0; i < _expiryParameters.length; i++){
+             StructureData.ExpiredOptionParameters expiryParameters = _expiryParameters[i];
+             require(expiryParameters.expiryLevel > 0, "No expiryLevel"); 
+             StructureData.VaultState storage data = vaultStates[expiryParameters.vaultId];
              OptionLifecycle.rollToNextRoundIfNeeded(data);
-             uint256 diff = data.callOrPut ? 
-             (expired.expiryLevel > data.strike ?  expired.expiryLevel - data.strike : 0) : 
-              (data.strike > expired.expiryLevel ? data.strike - expired.expiryLevel : 0);
+             StructureData.OptionState storage expired = data.expired;
+             if (expired.totalAmount == 0) {
+                 continue;
+             } 
+
+             require(expired.strike > 0, "No strike");
+             address asset = vaultDefinitions[expiryParameters.vaultId].asset;
+             uint256 diff = vaultDefinitions[expiryParameters.vaultId].callOrPut ? 
+             (expiryParameters.expiryLevel > expired.strike ?  expiryParameters.expiryLevel - expired.strike : 0) : 
+              (expired.strike > expiryParameters.expiryLevel ? expired.strike - expiryParameters.expiryLevel : 0);
              
               //can be withdrawn by trader 
-             StructureData.OptionBuyerState buyerState = buyerData[data.buyerAddress];
-             uint optionHolderValue = data.totalToExpire.mul(diff).div(expired.expiryLevel);
-             buyerState[data.asset] = buyerState[data.asset].add(optionHolderValue);
+             StructureData.OptionBuyerState buyerState = buyerStates[expired.buyerAddress];
 
-             
-             data.totalToSell = data.totalToSell.add(data.totalToExpire.withPremium(data.premiumRate).sub(optionHolderValue));
-             data.totalToExpire = 0;
-             data.strike = 0;
-             data.premiumRate = 0;
-             data.buyerAddress = address(0);
+             uint depositPriceAfterExpiry = diff.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expiryParameters.expiryLevel));
+             data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = depositPriceAfterExpiry;
+
+             uint optionHolderValue = expired.amount.mul(diff).div(expiryParameters.expiryLevel);
+             buyerState.optionValueToCollect[asset] = buyerState.optionValueToCollect[asset].add(optionHolderValue);
+
+             uint remaining = expired.amount.withPremium(expired.premiumRate).sub(optionHolderValue);
+             uint redeemed = remaining.mul(expired.queuedRedeemAmount).div(expired.amount);
+             data.totalRedeemed = data.totalRedeemed.add(redeemed);
+
+             data.onGoing.amount = data.onGoing.amount.add(remaining.sub(redeemed)); 
          }
         
     }
 
     
     function collectOptionHolderValues() external lock { 
-        StructureData.OptionBuyerState buyerState = buyerData[msg.sender];  
-        for (uint8 i = 0; i < optionCount; i++){
-             address asset = optionData[i].asset;
-             uint256 assetAmount = buyerState[asset];
+        StructureData.OptionBuyerState buyerState = buyerStates[msg.sender];  
+        for (uint8 i = 0; i < vaultCount; i++){
+             address asset = vaultDefinitions[i].asset;
+             uint256 assetAmount = buyerState.optionValueToCollect[asset];
              if (assetAmount > 0) {
                  buyerState[asset] = 0;
                  OptionLifecycle.withdraw(msg.sender, assetAmount, asset);
              }
          } 
     }
+
     modifier lock {
         require(locked == 0, "locked");
         locked = 1;

@@ -14,102 +14,73 @@ library StructureData {
 
     //struct kick off parameters 
     struct KickOffOptionParameters { 
-        uint8 optionId; 
+        uint8 vaultId; 
         uint256 maxCapacity;  
     }
 
     //parameters for cutoff option
-    struct CutOffOptionParameters {  
+    struct OnGoingOptionParameters {  
         uint128 strike; // strike price 
         uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
-        uint8 optionId; 
+        uint8 vaultId; 
     }
 
     //parameters for expired option 
     struct ExpiredOptionParameters{
         uint128 expiryLevel;
-        uint8 optionId; 
+        uint8 vaultId; 
     }
 
 
     //information that won't change
-    struct OptionDefinition {
-        uint8 optionId; 
+    struct VaultDefinition {
+        uint8 vaultId; 
         uint8 assetAmountDecimals; 
         address asset;
         bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral; 
     } 
 
-    //current option status
     struct OptionState {
-        //t+2 round
-        uint128 totalToExpire;
-        //t+1 round
-        uint128 totalToSell;
-        //amount to terminate at expiry
-        uint128 totalTerminating;
-        //amount to terminate at next expiry
-        uint128 totalToTerminate;
-        //t round
-        uint128 totalPending; 
-        uint32 cutOffAt; 
+        uint128 amount;
+        uint128 queuedRedeemAmount;
         uint128 strike;
-        uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4 
-        uint256 maxCapacity;  
+        uint16 premiumRate;
         address buyerAddress; 
-        mapping(address=>StructureData.UserState) userStates;
+    }
+ 
+    struct VaultState { 
+        uint128 totalPending; 
+        uint128 totalRedeemed;
+        uint32 cutOffAt;  
+        uint256 maxCapacity;   
+        uint128 currentRound;
+        StructureData.OptionState onGoing;
+        StructureData.OptionState expired; 
+        mapping(uint8 => uint128) depositPriceAfterExpiryPerRound; 
+        mapping(address=>StructureData.DepositReceipt) userDeposits;
+        mapping(address=>StructureData.Withdrawal) userWithdrawals;
     }
 
     struct OptionBuyerState {
        mapping(address=>uint256) optionValueToCollect;
     } 
 
+ 
 
-    struct UserState {
-        uint128 pendingAsset;  
-        uint128 assetToSell; 
-        //amount to terminate at expiry
-        uint128 assetTerminating;
-        //amount to terminate at next expiry
-        uint128 assetToTerminate;
-        bool hasState;
+    struct DepositReceipt { 
+        uint16 round; 
+        uint104 amount;  
+        uint128 unredeemmedAmountRoundMinus3;  
+        uint128 unredeemmedAmountRoundMinus2;  
+        uint128 unredeemmedAmountRoundMinus1;
+        
     }
 
-
-    //readonly query results
-    
-    struct MaturedState {
-        uint256 releasedAssetAmount;
-        uint256 releasedAssetPremiumAmount;
-        uint256 releasedAssetAmountWithPremium; 
-        uint256 autoRollAssetAmount;
-        uint256 autoRollAssetPremiumAmount;
-        uint256 autoRollAssetAmountWithPremium; 
+    struct Withdrawal { 
+        uint16 round; 
+        uint128 amountToRedeemBeforeExpiry;
+        uint128 redeemedAmountAfterExpiry;
     }
 
-
-    struct OptionSnapshot {
-        uint128 totalPending;
-        //total tvl = totalLocked + totalTerminating
-        uint128 totalLocked;
-        //only set during settlement
-        uint128 totalTerminating;
-        //amount to terminate in next round,  totalToTerminate <= totalLocked
-        uint128 totalToTerminate;
-        uint128 totalReleased; 
-    }
-
-    struct UserBalance {
-        uint128 pendingDepositAssetAmount;
-        //tvl = lockedDepositAssetAmount + terminatingDepositAssetAmount
-        uint128 lockedDepositAssetAmount;
-        //only set during settlement
-        uint128 terminatingDepositAssetAmount;
-        //amount to terminate in next round, toTerminateDepositAssetAmount <= lockedDepositAssetAmount
-        uint128 toTerminateDepositAssetAmount;
-        uint128 releasedDepositAssetAmount;
-        uint128 releasedCounterPartyAssetAmount;
-    }
-     
  
 }
