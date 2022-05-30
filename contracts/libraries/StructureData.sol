@@ -66,7 +66,8 @@ library StructureData {
     } 
 
  
-
+    //the core idea is that, util curent round -3, we don't know the exact new ratio 
+    //(current round: pending, current round - 1: selling, current round - 2: sold, current round -3: already expired)
     struct DepositReceipt { 
         uint16 round; 
         uint104 amount;  
@@ -79,8 +80,9 @@ library StructureData {
     struct Withdrawal { 
         uint16 round;  
         uint104 amount;
-        uint128 redeemingAmount; //amount not expired yet
-        uint128 redeemedAmount; //amount expired already
+        uint128 redeemedAmountRoundMinus3;
+        uint128 redeemingAmountRoundMinus2; 
+        uint128 redeemingAmountRoundMinus1; 
     }
 
  

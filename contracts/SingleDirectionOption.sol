@@ -24,32 +24,28 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     }
 
 
-    function initiateWithraw(uint8 _optionId, uint256 _assetToTerminate)
+    function initiateWithraw(uint8 _vaultId, uint256 _assetToTerminate)
         external
         override 
-        validateOptionById(_optionId)
-    {
+        validateVaultId(_vaultId) {
         //require(_assetToTerminate > 0 , "!_assetToTerminate");
         //require(currentRound > 1, "No on going"); 
         OptionLifecycle.initiateWithrawStorage(
-            optionStates[_optionId],
+            vaultStates[_vaultId],
             msg.sender,
-            _assetToTerminate,
-            underSettlement,
-            currentRound
+            _assetToTerminate
         );
     }
 
-    function cancelWithdraw(uint8 _optionId, uint256 _assetToTerminate)
+    function cancelWithdraw(uint8 _vaultId, uint256 _assetToTerminate)
         external
         override
-        validateOptionById(_optionId)
-    {
+        validateVaultId(_vaultId) {
         //require(_assetToTerminate > 0 , "!_assetToTerminate");
         //require(currentRound > 1, "No on going"); 
 
         OptionLifecycle.cancelWithdrawStorage(
-            optionStates[_optionId],
+            vaultStates[_vaultId],
             msg.sender,
             _assetToTerminate
         );
@@ -96,15 +92,15 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         StructureData.VaultState storage data = vaultStates[_vaultId];
         require(data.cutOffAt > 0, "!started"); 
 
-        OptionLifecycle.depositFor(
-            data,
-            msg.sender,
-            _amount); 
         IERC20(asset).safeTransferFrom(
             msg.sender,
             address(this),
             _amount
         );
+        OptionLifecycle.depositFor(
+            data,
+            msg.sender,
+            _amount); 
     }
  
 

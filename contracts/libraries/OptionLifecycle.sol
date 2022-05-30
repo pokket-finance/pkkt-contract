@@ -46,8 +46,10 @@ library OptionLifecycle {
 
         StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
         StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
-        recalcDeposit(_vault, deposit);
         recalcWithdrawal(_vault, withdrawal); 
+        recalcDeposit(_vault, deposit);
+        
+
        withdrawal.amount = withdrawl.amount.add(_amountToRedeem); 
        //todo: debit the deposit 
 
@@ -82,18 +84,19 @@ library OptionLifecycle {
         //withdraw after expiry
 
         //first withdraw the redeeemed
-        if (withdrawal.redeemedAmount >= _amount) {
-            withdrawal.redeemedAmount = withdrawal.redeemedAmount.sub(amount);
+        uint redeemableAmount = withdrawal.redeemedAmount;
+        if (redeemableAmount >= _amount) {
+            withdrawal.redeemedAmount = redeemableAmount.sub(amount);
             _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(amount);
             return;
         }
         
         //then withdraw the pending
-        uint128 pendingAmountToWithdraw = amount.sub(withdrawal.redeemedAmount);
+        uint128 pendingAmountToWithdraw = amount.sub(redeemableAmount);
         require(deposit.round == _vault.round, "No pending");
         require(deposit.amount >= pendingAmountToWithdraw, "Not enough to withdraw");
 
-         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(withdrawal.redeemedAmount);
+         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(redeemableAmount);
          _vaultState.totalPending = _vault.state.totalPending.sub(pendingAmountToWithdraw);
         withdrawal.redeemedAmount = 0; 
         deposit.amount = deposit.amount.sub(pendingAmountToWithdraw);
@@ -116,67 +119,96 @@ library OptionLifecycle {
     }
   
     function recalcWithdrawal(StructureData.VaultState storage _vaultState, StructureData.Withdrawal storage _withdrawal) {
-        if (_withdrawal.round < _vaultState.round) {
-            //merge redeeming to redeemed
-            if (_withdrawal.redeemingAmount > 0) {
-               uint128 price = getRoundPrice(data, _withdrawal.round - 3);
-               _withdrawal.redeeemedAmount = withdrawal.redeeemedAmount.add(_withdrawal.redeemingAmount.mul(price).div(10**ROUND_PRICE_DECIMALS));
-            }
-             if (_withrawal.round - _vaultState.round >= 2) { 
-                 
-               uint128 price = getRoundPrice(data, _withdrawal.round - 2);
-                _withdrawal.redeeemedAmount =  withdrawal.redeeemedAmount.add( withdrawal.amount.mul(price).div(10**ROUND_PRICE_DECIMALS));
-             }
-             else{
-                 _withdrawal.redeemingAmount = _withdrawal.amount;
-             }
-           withdrawl.amount = 0;
+        if (_withdrawal.round == _vaultState.round) {
+            return;
         }
+        uint newRedeemedAmount = 0;
+        if (_withdrawal.round - _vault.round == 1) {
+            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
+               newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
+            }
+            _withdrawal.redeemingAmountRoundMinus2 =  _withdrawal.redeemingAmountRoundMinus1;
+            _withdrawal.redeemingAmountRoundMinus1 = _withdrawal.amount;
+        }
+        else if (_withdrawal.round - _vault.round == 2) {
+
+            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
+                newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
+ 
+            }
+            if (_withdrawal.redeemingAmountRoundMinus1 > 0) {
+               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.redeemingAmountRoundMinus1.mul(getRoundPrice(data, _withdrawal.round - 2))
+               .mul(getRoundPrice(data, _withdrawal.round -3)).div(10**(ROUND_PRICE_DECIMALS * 2)));
+ 
+            }
+            _withdrawal.redeemingAmountRoundMinus2 =  _withdrawal.amount;
+            _withdrawal.redeemingAmountRoundMinus1 = 0;
+        }
+        else{
+            
+            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
+               newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
+ 
+            }
+            if (_withdrawal.redeemingAmountRoundMinus1 > 0) { 
+               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.redeemingAmountRoundMinus1.mul(getRoundPrice(data, _withdrawal.round - 3))
+               .mul(getRoundPrice(data, _withdrawal.round -2)).div(10**(ROUND_PRICE_DECIMALS * 2)));
+            }
+            if (_withdrawal.amount > 0) {
+               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.amount.mul(getRoundPrice(data, _withdrawal.round - 3))
+               .mul(getRoundPrice(data, _withdrawal.round -2)).mul(getRoundPrice(data, _withdrawal.round -1)).div(10**(ROUND_PRICE_DECIMALS * 3)));
+            }
+            _withdrawal.redeemingAmountRoundMinus1 = 0;
+            _withdrawal.redeemingAmountRoundMinus2 = 0;
+        }  
+        _withdrawal.redeemedAmountRoundMinus3 = _withdrawal.redeemedAmountRoundMinus3.add(newRedeemedAmount);
+        _withdrawl.amount = 0;
        _withdrawal.round = _vaultState.round;
     }
+    
     function recalcDeposit( StructureData.VaultState storage _vaultState,  StructureData.DepositReceipt storage _deposit) {
         
+        if (_deposit.round == _vaultState.round) {
+            return;
+        }
         uint128 lastDeposit = _deposit.amount; 
-        
         //last checked round is obsolete compared with new deposit round
-       if (_deposit.round < _vaultState.round) { 
-            uint128 unredeemmedAmountRoundMinus3 = _deposit.unredeemmedAmountRoundMinus3;
-            uint128 unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus2;
-            uint128 unredeemmedAmountRoundMinus1 = _deposit.unredeemmedAmountRoundMinus1;
-             if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
-                  for(uint i = _deposit.round - 3; i < _vaultState.round - 3; i++){
-                    uint128 price = getRoundPrice(data, i);
-                    if (i == _deposit.round - 2) {
-                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
-                    }
-                    else if (i == _deposit.round - 1) { 
-                        unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
-                    }
-                    unredeemmedAmountRoundMinus3 =  
-                    unredeemmedAmountRoundMinus3.mul(price).div(10**ROUND_PRICE_DECIMALS);
-                  }
-              }
-              _deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
+        uint128 unredeemmedAmountRoundMinus3 = _deposit.unredeemmedAmountRoundMinus3;
+        uint128 unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus2;
+        uint128 unredeemmedAmountRoundMinus1 = _deposit.unredeemmedAmountRoundMinus1;
+        if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
+            uint start = _deposit.round > 3 ? _deposit.round - 3: 1;
+            for(uint i = start; i < _vaultState.round - 3; i++){
+                if (i == _deposit.round - 2) {
+                    unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
+                }
+                else if (i == _deposit.round - 1) { 
+                    unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
+                } 
+                unredeemmedAmountRoundMinus3 =  
+                unredeemmedAmountRoundMinus3.mul(getRoundPrice(data, i)).div(10**ROUND_PRICE_DECIMALS);
+            }
+        }
+        _deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
               
-               //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
-              if (_deposit.round - _vault.round == 1) { 
-                _deposit.unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus1;
-                _deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
-              }
-               //merge minus3,2,1, move lastDeposit -> minus2
-              else if (_deposit.round - _vault.round == 2) { 
-                _deposit.unredeemmedAmountRoundMinus1  = 0;
-                _deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
-              }
-            //merge minus3,2,1,  
-              else{ 
-                _deposit.unredeemmedAmountRoundMinus1  = 0;
-                _deposit.unredeemmedAmountRoundMinus2 = 0; 
-              } 
+        //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
+        if (_deposit.round - _vault.round == 1) { 
+            _deposit.unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus1;
+            _deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
+        }
+        //merge minus3,2,1, move lastDeposit -> minus2
+        else if (_deposit.round - _vault.round == 2) { 
+            _deposit.unredeemmedAmountRoundMinus1  = 0;
+            _deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
+        }
+        //merge minus3,2,1,  
+        else{ 
+            _deposit.unredeemmedAmountRoundMinus1  = 0;
+            _deposit.unredeemmedAmountRoundMinus2 = 0; 
+        } 
 
-            _deposit.amount = 0;
-            _deposit.round = _vaultState.round;
-       }
+        _deposit.amount = 0;
+        _deposit.round = _vaultState.round;
        
     }
 
@@ -215,10 +247,10 @@ library OptionLifecycle {
             _vaultState.totalRedeemed = _vaultState.totalRedeemed.add(_vaultState.expired.queuedRedeemAmount);
             //we skip the price setting for the unsold round to save some gas
        }
-       _vaultState.expired = onGoing;
-         _vaultState.totalPending = 0; 
-         _vaultState.cutOffAt = _vaultState.cutOffAt.add(PERIOD); 
-         _vaultState.currentRound = _vaultState.currentRound + 1; 
+        _vaultState.expired = onGoing;
+        _vaultState.totalPending = 0; 
+        _vaultState.cutOffAt = _vaultState.cutOffAt.add(PERIOD); 
+        _vaultState.currentRound = _vaultState.currentRound + 1; 
 
     }
 }

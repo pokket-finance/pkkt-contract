@@ -72,6 +72,7 @@ abstract contract OptionVaultManager is
     }  
 
    //after buying by sending back the premium, the premium and strike can no longer be changed
+   //todo: whitelist check
     function buyOptions(uint8[] memory _vaultIds) payable external override lock{
         uint256 ethToSend = 0;
         for (uint8 i = 0; i < _vaultIds.length; i++){
@@ -103,8 +104,7 @@ abstract contract OptionVaultManager is
     }
 
     function expireOptions(StructureData.ExpiredOptionParameters[] memory _expiryParameters)
-        external override managerOnly
-    { 
+        external override managerOnly { 
         
         for (uint8 i = 0; i < _expiryParameters.length; i++){
              StructureData.ExpiredOptionParameters expiryParameters = _expiryParameters[i];
@@ -125,7 +125,7 @@ abstract contract OptionVaultManager is
               //can be withdrawn by trader 
              StructureData.OptionBuyerState buyerState = buyerStates[expired.buyerAddress];
 
-             uint depositPriceAfterExpiry = diff.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expiryParameters.expiryLevel));
+             uint depositPriceAfterExpiry = diff.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expiryParameters.expiryLevel);
              data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = depositPriceAfterExpiry;
 
              uint optionHolderValue = expired.amount.mul(diff).div(expiryParameters.expiryLevel);
