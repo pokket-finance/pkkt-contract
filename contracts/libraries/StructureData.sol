@@ -79,10 +79,8 @@ library StructureData {
 
     struct Withdrawal { 
         uint16 round;  
-        uint104 amount;
-        uint128 redeemedAmountRoundMinus3;
-        uint128 redeemingAmountRoundMinus2; 
-        uint128 redeemingAmountRoundMinus1; 
+        uint104 redeemingAmount; //amount on sold
+        uint128 redeemedAmount; //expired amount
     }
 
  

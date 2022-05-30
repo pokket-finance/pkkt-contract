@@ -46,26 +46,26 @@ library OptionLifecycle {
 
         StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
         StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
-        recalcWithdrawal(_vault, withdrawal); 
         recalcDeposit(_vault, deposit);
-        
+         
+        //user is allowed to redeem option sold, and can withdraw after the premium sent
+        uint maxRedeemable = deposit.unredeemmedAmountRoundMinus2.add(deposit.unredeemmedAmountRoundMinus3);
+        require(_amountToRedeem <= maxRedeemable, "Not enough to redeem");
+        if (_amountToRedeem <= deposit.unredeemmedAmountRoundMinus3) {
+            deposit.unredeemmedAmountRoundMinus3 = deposit.unredeemmedAmountRoundMinus3.sub(_amountToRedeem);
+        }
+        else{
+            deposit.unredeemmedAmountRoundMinus3 = 0;
+            deposit.unredeemmedAmountRoundMinus2 = _amountToRedeem.sub(deposit.unredeemmedAmountRoundMinus3);
+        }
 
-       withdrawal.amount = withdrawl.amount.add(_amountToRedeem); 
-       //todo: debit the deposit 
-
+        //recalc
+        recalcWithdrawal(_vaultState, withdrawal);
+        withdrawal.redeemingAmount = withdrawal.redeemingAmount.add(_amount);  
         _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
 
     }
 
-    function cancelWithdrawStorage(
-        StructureData.VaultState storage _vault,
-        address _user,
-        uint256 _amountToRedeem,
-    ) external {
-        
-        rollToNextRoundIfNeeded(_vault); 
-        _vault.onGoing.queuedRedeemAmount =  _vault.onGoing.queuedRedeemAmount.sub(_amountToRedeem);
-    }
 
     function withdrawStorage(
         StructureData.VaultState storage _vaultState,
@@ -76,27 +76,18 @@ library OptionLifecycle {
         rollToNextRoundIfNeeded(_vaultState);
         
         StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
-        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
-        //recalc
-        recalcWithdrawal(_vaultState, withdrawal);
-        //withdraw before expiry
-
-        //withdraw after expiry
-
-        //first withdraw the redeeemed
-        uint redeemableAmount = withdrawal.redeemedAmount;
-        if (redeemableAmount >= _amount) {
-            withdrawal.redeemedAmount = redeemableAmount.sub(amount);
+        recalcWithdrawal(_vaultState, withdrawal); 
+        if (withdrawal.redeemedAmount >= _amount) {
+            withdrawal.redeemedAmount =  withdrawal.redeemedAmoun.sub(amount);
             _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(amount);
             return;
         }
         
         //then withdraw the pending
-        uint128 pendingAmountToWithdraw = amount.sub(redeemableAmount);
+        uint128 pendingAmountToWithdraw = amount.sub(withdrawal.redeemedAmount);
         require(deposit.round == _vault.round, "No pending");
-        require(deposit.amount >= pendingAmountToWithdraw, "Not enough to withdraw");
-
-         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(redeemableAmount);
+        require(deposit.amount >= pendingAmountToWithdraw, "Not enough to withdraw"); 
+         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(withdrawal.redeemedAmount);
          _vaultState.totalPending = _vault.state.totalPending.sub(pendingAmountToWithdraw);
         withdrawal.redeemedAmount = 0; 
         deposit.amount = deposit.amount.sub(pendingAmountToWithdraw);
@@ -119,51 +110,7 @@ library OptionLifecycle {
     }
   
     function recalcWithdrawal(StructureData.VaultState storage _vaultState, StructureData.Withdrawal storage _withdrawal) {
-        if (_withdrawal.round == _vaultState.round) {
-            return;
-        }
-        uint newRedeemedAmount = 0;
-        if (_withdrawal.round - _vault.round == 1) {
-            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
-               newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
-            }
-            _withdrawal.redeemingAmountRoundMinus2 =  _withdrawal.redeemingAmountRoundMinus1;
-            _withdrawal.redeemingAmountRoundMinus1 = _withdrawal.amount;
-        }
-        else if (_withdrawal.round - _vault.round == 2) {
 
-            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
-                newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
- 
-            }
-            if (_withdrawal.redeemingAmountRoundMinus1 > 0) {
-               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.redeemingAmountRoundMinus1.mul(getRoundPrice(data, _withdrawal.round - 2))
-               .mul(getRoundPrice(data, _withdrawal.round -3)).div(10**(ROUND_PRICE_DECIMALS * 2)));
- 
-            }
-            _withdrawal.redeemingAmountRoundMinus2 =  _withdrawal.amount;
-            _withdrawal.redeemingAmountRoundMinus1 = 0;
-        }
-        else{
-            
-            if (_withdrawal.redeemingAmountRoundMinus2 > 0) {
-               newRedeemedAmount = _withdrawal.redeemingAmountRoundMinus2.mul(getRoundPrice(data, _withdrawal.round - 3)).div(10**ROUND_PRICE_DECIMALS);
- 
-            }
-            if (_withdrawal.redeemingAmountRoundMinus1 > 0) { 
-               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.redeemingAmountRoundMinus1.mul(getRoundPrice(data, _withdrawal.round - 3))
-               .mul(getRoundPrice(data, _withdrawal.round -2)).div(10**(ROUND_PRICE_DECIMALS * 2)));
-            }
-            if (_withdrawal.amount > 0) {
-               newRedeemedAmount = newRedeemedAmount.add(_withdrawal.amount.mul(getRoundPrice(data, _withdrawal.round - 3))
-               .mul(getRoundPrice(data, _withdrawal.round -2)).mul(getRoundPrice(data, _withdrawal.round -1)).div(10**(ROUND_PRICE_DECIMALS * 3)));
-            }
-            _withdrawal.redeemingAmountRoundMinus1 = 0;
-            _withdrawal.redeemingAmountRoundMinus2 = 0;
-        }  
-        _withdrawal.redeemedAmountRoundMinus3 = _withdrawal.redeemedAmountRoundMinus3.add(newRedeemedAmount);
-        _withdrawl.amount = 0;
-       _withdrawal.round = _vaultState.round;
     }
     
     function recalcDeposit( StructureData.VaultState storage _vaultState,  StructureData.DepositReceipt storage _deposit) {

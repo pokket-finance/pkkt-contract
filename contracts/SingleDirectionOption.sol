@@ -37,19 +37,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         );
     }
 
-    function cancelWithdraw(uint8 _vaultId, uint256 _assetToTerminate)
-        external
-        override
-        validateVaultId(_vaultId) {
-        //require(_assetToTerminate > 0 , "!_assetToTerminate");
-        //require(currentRound > 1, "No on going"); 
-
-        OptionLifecycle.cancelWithdrawStorage(
-            vaultStates[_vaultId],
-            msg.sender,
-            _assetToTerminate
-        );
-    }
+ 
     
     //withdraw pending and expired amount
     function withdraw(
