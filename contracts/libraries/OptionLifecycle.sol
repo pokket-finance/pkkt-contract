@@ -44,25 +44,40 @@ library OptionLifecycle {
         
         rollToNextRoundIfNeeded(_vault);  
 
-        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
-        StructureData.DepositReceipt storage deposit = _vaultState.userDeposits[_user]; 
-        recalcDeposit(_vault, deposit);
+        StructureData.UserState storage state = _vaultState.userStates[_user]; 
+        recalcState(_vault, state); 
          
-        //user is allowed to redeem option sold, and can withdraw after the premium sent
-        uint maxRedeemable = deposit.unredeemmedAmountRoundMinus2.add(deposit.unredeemmedAmountRoundMinus3);
+        uint maxInstantRedeemable = state.expiredAmount.sub(state.expiredQueueRedeemAmount);
+        uint maxRedeemable = state.onGoingAmount.sub(state.onGoingQueueRedeemAmount).add(maxInstantRedeemable);
         require(_amountToRedeem <= maxRedeemable, "Not enough to redeem");
-        if (_amountToRedeem <= deposit.unredeemmedAmountRoundMinus3) {
-            deposit.unredeemmedAmountRoundMinus3 = deposit.unredeemmedAmountRoundMinus3.sub(_amountToRedeem);
-        }
-        else{
-            deposit.unredeemmedAmountRoundMinus3 = 0;
-            deposit.unredeemmedAmountRoundMinus2 = _amountToRedeem.sub(deposit.unredeemmedAmountRoundMinus3);
-        }
 
-        //recalc
-        recalcWithdrawal(_vaultState, withdrawal);
-        withdrawal.redeemingAmount = withdrawal.redeemingAmount.add(_amount);  
-        _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
+        //check if the sold amount is expired or not
+        //1. withdraw initiated before the sold option expired (buyer not providing the expiry level yet)
+        //user could terminate all the sold options, and selling options
+        //user would be able to redeem all the sold options after expiry and all the selling option after next expiry
+        uint128 price = _vault.depositPriceAfterExpiryPerRound[_vault.round - 2];
+        if (price == 0) {
+            //first redeem from the sold options
+            if (_amountToRedeem <= maxInstantRedeemable) {
+                state.expiredQueueRedeemAmount = state.expiredQueueRedeemAmount.add(_amountToRedeem);
+                _vault.expired.queuedRedeemAmount = _vault.expired.queuedRedeemAmount.add(_amountToRedeem);
+                
+            }
+            else {
+                uint amountToRemdeemNextRound = _amountToRedeem - maxInstantRedeemable;
+                state.expiredQueueRedeemAmount = state.expiredAmount;
+                state.onGoingQueueRedeemAmount = state.onGoingQueueRedeemAmount.add(amountToRemdeemNextRound);
+                _vault.expired.queuedRedeemAmount = _vault.expired.queuedRedeemAmount.sub(maxInstantRedeemable);
+                _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.sub(amountToRemdeemNextRound);
+            }
+        }   
+        //2. withdraw initiated after the sold option expired (expiry level specified)
+        //user could terminate all the selling options
+        //user would be able to redeem all the selling options after next expiry
+        else{
+            state.onGoing.queuedRedeemAmount = state.onGoing.queuedRedeemAmount.add(_amountToRedeem);
+            _vault.onGoing.queuedRedeemAmount = _vault.onGoing.queuedRedeemAmount.add(_amountToRedeem);
+        } 
 
     }
 
@@ -75,90 +90,58 @@ library OptionLifecycle {
         
         rollToNextRoundIfNeeded(_vaultState);
         
-        StructureData.Withdrawal storage withdrawal = _vaultState.userWithdrawals[_user];
-        recalcWithdrawal(_vaultState, withdrawal); 
-        if (withdrawal.redeemedAmount >= _amount) {
-            withdrawal.redeemedAmount =  withdrawal.redeemedAmoun.sub(amount);
+        StructureData.UserState storage state = _vaultState.userStates[_user]; 
+        recalcState(_vault, state);  
+
+        if (state.redeemed >= _amount) {
+            state.redeemed =  withdrawal.state.sub(amount);
             _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(amount);
             return;
         }
         
         //then withdraw the pending
-        uint128 pendingAmountToWithdraw = amount.sub(withdrawal.redeemedAmount);
-        require(deposit.round == _vault.round, "No pending");
-        require(deposit.amount >= pendingAmountToWithdraw, "Not enough to withdraw"); 
-         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(withdrawal.redeemedAmount);
+        uint128 pendingAmountToWithdraw = amount.sub(state.redeemedAmount); 
+        require(state.pending >= pendingAmountToWithdraw, "Not enough to withdraw"); 
+         _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(state.redeemedAmount);
          _vaultState.totalPending = _vault.state.totalPending.sub(pendingAmountToWithdraw);
-        withdrawal.redeemedAmount = 0; 
-        deposit.amount = deposit.amount.sub(pendingAmountToWithdraw);
+        state.redeemedAmount = 0; 
+        state.pending = state.pending.sub(pendingAmountToWithdraw);
         
     }
  
     function getRoundPrice( StructureData.VaultState storage _vaultState, uint8 _round) view {
         
-        uint128 price = deposit.round - 3 > 0 ? 
-           data.depositPriceAfterExpiryPerRound[deposit.round - 3] : 
-           0;
+        uint128 price = 
+           data.depositPriceAfterExpiryPerRound[_round];
         return price == 0 ? 10**ROUND_PRICE_DECIMALS : price;
     }
 
 
-
-    function debitWithdrawal(StructureData.VaultState storage _vaultState, 
-      StructureData.Withdrawal storage _withdrawal,StructureData.DepositReceipt storage _deposit) {
-
-    }
-  
-    function recalcWithdrawal(StructureData.VaultState storage _vaultState, StructureData.Withdrawal storage _withdrawal) {
-
-    }
-    
-    function recalcDeposit( StructureData.VaultState storage _vaultState,  StructureData.DepositReceipt storage _deposit) {
-        
-        if (_deposit.round == _vaultState.round) {
-            return;
-        }
-        uint128 lastDeposit = _deposit.amount; 
-        //last checked round is obsolete compared with new deposit round
-        uint128 unredeemmedAmountRoundMinus3 = _deposit.unredeemmedAmountRoundMinus3;
-        uint128 unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus2;
-        uint128 unredeemmedAmountRoundMinus1 = _deposit.unredeemmedAmountRoundMinus1;
-        if (unredeemmedAmountRoundMinus3 != 0 || unredeemmedAmountRoundMinus2 != 0 || unredeemmedAmountRoundMinus1 != 0) {
-            uint start = _deposit.round > 3 ? _deposit.round - 3: 1;
-            for(uint i = start; i < _vaultState.round - 3; i++){
-                if (i == _deposit.round - 2) {
-                    unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus2);
+    function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState) {
+        //first recalc to the state before expiry
+        if (_userState.lastUpdateRound < _vaultState.round) {
+            if (_userState.pending > 0) {
+                //move it to onGoing or expired
+                if (_userState.lastUpdateRound - _vaultState.round == 1) {
+                    _userState.onGoingAmount = _userState.onGoingAmount.add(_userState.pending);
                 }
-                else if (i == _deposit.round - 1) { 
-                    unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(unredeemmedAmountRoundMinus1);
-                } 
-                unredeemmedAmountRoundMinus3 =  
-                unredeemmedAmountRoundMinus3.mul(getRoundPrice(data, i)).div(10**ROUND_PRICE_DECIMALS);
+                else if (_userState.lastUpdateRound - _vaultState.round == 2) {
+                    _userState.expiredAmount = _userState.expiredAmount.add(_userState.pending);
+                }
+            }  
+            if (_userState.onGoingAmount > 0) {
+                if (_userState.lastUpdateRound - _vaultState.round == 1) {
+
+                }
             }
-        }
-        _deposit.unredeemmedAmountRoundMinus3 = unredeemmedAmountRoundMinus3.add(lastDeposit);
-              
-        //merge minus 3 and 2, move minus1-> minus2. move lastDeposit->minus1
-        if (_deposit.round - _vault.round == 1) { 
-            _deposit.unredeemmedAmountRoundMinus2 = _deposit.unredeemmedAmountRoundMinus1;
-            _deposit.unredeemmedAmountRoundMinus1 = lastDeposit; 
-        }
-        //merge minus3,2,1, move lastDeposit -> minus2
-        else if (_deposit.round - _vault.round == 2) { 
-            _deposit.unredeemmedAmountRoundMinus1  = 0;
-            _deposit.unredeemmedAmountRoundMinus2 = lastDeposit; 
-        }
-        //merge minus3,2,1,  
-        else{ 
-            _deposit.unredeemmedAmountRoundMinus1  = 0;
-            _deposit.unredeemmedAmountRoundMinus2 = 0; 
-        } 
+            if (_userState.expiredAmount > 0) {
 
-        _deposit.amount = 0;
-        _deposit.round = _vaultState.round;
-       
-    }
+            } 
+        }
 
+        //then check if the expiry level is pecified
+
+    } 
    //for deposit we need to check the cap
     function depositFor(
         StructureData.VaultState storage _vaultState,
@@ -167,9 +150,9 @@ library OptionLifecycle {
     ) external { 
 
        rollToNextRoundIfNeeded(_vaultState); 
-        StructureData.DepositReceipt storage deposit = data.userDeposits[msg.sender]; 
-        recalcDeposit(_vaultState, deposit); 
-       deposit.amount = deposit.amount.add(_amount); 
+        StructureData.UserState storage userState = data.userStates[msg.sender]; 
+        recalcState(_vaultState, userState); 
+        userState.pending = userState.pending.add(_amount); 
        _vaultState.totalPending = _vaultState.totalPending.add(_amount);  
     }
 

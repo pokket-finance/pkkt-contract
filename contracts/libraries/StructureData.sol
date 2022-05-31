@@ -57,31 +57,22 @@ library StructureData {
         StructureData.OptionState onGoing;
         StructureData.OptionState expired; 
         mapping(uint8 => uint128) depositPriceAfterExpiryPerRound; 
-        mapping(address=>StructureData.DepositReceipt) userDeposits;
-        mapping(address=>StructureData.Withdrawal) userWithdrawals;
+        mapping(address=>StructureData.UserState) userStates;
     }
 
     struct OptionBuyerState {
        mapping(address=>uint256) optionValueToCollect;
     } 
 
+    struct UserState {
+        uint16 lastUpdateRound;
+        uint128 pending;
+        uint128 redeemed;
+        uint128 expiredAmount;
+        uint128 expiredQueueRedeemAmount;
+        uint128 onGoingAmount;
+        uint128 onGoingQueueRedeemAmount;
+    }
  
-    //the core idea is that, util curent round -3, we don't know the exact new ratio 
-    //(current round: pending, current round - 1: selling, current round - 2: sold, current round -3: already expired)
-    struct DepositReceipt { 
-        uint16 round; 
-        uint104 amount;  
-        uint128 unredeemmedAmountRoundMinus3;  
-        uint128 unredeemmedAmountRoundMinus2;  
-        uint128 unredeemmedAmountRoundMinus1;
-        
-    }
-
-    struct Withdrawal { 
-        uint16 round;  
-        uint104 redeemingAmount; //amount on sold
-        uint128 redeemedAmount; //expired amount
-    }
-
  
 }
