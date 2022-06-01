@@ -94,7 +94,7 @@ library OptionLifecycle {
         recalcState(_vault, state);  
 
         if (state.redeemed >= _amount) {
-            state.redeemed =  withdrawal.state.sub(amount);
+            state.redeemed =  state.redeemed.sub(amount);
             _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(amount);
             return;
         }
@@ -103,7 +103,7 @@ library OptionLifecycle {
         uint128 pendingAmountToWithdraw = amount.sub(state.redeemedAmount); 
         require(state.pending >= pendingAmountToWithdraw, "Not enough to withdraw"); 
          _vaultState.totalRedeemed = _vaultState.totalRedeemed.sub(state.redeemedAmount);
-         _vaultState.totalPending = _vault.state.totalPending.sub(pendingAmountToWithdraw);
+         _vaultState.totalPending = _vaultState.totalPending.sub(pendingAmountToWithdraw);
         state.redeemedAmount = 0; 
         state.pending = state.pending.sub(pendingAmountToWithdraw);
         
@@ -119,27 +119,68 @@ library OptionLifecycle {
 
     function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState) {
         //first recalc to the state before expiry
-        if (_userState.lastUpdateRound < _vaultState.round) {
-            if (_userState.pending > 0) {
-                //move it to onGoing or expired
-                if (_userState.lastUpdateRound - _vaultState.round == 1) {
-                    _userState.onGoingAmount = _userState.onGoingAmount.add(_userState.pending);
-                }
-                else if (_userState.lastUpdateRound - _vaultState.round == 2) {
-                    _userState.expiredAmount = _userState.expiredAmount.add(_userState.pending);
-                }
-            }  
-            if (_userState.onGoingAmount > 0) {
-                if (_userState.lastUpdateRound - _vaultState.round == 1) {
 
+         uint128 onGoingAmount =  _userState.onGoingAmount;
+         uint128 expiredAmount =  _userState.expiredAmount; 
+         uint128 expiredQueueRedeemAmount = _userState.expiredQueueRedeemAmount;
+         uint128 ongoingQueueRedeemAmount = _userState.ongoingQueueRedeemAmount;
+         uint128 lastUpdateRound = _userState.lastUpdateRound;
+         uint128 pendingAmount = _userState.pendingAmount;
+         uint128 redeemed = _userState.redeemed;
+         while(lastUpdateRound < _vaultState.round) {
+             uint128 oldonGoingAmount = onGoingAmount;
+            if (expiredAmount > 0) { 
+                uint128 price = _vaultState.depositPriceAfterExpiryPerRound[lastUpdateRound - 2]; 
+                if (price > 0) {
+                    expiredAmount = expiredAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                    if (expiredQueueRedeemAmount > 0) {
+                        expiredQueueRedeemAmount = expiredQueueRedeemAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                    }
+                }   
+                redeemed = redeemed.add(expiredQueueRedeemAmount);
+                expiredQueueRedeemAmount = 0;
+                onGoingAmount = expiredAmount.sub(expiredQueueRedeemAmount); 
+            } 
+
+            if (pendingAmount > 0) {
+                onGoingAmount =  onGoingAmount.add(pendingAmount);
+                pendingAmount = 0;
+            }  
+            if (oldonGoingAmount > 0) {
+                expiredAmount = oldonGoingAmount;
+                expiredQueueRedeemAmount = ongoingQueueRedeemAmount;
+                ongoingQueueRedeemAmount = 0;
+            }
+
+            lastUpdateRound = lastUpdateRound + 1;
+         } 
+
+        //then check if the expiry level is specified
+        if (expiredAmount > 0) {
+
+            uint128 price = _vaultState.depositPriceAfterExpiryPerRound[lastUpdateRound -2];
+            if (price > 0) { 
+                expiredAmount = expiredAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                if (expiredQueueRedeemAmount > 0) {
+                    expiredQueueRedeemAmount = expiredQueueRedeemAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
+                } 
+            }
+            if (expiredAmount > 0) {
+                onGoingAmount = onGoingAmount.add(expiredAmount);
+                expiredAmount = 0;
+                if (expiredQueueRedeemAmount > 0) {
+                    redeemed = redeemed.add(expiredQueueRedeemAmount);
+                    expiredQueueRedeemAmount = 0;
                 }
             }
-            if (_userState.expiredAmount > 0) {
-
-            } 
         }
-
-        //then check if the expiry level is pecified
+        _userState.lastUpdateRound = _vaultState.round;
+        _userState.pending = pendingAmount;
+        _userState.redeemed = redeemed;
+        _userState.expiredAmount = expiredAmount;
+        _userState.expiredQueueRedeemAmount = expiredQueueRedeemAmount;
+        _userState.onGoingAmount = onGoingAmount;
+        _userState.onGoingQueueRedeemAmount = onGoingQueueRedeemAmount;
 
     } 
    //for deposit we need to check the cap
