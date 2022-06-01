@@ -24,45 +24,53 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     }
 
 
-    function initiateWithraw(uint8 _vaultId, uint256 _assetToTerminate)
+    function initiateWithraw(uint8 _vaultId, uint256 _redeemAmount)
         external
         override 
-        validateVaultId(_vaultId) {
-        //require(_assetToTerminate > 0 , "!_assetToTerminate");
-        //require(currentRound > 1, "No on going"); 
+        validateVaultId(_vaultId) { 
         OptionLifecycle.initiateWithrawStorage(
             vaultStates[_vaultId],
             msg.sender,
-            _assetToTerminate
+            _redeemAmount
         );
     }
 
  
+
+    function cancelWithdraw(uint8 _vaultId, uint256 _redeemAmount) 
+        external 
+        override 
+        validateVaultId(_vaultId) {
+
+        OptionLifecycle.cancelWithrawStorage(
+            vaultStates[_vaultId],
+            msg.sender,
+            _redeemAmount
+        );
+    }
     
     //withdraw pending and expired amount
-    function withdraw(
-        uint8 _vaultId,
-        uint256 _amount
-    ) external override 
+    function withdraw(uint8 _vaultId, uint256 _amount) 
+        external 
+        override 
         validateVaultById(_vaultId) lock{ 
-
-        address asset = vaultDefinitions[_vaultId].asset; 
+ 
         OptionLifecycle.withdrawStorage(
-            optionStates[_optionId],
+            vaultStates[_vaultId],
             msg.sender,
             _amount);
-        OptionLifecycle.withdraw(msg.sender, _amount, asset);
+        OptionLifecycle.withdraw(msg.sender, _amount, vaultDefinitions[_vaultId].asset);
     }
 
     //deposit eth
     function depositETH(uint8 _vaultId) external payable override 
         validateVaultById(_vaultId) lock{ 
 
-        require(msg.value > 0, "no value"); 
+        require(msg.value > 0, "!value"); 
         address asset = vaultDefinitions[_vaultId].asset; 
         require(asset == address(0), "!ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];
-        require(data.cutOffAt > 0, "!started");
+        require(data.cutOffAt > 0, "!Started");
         //todo: check for cap
         OptionLifecycle.depositFor(
             data,
@@ -74,7 +82,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     //deposit other erc20 coin, take wbtc
     function deposit(uint8 _vaultId, uint256 _amount) external override 
         validateVaultById(_vaultId) lock{ 
-        require(msg.value > 0, "no value"); 
+        require(_amount > 0, "!amount"); 
         address asset = vaultDefinitions[_vaultId].asset; 
         require(asset != address(0), "ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];

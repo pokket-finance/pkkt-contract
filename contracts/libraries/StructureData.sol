@@ -15,7 +15,7 @@ library StructureData {
     //struct kick off parameters 
     struct KickOffOptionParameters { 
         uint8 vaultId; 
-        uint256 maxCapacity;  
+        uint128 maxCapacity;  
     }
 
     //parameters for cutoff option
@@ -52,11 +52,11 @@ library StructureData {
         uint128 totalPending; 
         uint128 totalRedeemed;
         uint32 cutOffAt;  
-        uint256 maxCapacity;   
-        uint128 currentRound;
+        uint16 currentRound;
+        uint128 maxCapacity;   
         StructureData.OptionState onGoing;
         StructureData.OptionState expired; 
-        mapping(uint8 => uint128) depositPriceAfterExpiryPerRound; 
+        mapping(uint16 => uint128) depositPriceAfterExpiryPerRound; 
         mapping(address=>StructureData.UserState) userStates;
     }
 
@@ -65,13 +65,13 @@ library StructureData {
     } 
 
     struct UserState {
-        uint16 lastUpdateRound;
         uint128 pending;
         uint128 redeemed;
         uint128 expiredAmount;
-        uint128 expiredQueueRedeemAmount;
+        uint128 expiredQueuedRedeemAmount;
         uint128 onGoingAmount;
-        uint128 onGoingQueueRedeemAmount;
+        uint128 onGoingQueuedRedeemAmount;
+        uint16 lastUpdateRound;
     }
  
  
