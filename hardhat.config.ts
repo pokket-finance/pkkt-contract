@@ -86,7 +86,7 @@ var accounts = data.deployerPrivateKey ?
     owner: { 
       default: data.ownerAddress || 1,
     },
-    settler: { 
+    manager: { 
       default: data.settlerAddress || 2,
     },
     admin : {
@@ -138,7 +138,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("prepare-accounts", "Prepare accounts", prepareAccounts)
+/*task("prepare-accounts", "Prepare accounts", prepareAccounts)
 .addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
 
@@ -159,4 +159,4 @@ task("send-coins", "Send test coins to specific address", sendUserCoins)
 .addParam("target", "target address");
 
 task("set-settler", "Reset the settler", setSettler);
-task("configure-email", "Configure the email server", configureEmail);
+task("configure-email", "Configure the email server", configureEmail);*/

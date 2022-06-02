@@ -20,61 +20,25 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
   functions: {
-    "currentRound()": FunctionFragment;
-    "executionAccountingResult(uint8)": FunctionFragment;
-    "optionPairCount()": FunctionFragment;
-    "optionPairs(uint8)": FunctionFragment;
-    "settlementCashflowResult(address)": FunctionFragment;
-    "underSettlement()": FunctionFragment;
+    "managerRoleAddress()": FunctionFragment;
+    "vaultDefinitions(uint8)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "currentRound",
+    functionFragment: "managerRoleAddress",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "executionAccountingResult",
+    functionFragment: "vaultDefinitions",
     values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "optionPairCount",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "optionPairs",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "settlementCashflowResult",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "underSettlement",
-    values?: undefined
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "currentRound",
+    functionFragment: "managerRoleAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "executionAccountingResult",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "optionPairCount",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "optionPairs",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "settlementCashflowResult",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "underSettlement",
+    functionFragment: "vaultDefinitions",
     data: BytesLike
   ): Result;
 
@@ -125,462 +89,70 @@ export class OptionVaultStorageV1 extends BaseContract {
   interface: OptionVaultStorageV1Interface;
 
   functions: {
-    currentRound(overrides?: CallOverrides): Promise<[number]>;
+    managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
 
-    executionAccountingResult(
+    vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [
-        [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        },
-        [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        },
-        number
-      ] & {
-        callOptionResult: [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        };
-        putOptionResult: [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        };
-        execute: number;
+      [number, number, string, boolean] & {
+        vaultId: number;
+        assetAmountDecimals: number;
+        asset: string;
+        callOrPut: boolean;
       }
     >;
-
-    optionPairCount(overrides?: CallOverrides): Promise<[number]>;
-
-    optionPairs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [number, number, number, number, string, string, boolean] & {
-        callOptionId: number;
-        putOptionId: number;
-        depositAssetAmountDecimals: number;
-        counterPartyAssetAmountDecimals: number;
-        depositAsset: string;
-        counterPartyAsset: string;
-        manualDepositDisabled: boolean;
-      }
-    >;
-
-    settlementCashflowResult(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber, BigNumber, string] & {
-        newDepositAmount: BigNumber;
-        newReleasedAmount: BigNumber;
-        leftOverAmount: BigNumber;
-        contractAddress: string;
-      }
-    >;
-
-    underSettlement(overrides?: CallOverrides): Promise<[boolean]>;
   };
 
-  currentRound(overrides?: CallOverrides): Promise<number>;
+  managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
-  executionAccountingResult(
+  vaultDefinitions(
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [
-      [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
-        depositAmount: BigNumber;
-        autoRollAmount: BigNumber;
-        autoRollPremium: BigNumber;
-        releasedAmount: BigNumber;
-        releasedPremium: BigNumber;
-        autoRollCounterPartyAmount: BigNumber;
-        autoRollCounterPartyPremium: BigNumber;
-        releasedCounterPartyAmount: BigNumber;
-        releasedCounterPartyPremium: BigNumber;
-        executed: boolean;
-      },
-      [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
-        depositAmount: BigNumber;
-        autoRollAmount: BigNumber;
-        autoRollPremium: BigNumber;
-        releasedAmount: BigNumber;
-        releasedPremium: BigNumber;
-        autoRollCounterPartyAmount: BigNumber;
-        autoRollCounterPartyPremium: BigNumber;
-        releasedCounterPartyAmount: BigNumber;
-        releasedCounterPartyPremium: BigNumber;
-        executed: boolean;
-      },
-      number
-    ] & {
-      callOptionResult: [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
-        depositAmount: BigNumber;
-        autoRollAmount: BigNumber;
-        autoRollPremium: BigNumber;
-        releasedAmount: BigNumber;
-        releasedPremium: BigNumber;
-        autoRollCounterPartyAmount: BigNumber;
-        autoRollCounterPartyPremium: BigNumber;
-        releasedCounterPartyAmount: BigNumber;
-        releasedCounterPartyPremium: BigNumber;
-        executed: boolean;
-      };
-      putOptionResult: [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean
-      ] & {
-        depositAmount: BigNumber;
-        autoRollAmount: BigNumber;
-        autoRollPremium: BigNumber;
-        releasedAmount: BigNumber;
-        releasedPremium: BigNumber;
-        autoRollCounterPartyAmount: BigNumber;
-        autoRollCounterPartyPremium: BigNumber;
-        releasedCounterPartyAmount: BigNumber;
-        releasedCounterPartyPremium: BigNumber;
-        executed: boolean;
-      };
-      execute: number;
+    [number, number, string, boolean] & {
+      vaultId: number;
+      assetAmountDecimals: number;
+      asset: string;
+      callOrPut: boolean;
     }
   >;
-
-  optionPairCount(overrides?: CallOverrides): Promise<number>;
-
-  optionPairs(
-    arg0: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [number, number, number, number, string, string, boolean] & {
-      callOptionId: number;
-      putOptionId: number;
-      depositAssetAmountDecimals: number;
-      counterPartyAssetAmountDecimals: number;
-      depositAsset: string;
-      counterPartyAsset: string;
-      manualDepositDisabled: boolean;
-    }
-  >;
-
-  settlementCashflowResult(
-    arg0: string,
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, BigNumber, BigNumber, string] & {
-      newDepositAmount: BigNumber;
-      newReleasedAmount: BigNumber;
-      leftOverAmount: BigNumber;
-      contractAddress: string;
-    }
-  >;
-
-  underSettlement(overrides?: CallOverrides): Promise<boolean>;
 
   callStatic: {
-    currentRound(overrides?: CallOverrides): Promise<number>;
+    managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
-    executionAccountingResult(
+    vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [
-        [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        },
-        [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        },
-        number
-      ] & {
-        callOptionResult: [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        };
-        putOptionResult: [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean
-        ] & {
-          depositAmount: BigNumber;
-          autoRollAmount: BigNumber;
-          autoRollPremium: BigNumber;
-          releasedAmount: BigNumber;
-          releasedPremium: BigNumber;
-          autoRollCounterPartyAmount: BigNumber;
-          autoRollCounterPartyPremium: BigNumber;
-          releasedCounterPartyAmount: BigNumber;
-          releasedCounterPartyPremium: BigNumber;
-          executed: boolean;
-        };
-        execute: number;
+      [number, number, string, boolean] & {
+        vaultId: number;
+        assetAmountDecimals: number;
+        asset: string;
+        callOrPut: boolean;
       }
     >;
-
-    optionPairCount(overrides?: CallOverrides): Promise<number>;
-
-    optionPairs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [number, number, number, number, string, string, boolean] & {
-        callOptionId: number;
-        putOptionId: number;
-        depositAssetAmountDecimals: number;
-        counterPartyAssetAmountDecimals: number;
-        depositAsset: string;
-        counterPartyAsset: string;
-        manualDepositDisabled: boolean;
-      }
-    >;
-
-    settlementCashflowResult(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber, BigNumber, string] & {
-        newDepositAmount: BigNumber;
-        newReleasedAmount: BigNumber;
-        leftOverAmount: BigNumber;
-        contractAddress: string;
-      }
-    >;
-
-    underSettlement(overrides?: CallOverrides): Promise<boolean>;
   };
 
   filters: {};
 
   estimateGas: {
-    currentRound(overrides?: CallOverrides): Promise<BigNumber>;
+    managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
-    executionAccountingResult(
+    vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    optionPairCount(overrides?: CallOverrides): Promise<BigNumber>;
-
-    optionPairs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    settlementCashflowResult(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    underSettlement(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    currentRound(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    managerRoleAddress(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    executionAccountingResult(
+    vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    optionPairCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    optionPairs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    settlementCashflowResult(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    underSettlement(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

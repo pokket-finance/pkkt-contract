@@ -20,39 +20,19 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface OptionLifecycleInterface extends ethers.utils.Interface {
   functions: {
-    "calculateMaturity(bool,(uint128,uint128,uint128,uint16,uint16,bool,bool),bool,uint8,uint8)": FunctionFragment;
-    "getAvailableBalance(address,address)": FunctionFragment;
+    "PERIOD()": FunctionFragment;
+    "ROUND_PRICE_DECIMALS()": FunctionFragment;
   };
 
+  encodeFunctionData(functionFragment: "PERIOD", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "calculateMaturity",
-    values: [
-      boolean,
-      {
-        totalAmount: BigNumberish;
-        totalTerminate: BigNumberish;
-        strikePrice: BigNumberish;
-        round: BigNumberish;
-        premiumRate: BigNumberish;
-        executed: boolean;
-        callOrPut: boolean;
-      },
-      boolean,
-      BigNumberish,
-      BigNumberish
-    ]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getAvailableBalance",
-    values: [string, string]
+    functionFragment: "ROUND_PRICE_DECIMALS",
+    values?: undefined
   ): string;
 
+  decodeFunctionResult(functionFragment: "PERIOD", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "calculateMaturity",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getAvailableBalance",
+    functionFragment: "ROUND_PRICE_DECIMALS",
     data: BytesLike
   ): Result;
 
@@ -103,212 +83,33 @@ export class OptionLifecycle extends BaseContract {
   interface: OptionLifecycleInterface;
 
   functions: {
-    calculateMaturity(
-      _execute: boolean,
-      _optionState: {
-        totalAmount: BigNumberish;
-        totalTerminate: BigNumberish;
-        strikePrice: BigNumberish;
-        round: BigNumberish;
-        premiumRate: BigNumberish;
-        executed: boolean;
-        callOrPut: boolean;
-      },
-      _callOrPut: boolean,
-      _depositAssetAmountDecimals: BigNumberish,
-      _counterPartyAssetAmountDecimals: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        [
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber
-        ] & {
-          releasedDepositAssetAmount: BigNumber;
-          releasedDepositAssetPremiumAmount: BigNumber;
-          releasedDepositAssetAmountWithPremium: BigNumber;
-          releasedCounterPartyAssetAmount: BigNumber;
-          releasedCounterPartyAssetPremiumAmount: BigNumber;
-          releasedCounterPartyAssetAmountWithPremium: BigNumber;
-          autoRollDepositAssetAmount: BigNumber;
-          autoRollDepositAssetPremiumAmount: BigNumber;
-          autoRollDepositAssetAmountWithPremium: BigNumber;
-          autoRollCounterPartyAssetAmount: BigNumber;
-          autoRollCounterPartyAssetPremiumAmount: BigNumber;
-          autoRollCounterPartyAssetAmountWithPremium: BigNumber;
-        }
-      ]
-    >;
+    PERIOD(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    getAvailableBalance(
-      _asset: string,
-      _source: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
-  calculateMaturity(
-    _execute: boolean,
-    _optionState: {
-      totalAmount: BigNumberish;
-      totalTerminate: BigNumberish;
-      strikePrice: BigNumberish;
-      round: BigNumberish;
-      premiumRate: BigNumberish;
-      executed: boolean;
-      callOrPut: boolean;
-    },
-    _callOrPut: boolean,
-    _depositAssetAmountDecimals: BigNumberish,
-    _counterPartyAssetAmountDecimals: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber
-    ] & {
-      releasedDepositAssetAmount: BigNumber;
-      releasedDepositAssetPremiumAmount: BigNumber;
-      releasedDepositAssetAmountWithPremium: BigNumber;
-      releasedCounterPartyAssetAmount: BigNumber;
-      releasedCounterPartyAssetPremiumAmount: BigNumber;
-      releasedCounterPartyAssetAmountWithPremium: BigNumber;
-      autoRollDepositAssetAmount: BigNumber;
-      autoRollDepositAssetPremiumAmount: BigNumber;
-      autoRollDepositAssetAmountWithPremium: BigNumber;
-      autoRollCounterPartyAssetAmount: BigNumber;
-      autoRollCounterPartyAssetPremiumAmount: BigNumber;
-      autoRollCounterPartyAssetAmountWithPremium: BigNumber;
-    }
-  >;
+  PERIOD(overrides?: CallOverrides): Promise<BigNumber>;
 
-  getAvailableBalance(
-    _asset: string,
-    _source: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
-    calculateMaturity(
-      _execute: boolean,
-      _optionState: {
-        totalAmount: BigNumberish;
-        totalTerminate: BigNumberish;
-        strikePrice: BigNumberish;
-        round: BigNumberish;
-        premiumRate: BigNumberish;
-        executed: boolean;
-        callOrPut: boolean;
-      },
-      _callOrPut: boolean,
-      _depositAssetAmountDecimals: BigNumberish,
-      _counterPartyAssetAmountDecimals: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber
-      ] & {
-        releasedDepositAssetAmount: BigNumber;
-        releasedDepositAssetPremiumAmount: BigNumber;
-        releasedDepositAssetAmountWithPremium: BigNumber;
-        releasedCounterPartyAssetAmount: BigNumber;
-        releasedCounterPartyAssetPremiumAmount: BigNumber;
-        releasedCounterPartyAssetAmountWithPremium: BigNumber;
-        autoRollDepositAssetAmount: BigNumber;
-        autoRollDepositAssetPremiumAmount: BigNumber;
-        autoRollDepositAssetAmountWithPremium: BigNumber;
-        autoRollCounterPartyAssetAmount: BigNumber;
-        autoRollCounterPartyAssetPremiumAmount: BigNumber;
-        autoRollCounterPartyAssetAmountWithPremium: BigNumber;
-      }
-    >;
+    PERIOD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getAvailableBalance(
-      _asset: string,
-      _source: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {};
 
   estimateGas: {
-    calculateMaturity(
-      _execute: boolean,
-      _optionState: {
-        totalAmount: BigNumberish;
-        totalTerminate: BigNumberish;
-        strikePrice: BigNumberish;
-        round: BigNumberish;
-        premiumRate: BigNumberish;
-        executed: boolean;
-        callOrPut: boolean;
-      },
-      _callOrPut: boolean,
-      _depositAssetAmountDecimals: BigNumberish,
-      _counterPartyAssetAmountDecimals: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    PERIOD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getAvailableBalance(
-      _asset: string,
-      _source: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    calculateMaturity(
-      _execute: boolean,
-      _optionState: {
-        totalAmount: BigNumberish;
-        totalTerminate: BigNumberish;
-        strikePrice: BigNumberish;
-        round: BigNumberish;
-        premiumRate: BigNumberish;
-        executed: boolean;
-        callOrPut: boolean;
-      },
-      _callOrPut: boolean,
-      _depositAssetAmountDecimals: BigNumberish,
-      _counterPartyAssetAmountDecimals: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    PERIOD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getAvailableBalance(
-      _asset: string,
-      _source: string,
+    ROUND_PRICE_DECIMALS(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };

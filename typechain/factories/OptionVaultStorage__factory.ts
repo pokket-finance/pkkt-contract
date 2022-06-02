@@ -12,253 +12,45 @@ import type {
 const _abi = [
   {
     inputs: [],
-    name: "currentRound",
+    name: "managerRoleAddress",
     outputs: [
-      {
-        internalType: "uint16",
-        name: "",
-        type: "uint16",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
-      },
-    ],
-    name: "executionAccountingResult",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "uint128",
-            name: "depositAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollCounterPartyAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollCounterPartyPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedCounterPartyAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedCounterPartyPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "bool",
-            name: "executed",
-            type: "bool",
-          },
-        ],
-        internalType: "struct StructureData.SettlementAccountingResult",
-        name: "callOptionResult",
-        type: "tuple",
-      },
-      {
-        components: [
-          {
-            internalType: "uint128",
-            name: "depositAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollCounterPartyAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "autoRollCounterPartyPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedCounterPartyAmount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "releasedCounterPartyPremium",
-            type: "uint128",
-          },
-          {
-            internalType: "bool",
-            name: "executed",
-            type: "bool",
-          },
-        ],
-        internalType: "struct StructureData.SettlementAccountingResult",
-        name: "putOptionResult",
-        type: "tuple",
-      },
-      {
-        internalType: "enum StructureData.OptionExecution",
-        name: "execute",
-        type: "uint8",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "optionPairCount",
-    outputs: [
-      {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
-      },
-    ],
-    name: "optionPairs",
-    outputs: [
-      {
-        internalType: "uint8",
-        name: "callOptionId",
-        type: "uint8",
-      },
-      {
-        internalType: "uint8",
-        name: "putOptionId",
-        type: "uint8",
-      },
-      {
-        internalType: "uint8",
-        name: "depositAssetAmountDecimals",
-        type: "uint8",
-      },
-      {
-        internalType: "uint8",
-        name: "counterPartyAssetAmountDecimals",
-        type: "uint8",
-      },
       {
         internalType: "address",
-        name: "depositAsset",
+        name: "",
         type: "address",
       },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    name: "vaultDefinitions",
+    outputs: [
+      {
+        internalType: "uint8",
+        name: "vaultId",
+        type: "uint8",
+      },
+      {
+        internalType: "uint8",
+        name: "assetAmountDecimals",
+        type: "uint8",
+      },
       {
         internalType: "address",
-        name: "counterPartyAsset",
+        name: "asset",
         type: "address",
       },
       {
         internalType: "bool",
-        name: "manualDepositDisabled",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "settlementCashflowResult",
-    outputs: [
-      {
-        internalType: "uint128",
-        name: "newDepositAmount",
-        type: "uint128",
-      },
-      {
-        internalType: "uint128",
-        name: "newReleasedAmount",
-        type: "uint128",
-      },
-      {
-        internalType: "int128",
-        name: "leftOverAmount",
-        type: "int128",
-      },
-      {
-        internalType: "address",
-        name: "contractAddress",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "underSettlement",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
+        name: "callOrPut",
         type: "bool",
       },
     ],

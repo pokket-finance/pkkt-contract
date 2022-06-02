@@ -53,7 +53,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     function withdraw(uint8 _vaultId, uint256 _amount) 
         external 
         override 
-        validateVaultById(_vaultId) lock{ 
+        validateVaultId(_vaultId) lock{ 
  
         OptionLifecycle.withdrawStorage(
             vaultStates[_vaultId],
@@ -64,7 +64,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
 
     //deposit eth
     function depositETH(uint8 _vaultId) external payable override 
-        validateVaultById(_vaultId) lock{ 
+        validateVaultId(_vaultId) lock{ 
 
         require(msg.value > 0, "!value"); 
         address asset = vaultDefinitions[_vaultId].asset; 
@@ -81,7 +81,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
 
     //deposit other erc20 coin, take wbtc
     function deposit(uint8 _vaultId, uint256 _amount) external override 
-        validateVaultById(_vaultId) lock{ 
+        validateVaultId(_vaultId) lock{ 
         require(_amount > 0, "!amount"); 
         address asset = vaultDefinitions[_vaultId].asset; 
         require(asset != address(0), "ETH");

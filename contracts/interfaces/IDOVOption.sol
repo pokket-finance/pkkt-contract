@@ -17,7 +17,7 @@ interface IDOVOption {
     function cancelWithdraw(uint8 _vaultId, uint256 _redeemAmount) external;
  
     
-    function withdraw(uint8 _vaultId, uint256 _amount, address _asset) external; 
+    function withdraw(uint8 _vaultId, uint256 _amount) external; 
  
  
  

@@ -24,8 +24,9 @@ abstract contract OptionVaultManager is
     using SafeCast for int256;
 
   
-    function setManagerInternal(address _mananger) internal { 
-        managerRoleAddress = _mananger; 
+    function setManagerInternal(address _manager) internal { 
+        require(_manager != address(0), "!manager");
+        managerRoleAddress = _manager; 
     }  
 
     function addVaultsInternal(
@@ -49,13 +50,13 @@ abstract contract OptionVaultManager is
              StructureData.VaultState storage data = vaultStates[kickoff.vaultId];
              require(data.cutOffAt <= block.timestamp, "already kicked off");  
              
-             data.cutOffAt = uint32(block.timestamp.add(PERIOD));
-             data.maxCapacity = _kickoff.maxCapacity;
+             data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD));
+             data.maxCapacity = kickoff.maxCapacity;
          }
     }
  
     //parameters for option to sell, todo: whitelist
-    function sellOptions(StructureData.OnGoingOptionParameters[] memory _ongoingParameters) 
+    function sellOptions(StructureData.OnGoingOptionParameters[] memory _ongoingParameters) external override{
         for (uint256 i = 0; i < _ongoingParameters.length; i++){
              StructureData.OnGoingOptionParameters memory ongoingParameters = _ongoingParameters[i];
              require(ongoingParameters.premiumRate > 0, "!premium");
@@ -98,7 +99,7 @@ abstract contract OptionVaultManager is
          require(ethToSend >= msg.value, "Not enough eth");
          //transfer back extra
          if (ethToSend > msg.value) { 
-            msg.sender.transfer(ethToSend-msg.value); 
+            payable(msg.sender).transfer(ethToSend-msg.value); 
          }
     }
 
@@ -129,7 +130,7 @@ abstract contract OptionVaultManager is
              data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = uint128(depositPriceAfterExpiry);
 
              uint256 optionHolderValue = diff.mul(expired.amount).div(expiryParameters.expiryLevel);
-             buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(optionValueToCollect[asset]));
+             buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(buyerState.optionValueToCollect[asset]));
 
              uint256 remaining = uint256(expired.amount).withPremium(expired.premiumRate).sub(optionHolderValue);
              uint256 redeemed = remaining.mul(expired.queuedRedeemAmount).div(expired.amount);
@@ -141,13 +142,13 @@ abstract contract OptionVaultManager is
     }
 
     
-    function collectOptionHolderValues() external lock { 
+    function collectOptionHolderValues() external override lock { 
         StructureData.OptionBuyerState storage buyerState = buyerStates[msg.sender];  
         for (uint256 i = 0; i < vaultCount; i++){
-             address asset = vaultDefinitions[i].asset;
+             address asset = vaultDefinitions[uint8(i)].asset;
              uint256 assetAmount = buyerState.optionValueToCollect[asset];
              if (assetAmount > 0) {
-                 buyerState[asset] = 0;
+                 buyerState.optionValueToCollect[asset] = 0;
                  OptionLifecycle.withdraw(msg.sender, assetAmount, asset);
              }
          } 

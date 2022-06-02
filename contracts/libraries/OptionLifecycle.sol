@@ -56,7 +56,7 @@ library OptionLifecycle {
         //1. withdraw initiated before the sold option expired (buyer not providing the expiry level yet)
         //user could terminate all the sold options, and selling options
         //user would be able to redeem all the sold options after expiry and all the selling option after next expiry
-        uint256 price = _vault.currentRound > 2 ? _vault.depositPriceAfterExpiryPerRound[_vault.round - 2] : 0;
+        uint256 price = _vault.currentRound > 2 ? _vault.depositPriceAfterExpiryPerRound[_vault.currentRound - 2] : 0;
         if (price == 0) {
             //first redeem from the sold options
             if (_amountToRedeem <= maxInstantRedeemable) {
@@ -96,15 +96,15 @@ library OptionLifecycle {
         
         uint256 expiredQueuedRedeemAmount = state.expiredQueuedRedeemAmount;
         uint256 onGoingQueuedRedeemAmount = state.onGoingQueuedRedeemAmount;
-        require(_amountToRedeem <= maxRedeemable, "Not enough to cancel redeem");
-        if (_amountToRedeem <= expiredQueuedRedeemAmount) {
-            state.expiredQueuedRedeemAmount = expiredQueuedRedeemAmount.sub(_amountToRedeem);
-            _vault.expired.queuedRedeemAmount = uint128(uint256(_vault.expired.queuedRedeemAmount).sub(_amountToRedeem));
+        require(_amountToRedeemToCancel <= expiredQueuedRedeemAmount.add(onGoingQueuedRedeemAmount), "Not enough to cancel redeem");
+        if (_amountToRedeemToCancel <= expiredQueuedRedeemAmount) {
+            state.expiredQueuedRedeemAmount = uint128(expiredQueuedRedeemAmount.sub(_amountToRedeemToCancel));
+            _vault.expired.queuedRedeemAmount = uint128(uint256(_vault.expired.queuedRedeemAmount).sub(_amountToRedeemToCancel));
             return;
         }
         state.expiredQueuedRedeemAmount = 0;
         _vault.expired.queuedRedeemAmount = uint128(uint256(_vault.expired.queuedRedeemAmount).sub(expiredQueuedRedeemAmount));
-        uint256 onGoingQueuedRedeeemAmountToCancel = _amountToRedeem.sub(expiredQueuedRedeemAmount);
+        uint256 onGoingQueuedRedeeemAmountToCancel = _amountToRedeemToCancel.sub(expiredQueuedRedeemAmount);
         state.onGoingQueuedRedeemAmount = uint128(onGoingQueuedRedeemAmount.sub(onGoingQueuedRedeeemAmountToCancel));
         _vault.onGoing.queuedRedeemAmount = uint128(uint256(_vault.onGoing.queuedRedeemAmount).sub(onGoingQueuedRedeeemAmountToCancel));
     }
@@ -118,20 +118,20 @@ library OptionLifecycle {
         rollToNextRoundIfNeeded(_vaultState);
         
         StructureData.UserState storage state = _vaultState.userStates[_user]; 
-        recalcState(_vault, state);  
+        recalcState(_vaultState, state);  
         uint256 redeemed = state.redeemed;
         if (state.redeemed >= _amount) {
-            state.redeemed =  uint128(redeemed.sub(amount));
-            _vaultState.totalRedeemed = uint128(uint256(_vaultState.totalRedeemed).sub(amount));
+            state.redeemed =  uint128(redeemed.sub(_amount));
+            _vaultState.totalRedeemed = uint128(uint256(_vaultState.totalRedeemed).sub(_amount));
             return;
         }
         
         //then withdraw the pending
-        uint128 pendingAmountToWithdraw = amount.sub(redeemed); 
+        uint256 pendingAmountToWithdraw = _amount.sub(redeemed); 
         require(state.pending >= pendingAmountToWithdraw, "Not enough to withdraw"); 
          _vaultState.totalRedeemed = uint128(uint256(_vaultState.totalRedeemed).sub(redeemed));
          _vaultState.totalPending = uint128(uint256(_vaultState.totalPending).sub(pendingAmountToWithdraw));
-        state.redeemedAmount = 0; 
+        state.redeemed = 0; 
         state.pending = uint128(uint256(state.pending).sub(pendingAmountToWithdraw));
         
     }
@@ -152,7 +152,7 @@ library OptionLifecycle {
        _vaultState.totalPending =  uint128(_amount.add(_vaultState.totalPending));  
     }
 
-    function rollToNextRoundIfNeeded(StructureData.VaultState storage _vaultState) { 
+    function rollToNextRoundIfNeeded(StructureData.VaultState storage _vaultState) public { 
        if (_vaultState.cutOffAt > block.timestamp) { 
            return;
        }
@@ -163,7 +163,7 @@ library OptionLifecycle {
            queuedRedeemAmount: 0,
            strike: 0,
            premiumRate : 0,
-           buyer: new address(0)
+           buyerAddress: address(0)
        });
 
        //premium not sent, simply bring it to next round
@@ -181,19 +181,19 @@ library OptionLifecycle {
     }
 
     
-    function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState) {
+    function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState) private {
         //first recalc to the state before expiry
          uint256 onGoingAmount =  _userState.onGoingAmount;
          uint256 expiredAmount =  _userState.expiredAmount; 
          uint256 expiredQueuedRedeemAmount = _userState.expiredQueuedRedeemAmount;
          uint256 onGoingQueuedRedeemAmount = _userState.onGoingQueuedRedeemAmount;
          uint256 lastUpdateRound = _userState.lastUpdateRound;
-         uint256 pendingAmount = _userState.pendingAmount;
+         uint256 pendingAmount = _userState.pending;
          uint256 redeemed = _userState.redeemed;
          while(lastUpdateRound < _vaultState.currentRound) {
              uint256 oldonGoingAmount = onGoingAmount;
             if (expiredAmount > 0) { 
-                uint256 price = _vaultState.depositPriceAfterExpiryPerRound[lastUpdateRound - 2]; 
+                uint256 price = _vaultState.depositPriceAfterExpiryPerRound[uint16(lastUpdateRound - 2)]; 
                 if (price > 0) {
                     expiredAmount = expiredAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
                     if (expiredQueuedRedeemAmount > 0) {
@@ -221,7 +221,7 @@ library OptionLifecycle {
         //then check if the expiry level is specified
         if (expiredAmount > 0) {
 
-            uint256 price = _vaultState.depositPriceAfterExpiryPerRound[lastUpdateRound -2];
+            uint256 price = _vaultState.depositPriceAfterExpiryPerRound[uint16(lastUpdateRound -2)];
             if (price > 0) { 
                 expiredAmount = expiredAmount.mul(price).div(10**ROUND_PRICE_DECIMALS);
                 if (expiredQueuedRedeemAmount > 0) {
