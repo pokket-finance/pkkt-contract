@@ -17,5 +17,5 @@ abstract contract OptionVaultStorageV1 {
 }
 
 abstract contract OptionVaultStorage is OptionVaultStorageV1 {
-
+    mapping(address=>bool) internal whitelist;
 }

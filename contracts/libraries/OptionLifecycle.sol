@@ -147,7 +147,9 @@ library OptionLifecycle {
        rollToNextRoundIfNeeded(_vaultState); 
         StructureData.UserState storage state = _vaultState.userStates[_user]; 
         recalcState(_vaultState, state);
-        //todo: check maxCapacity 
+        uint256 pending = _vaultState.totalPending;
+        uint256 currentTVL = pending.add(_vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
+        require(_amount.add(state.pending) <= currentTVL, "Exceeds capacity");
         state.pending = uint128(_amount.add(state.pending)); 
        _vaultState.totalPending =  uint128(_amount.add(_vaultState.totalPending));  
     }

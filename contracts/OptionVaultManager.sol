@@ -72,8 +72,7 @@ abstract contract OptionVaultManager is
     }  
 
    //after buying by sending back the premium, the premium and strike can no longer be changed
-   //todo: whitelist check
-    function buyOptions(uint8[] memory _vaultIds) payable external override lock{
+    function buyOptions(uint8[] memory _vaultIds) payable external override whitelisted lock {
         uint256 ethToSend = 0;
         for (uint256 i = 0; i < _vaultIds.length; i++){
             uint8 vaultId = _vaultIds[i];
@@ -142,7 +141,7 @@ abstract contract OptionVaultManager is
     }
 
     
-    function collectOptionHolderValues() external override lock { 
+    function collectOptionHolderValues() external override whitelisted lock { 
         StructureData.OptionBuyerState storage buyerState = buyerStates[msg.sender];  
         for (uint256 i = 0; i < vaultCount; i++){
              address asset = vaultDefinitions[uint8(i)].asset;
@@ -164,4 +163,9 @@ abstract contract OptionVaultManager is
          require(managerRoleAddress == msg.sender, "!manager"); 
          _;
     } 
+
+    modifier whitelisted() {
+        require(whitelist[msg.sender], "!whitelisted");
+        _;
+    }
 }
