@@ -63,6 +63,172 @@ const _abi = [
         name: "_vaultId",
         type: "uint8",
       },
+    ],
+    name: "getUserState",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint128",
+            name: "pending",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "redeemed",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "expiredAmount",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "expiredQueuedRedeemAmount",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "onGoingAmount",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "onGoingQueuedRedeemAmount",
+            type: "uint128",
+          },
+          {
+            internalType: "uint16",
+            name: "lastUpdateRound",
+            type: "uint16",
+          },
+        ],
+        internalType: "struct StructureData.UserState",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+    ],
+    name: "getVaultState",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint128",
+            name: "totalPending",
+            type: "uint128",
+          },
+          {
+            internalType: "uint128",
+            name: "totalRedeemed",
+            type: "uint128",
+          },
+          {
+            internalType: "uint32",
+            name: "cutOffAt",
+            type: "uint32",
+          },
+          {
+            internalType: "uint16",
+            name: "currentRound",
+            type: "uint16",
+          },
+          {
+            internalType: "uint128",
+            name: "maxCapacity",
+            type: "uint128",
+          },
+          {
+            components: [
+              {
+                internalType: "uint128",
+                name: "amount",
+                type: "uint128",
+              },
+              {
+                internalType: "uint128",
+                name: "queuedRedeemAmount",
+                type: "uint128",
+              },
+              {
+                internalType: "uint128",
+                name: "strike",
+                type: "uint128",
+              },
+              {
+                internalType: "uint16",
+                name: "premiumRate",
+                type: "uint16",
+              },
+              {
+                internalType: "address",
+                name: "buyerAddress",
+                type: "address",
+              },
+            ],
+            internalType: "struct StructureData.OptionState",
+            name: "onGoing",
+            type: "tuple",
+          },
+          {
+            components: [
+              {
+                internalType: "uint128",
+                name: "amount",
+                type: "uint128",
+              },
+              {
+                internalType: "uint128",
+                name: "queuedRedeemAmount",
+                type: "uint128",
+              },
+              {
+                internalType: "uint128",
+                name: "strike",
+                type: "uint128",
+              },
+              {
+                internalType: "uint16",
+                name: "premiumRate",
+                type: "uint16",
+              },
+              {
+                internalType: "address",
+                name: "buyerAddress",
+                type: "address",
+              },
+            ],
+            internalType: "struct StructureData.OptionState",
+            name: "expired",
+            type: "tuple",
+          },
+        ],
+        internalType: "struct StructureData.VaultSnapShot",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
       {
         internalType: "uint256",
         name: "_redeemAmount",

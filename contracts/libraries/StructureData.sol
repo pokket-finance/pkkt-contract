@@ -74,5 +74,13 @@ library StructureData {
         uint16 lastUpdateRound;
     }
  
- 
+    struct VaultSnapShot {
+        uint128 totalPending; 
+        uint128 totalRedeemed;
+        uint32 cutOffAt;  
+        uint16 currentRound;
+        uint128 maxCapacity;   
+        StructureData.OptionState onGoing;
+        StructureData.OptionState expired;
+    }
 }

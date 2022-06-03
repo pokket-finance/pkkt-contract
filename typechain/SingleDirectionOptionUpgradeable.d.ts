@@ -30,6 +30,8 @@ interface SingleDirectionOptionUpgradeableInterface
     "deposit(uint8,uint256)": FunctionFragment;
     "depositETH(uint8)": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
+    "getUserState(uint8)": FunctionFragment;
+    "getVaultState(uint8)": FunctionFragment;
     "initialize(address,address,(uint8,uint8,address,bool)[])": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
     "kickOffOptions((uint8,uint128)[])": FunctionFragment;
@@ -77,6 +79,14 @@ interface SingleDirectionOptionUpgradeableInterface
   encodeFunctionData(
     functionFragment: "expireOptions",
     values: [{ expiryLevel: BigNumberish; vaultId: BigNumberish }[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getUserState",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getVaultState",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
@@ -146,6 +156,14 @@ interface SingleDirectionOptionUpgradeableInterface
   decodeFunctionResult(functionFragment: "depositETH", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "expireOptions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getUserState",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getVaultState",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
@@ -277,6 +295,80 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        [
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          number
+        ] & {
+          pending: BigNumber;
+          redeemed: BigNumber;
+          expiredAmount: BigNumber;
+          expiredQueuedRedeemAmount: BigNumber;
+          onGoingAmount: BigNumber;
+          onGoingQueuedRedeemAmount: BigNumber;
+          lastUpdateRound: number;
+        }
+      ]
+    >;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        [
+          BigNumber,
+          BigNumber,
+          number,
+          number,
+          BigNumber,
+          [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          },
+          [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          }
+        ] & {
+          totalPending: BigNumber;
+          totalRedeemed: BigNumber;
+          cutOffAt: number;
+          currentRound: number;
+          maxCapacity: BigNumber;
+          onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          };
+          expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          };
+        }
+      ]
+    >;
+
     initialize(
       _owner: string,
       _manager: string,
@@ -387,6 +479,76 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  getUserState(
+    _vaultId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      number
+    ] & {
+      pending: BigNumber;
+      redeemed: BigNumber;
+      expiredAmount: BigNumber;
+      expiredQueuedRedeemAmount: BigNumber;
+      onGoingAmount: BigNumber;
+      onGoingQueuedRedeemAmount: BigNumber;
+      lastUpdateRound: number;
+    }
+  >;
+
+  getVaultState(
+    _vaultId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [
+      BigNumber,
+      BigNumber,
+      number,
+      number,
+      BigNumber,
+      [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      },
+      [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      }
+    ] & {
+      totalPending: BigNumber;
+      totalRedeemed: BigNumber;
+      cutOffAt: number;
+      currentRound: number;
+      maxCapacity: BigNumber;
+      onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      };
+      expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      };
+    }
+  >;
+
   initialize(
     _owner: string,
     _manager: string,
@@ -494,6 +656,76 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number
+      ] & {
+        pending: BigNumber;
+        redeemed: BigNumber;
+        expiredAmount: BigNumber;
+        expiredQueuedRedeemAmount: BigNumber;
+        onGoingAmount: BigNumber;
+        onGoingQueuedRedeemAmount: BigNumber;
+        lastUpdateRound: number;
+      }
+    >;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        BigNumber,
+        BigNumber,
+        number,
+        number,
+        BigNumber,
+        [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        },
+        [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        }
+      ] & {
+        totalPending: BigNumber;
+        totalRedeemed: BigNumber;
+        cutOffAt: number;
+        currentRound: number;
+        maxCapacity: BigNumber;
+        onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        };
+        expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        };
+      }
+    >;
 
     initialize(
       _owner: string,
@@ -619,6 +851,16 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     initialize(
       _owner: string,
       _manager: string,
@@ -721,6 +963,16 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     expireOptions(
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initialize(

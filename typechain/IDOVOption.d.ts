@@ -25,6 +25,8 @@ interface IDOVOptionInterface extends ethers.utils.Interface {
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
     "deposit(uint8,uint256)": FunctionFragment;
     "depositETH(uint8)": FunctionFragment;
+    "getUserState(uint8)": FunctionFragment;
+    "getVaultState(uint8)": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
@@ -42,6 +44,14 @@ interface IDOVOptionInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "getUserState",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getVaultState",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "initiateWithraw",
     values: [BigNumberish, BigNumberish]
   ): string;
@@ -56,6 +66,14 @@ interface IDOVOptionInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "depositETH", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getUserState",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getVaultState",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "initiateWithraw",
     data: BytesLike
@@ -126,6 +144,80 @@ export class IDOVOption extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        [
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          number
+        ] & {
+          pending: BigNumber;
+          redeemed: BigNumber;
+          expiredAmount: BigNumber;
+          expiredQueuedRedeemAmount: BigNumber;
+          onGoingAmount: BigNumber;
+          onGoingQueuedRedeemAmount: BigNumber;
+          lastUpdateRound: number;
+        }
+      ]
+    >;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        [
+          BigNumber,
+          BigNumber,
+          number,
+          number,
+          BigNumber,
+          [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          },
+          [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          }
+        ] & {
+          totalPending: BigNumber;
+          totalRedeemed: BigNumber;
+          cutOffAt: number;
+          currentRound: number;
+          maxCapacity: BigNumber;
+          onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          };
+          expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+            amount: BigNumber;
+            queuedRedeemAmount: BigNumber;
+            strike: BigNumber;
+            premiumRate: number;
+            buyerAddress: string;
+          };
+        }
+      ]
+    >;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -156,6 +248,76 @@ export class IDOVOption extends BaseContract {
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  getUserState(
+    _vaultId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      number
+    ] & {
+      pending: BigNumber;
+      redeemed: BigNumber;
+      expiredAmount: BigNumber;
+      expiredQueuedRedeemAmount: BigNumber;
+      onGoingAmount: BigNumber;
+      onGoingQueuedRedeemAmount: BigNumber;
+      lastUpdateRound: number;
+    }
+  >;
+
+  getVaultState(
+    _vaultId: BigNumberish,
+    overrides?: CallOverrides
+  ): Promise<
+    [
+      BigNumber,
+      BigNumber,
+      number,
+      number,
+      BigNumber,
+      [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      },
+      [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      }
+    ] & {
+      totalPending: BigNumber;
+      totalRedeemed: BigNumber;
+      cutOffAt: number;
+      currentRound: number;
+      maxCapacity: BigNumber;
+      onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      };
+      expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+        amount: BigNumber;
+        queuedRedeemAmount: BigNumber;
+        strike: BigNumber;
+        premiumRate: number;
+        buyerAddress: string;
+      };
+    }
+  >;
+
   initiateWithraw(
     _vaultId: BigNumberish,
     _redeemAmount: BigNumberish,
@@ -185,6 +347,76 @@ export class IDOVOption extends BaseContract {
       _vaultId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number
+      ] & {
+        pending: BigNumber;
+        redeemed: BigNumber;
+        expiredAmount: BigNumber;
+        expiredQueuedRedeemAmount: BigNumber;
+        onGoingAmount: BigNumber;
+        onGoingQueuedRedeemAmount: BigNumber;
+        lastUpdateRound: number;
+      }
+    >;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        BigNumber,
+        BigNumber,
+        number,
+        number,
+        BigNumber,
+        [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        },
+        [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        }
+      ] & {
+        totalPending: BigNumber;
+        totalRedeemed: BigNumber;
+        cutOffAt: number;
+        currentRound: number;
+        maxCapacity: BigNumber;
+        onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        };
+        expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+          amount: BigNumber;
+          queuedRedeemAmount: BigNumber;
+          strike: BigNumber;
+          premiumRate: number;
+          buyerAddress: string;
+        };
+      }
+    >;
 
     initiateWithraw(
       _vaultId: BigNumberish,
@@ -219,6 +451,16 @@ export class IDOVOption extends BaseContract {
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -248,6 +490,16 @@ export class IDOVOption extends BaseContract {
     depositETH(
       _vaultId: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    getUserState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getVaultState(
+      _vaultId: BigNumberish,
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     initiateWithraw(

@@ -20,6 +20,9 @@ interface IDOVOption {
     function withdraw(uint8 _vaultId, uint256 _amount) external; 
  
  
+    function getUserState(uint8 _vaultId) external view returns (StructureData.UserState memory); 
+ 
+    function getVaultState(uint8 _vaultId) external view returns(StructureData.VaultSnapShot memory); 
  
  
 }

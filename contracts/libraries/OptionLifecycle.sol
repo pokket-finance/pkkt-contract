@@ -43,10 +43,12 @@ library OptionLifecycle {
     ) external {
         
         rollToNextRoundIfNeeded(_vault);  
+        require(_vault.currentRound >1, "Nothing to redeem");
 
         StructureData.UserState storage state = _vault.userStates[_user]; 
-        recalcState(_vault, state);
-        require(_vault.currentRound >1, "Nothing to redeem");
+        _vault.userStates[_user] = recalcState(_vault, state, _vault.currentRound);
+        state = _vault.userStates[_user];
+
         
         uint256 maxInstantRedeemable = uint256(state.expiredAmount).sub(state.expiredQueuedRedeemAmount);
         uint256 maxRedeemable = maxInstantRedeemable.add(state.onGoingAmount).sub(state.onGoingQueuedRedeemAmount);
@@ -89,10 +91,11 @@ library OptionLifecycle {
     ) external {
         
         rollToNextRoundIfNeeded(_vault);  
+        require(_vault.currentRound > 1, "Nothing to cancel redeem");
 
         StructureData.UserState storage state = _vault.userStates[_user]; 
-        recalcState(_vault, state);
-        require(_vault.currentRound > 1, "Nothing to cancel redeem");
+        _vault.userStates[_user] = recalcState(_vault, state, _vault.currentRound);
+        state = _vault.userStates[_user];
         
         uint256 expiredQueuedRedeemAmount = state.expiredQueuedRedeemAmount;
         uint256 onGoingQueuedRedeemAmount = state.onGoingQueuedRedeemAmount;
@@ -117,8 +120,11 @@ library OptionLifecycle {
         
         rollToNextRoundIfNeeded(_vaultState);
         
+
         StructureData.UserState storage state = _vaultState.userStates[_user]; 
-        recalcState(_vaultState, state);  
+        _vaultState.userStates[_user] = recalcState(_vaultState, state, _vaultState.currentRound);
+        state = _vaultState.userStates[_user];
+
         uint256 redeemed = state.redeemed;
         if (state.redeemed >= _amount) {
             state.redeemed =  uint128(redeemed.sub(_amount));
@@ -144,9 +150,12 @@ library OptionLifecycle {
         uint256 _amount
     ) external { 
 
-       rollToNextRoundIfNeeded(_vaultState); 
+       rollToNextRoundIfNeeded(_vaultState);
+       
         StructureData.UserState storage state = _vaultState.userStates[_user]; 
-        recalcState(_vaultState, state);
+        _vaultState.userStates[_user] = recalcState(_vaultState, state, _vaultState.currentRound);
+        state = _vaultState.userStates[_user];
+
         uint256 pending = _vaultState.totalPending;
         uint256 currentTVL = pending.add(_vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
         require(_amount.add(state.pending) <= currentTVL, "Exceeds capacity");
@@ -183,7 +192,45 @@ library OptionLifecycle {
     }
 
     
-    function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState) private {
+    function recalcVault(StructureData.VaultState storage _vaultState) external view returns(StructureData.VaultSnapShot memory) { 
+       StructureData.VaultSnapShot memory snapShot = StructureData.VaultSnapShot({
+               totalPending: _vaultState.totalPending,
+               totalRedeemed: _vaultState.totalRedeemed,
+               cutOffAt: _vaultState.cutOffAt,
+               currentRound: _vaultState.currentRound,
+               maxCapacity: _vaultState.maxCapacity,
+               onGoing: _vaultState.onGoing,
+               expired: _vaultState.expired
+           });
+        if (_vaultState.cutOffAt > block.timestamp) {
+            return snapShot;
+        }
+
+       StructureData.OptionState memory onGoing = _vaultState.onGoing;
+       snapShot.onGoing = StructureData.OptionState({
+           amount: snapShot.totalPending,
+           queuedRedeemAmount: 0,
+           strike: 0,
+           premiumRate : 0,
+           buyerAddress: address(0)
+       });
+
+       //premium not sent, simply bring it to next round
+       if (snapShot.currentRound > 1 &&  snapShot.expired.buyerAddress == address(0)) { 
+            snapShot.onGoing.amount = uint128(uint256(snapShot.onGoing.amount).add(snapShot.expired.amount).sub(snapShot.expired.queuedRedeemAmount));
+            snapShot.totalRedeemed = uint128(uint256(snapShot.totalRedeemed).add(snapShot.expired.queuedRedeemAmount));
+            
+       }
+        snapShot.expired = onGoing;
+        snapShot.totalPending = 0; 
+        snapShot.cutOffAt = uint32(PERIOD.add(snapShot.cutOffAt)); 
+        snapShot.currentRound = snapShot.currentRound + 1; 
+        return snapShot;
+
+    } 
+
+    function recalcState(StructureData.VaultState storage _vaultState, StructureData.UserState storage _userState, uint16 _currentRound) public view 
+    returns(StructureData.UserState memory){
         //first recalc to the state before expiry
          uint256 onGoingAmount =  _userState.onGoingAmount;
          uint256 expiredAmount =  _userState.expiredAmount; 
@@ -192,7 +239,7 @@ library OptionLifecycle {
          uint256 lastUpdateRound = _userState.lastUpdateRound;
          uint256 pendingAmount = _userState.pending;
          uint256 redeemed = _userState.redeemed;
-         while(lastUpdateRound < _vaultState.currentRound) {
+         while(lastUpdateRound < _currentRound) {
              uint256 oldonGoingAmount = onGoingAmount;
             if (expiredAmount > 0) { 
                 uint256 price = _vaultState.depositPriceAfterExpiryPerRound[uint16(lastUpdateRound - 2)]; 
@@ -238,13 +285,15 @@ library OptionLifecycle {
                 }
             }
         }
-        _userState.lastUpdateRound = _vaultState.currentRound;
-        _userState.pending = uint128(pendingAmount);
-        _userState.redeemed = uint128(redeemed);
-        _userState.expiredAmount = uint128(expiredAmount);
-        _userState.expiredQueuedRedeemAmount = uint128(expiredQueuedRedeemAmount);
-        _userState.onGoingAmount = uint128(onGoingAmount);
-        _userState.onGoingQueuedRedeemAmount = uint128(onGoingQueuedRedeemAmount);
-
+        StructureData.UserState memory updatedUserState = StructureData.UserState({
+            lastUpdateRound: _currentRound,
+            pending: uint128(pendingAmount),
+            redeemed: uint128(redeemed),
+            expiredAmount: uint128(expiredAmount),
+            expiredQueuedRedeemAmount: uint128(expiredQueuedRedeemAmount),
+            onGoingAmount: uint128(onGoingAmount),
+            onGoingQueuedRedeemAmount: uint128(onGoingQueuedRedeemAmount)
+        });
+        return updatedUserState;
     } 
 }

@@ -99,5 +99,22 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             _amount); 
     }
  
+    function getUserState(uint8 _vaultId) external override view validateVaultId(_vaultId) returns (StructureData.UserState memory) {
 
+        StructureData.VaultState storage data = vaultStates[_vaultId];
+        uint16 currentRound = data.currentRound;
+        if (data.cutOffAt <= block.timestamp) {
+            currentRound = currentRound + 1;
+        }
+        StructureData.UserState storage state = data.userStates[msg.sender];
+        return OptionLifecycle.recalcState(data, state, currentRound);
+
+    }
+
+    
+    function getVaultState(uint8 _vaultId) external override view validateVaultId(_vaultId) returns(StructureData.VaultSnapShot memory) {
+        StructureData.VaultState storage data = vaultStates[_vaultId];
+        return OptionLifecycle.recalcVault(data);
+
+    }
 }
