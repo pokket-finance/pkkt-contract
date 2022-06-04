@@ -20,23 +20,24 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
-interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
+interface SingleDirectionOptionV2UpgradeableInterface
+  extends ethers.utils.Interface {
   functions: {
-    "addToWhitelist(address[])": FunctionFragment;
     "addVaults((uint8,uint8,address,address,bool)[])": FunctionFragment;
-    "buyOptions(uint8[])": FunctionFragment;
+    "bidOption(uint8,uint16)": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
+    "clearBidding()": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "deposit(uint8,uint256)": FunctionFragment;
     "depositETH(uint8)": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
     "getUserState(uint8)": FunctionFragment;
     "getVaultState(uint8)": FunctionFragment;
+    "initialize(address,address,(uint8,uint8,address,address,bool)[])": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
     "kickOffOptions((uint8,uint128)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "owner()": FunctionFragment;
-    "removeFromWhitelist(address[])": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "setManager(address)": FunctionFragment;
@@ -45,10 +46,6 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     "withdraw(uint8,uint256)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "addToWhitelist",
-    values: [string[]]
-  ): string;
   encodeFunctionData(
     functionFragment: "addVaults",
     values: [
@@ -62,12 +59,16 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "buyOptions",
-    values: [BigNumberish[]]
+    functionFragment: "bidOption",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "cancelWithdraw",
     values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "clearBidding",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "collectOptionHolderValues",
@@ -94,6 +95,20 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "initialize",
+    values: [
+      string,
+      string,
+      {
+        vaultId: BigNumberish;
+        assetAmountDecimals: BigNumberish;
+        asset: string;
+        underlying: string;
+        callOrPut: boolean;
+      }[]
+    ]
+  ): string;
+  encodeFunctionData(
     functionFragment: "initiateWithraw",
     values: [BigNumberish, BigNumberish]
   ): string;
@@ -106,10 +121,6 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "removeFromWhitelist",
-    values: [string[]]
-  ): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
     values?: undefined
@@ -138,14 +149,14 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "addToWhitelist",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "addVaults", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "buyOptions", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "bidOption", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "cancelWithdraw",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "clearBidding",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -166,6 +177,7 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     functionFragment: "getVaultState",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "initiateWithraw",
     data: BytesLike
@@ -179,10 +191,6 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "removeFromWhitelist",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
     data: BytesLike
@@ -213,7 +221,7 @@ export type OwnershipTransferredEvent = TypedEvent<
   [string, string] & { previousOwner: string; newOwner: string }
 >;
 
-export class SingleDirectionOptionStatic extends BaseContract {
+export class SingleDirectionOptionV2Upgradeable extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -254,14 +262,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: SingleDirectionOptionStaticInterface;
+  interface: SingleDirectionOptionV2UpgradeableInterface;
 
   functions: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     addVaults(
       _vaultDefinitions: {
         vaultId: BigNumberish;
@@ -273,8 +276,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -282,6 +286,10 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    clearBidding(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     collectOptionHolderValues(
@@ -378,6 +386,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
       ]
     >;
 
+    initialize(
+      _owner: string,
+      _manager: string,
+      _vaultDefinitions: {
+        vaultId: BigNumberish;
+        assetAmountDecimals: BigNumberish;
+        asset: string;
+        underlying: string;
+        callOrPut: boolean;
+      }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -392,11 +413,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
     managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -441,11 +457,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  addToWhitelist(
-    _whitelistAddresses: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   addVaults(
     _vaultDefinitions: {
       vaultId: BigNumberish;
@@ -457,8 +468,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  buyOptions(
-    _vaultIds: BigNumberish[],
+  bidOption(
+    _vaultId: BigNumberish,
+    _premiumRate: BigNumberish,
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -466,6 +478,10 @@ export class SingleDirectionOptionStatic extends BaseContract {
     _vaultId: BigNumberish,
     _redeemAmount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  clearBidding(
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   collectOptionHolderValues(
@@ -558,6 +574,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
     }
   >;
 
+  initialize(
+    _owner: string,
+    _manager: string,
+    _vaultDefinitions: {
+      vaultId: BigNumberish;
+      assetAmountDecimals: BigNumberish;
+      asset: string;
+      underlying: string;
+      callOrPut: boolean;
+    }[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   initiateWithraw(
     _vaultId: BigNumberish,
     _redeemAmount: BigNumberish,
@@ -572,11 +601,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
   managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   owner(overrides?: CallOverrides): Promise<string>;
-
-  removeFromWhitelist(
-    _delistAddresses: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   renounceOwnership(
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -621,11 +645,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     addVaults(
       _vaultDefinitions: {
         vaultId: BigNumberish;
@@ -637,8 +656,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -647,6 +667,8 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _redeemAmount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    clearBidding(overrides?: CallOverrides): Promise<void>;
 
     collectOptionHolderValues(overrides?: CallOverrides): Promise<void>;
 
@@ -736,6 +758,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
       }
     >;
 
+    initialize(
+      _owner: string,
+      _manager: string,
+      _vaultDefinitions: {
+        vaultId: BigNumberish;
+        assetAmountDecimals: BigNumberish;
+        asset: string;
+        underlying: string;
+        callOrPut: boolean;
+      }[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -750,11 +785,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
     owner(overrides?: CallOverrides): Promise<string>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
 
@@ -813,11 +843,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
   };
 
   estimateGas: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     addVaults(
       _vaultDefinitions: {
         vaultId: BigNumberish;
@@ -829,8 +854,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -838,6 +864,10 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    clearBidding(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     collectOptionHolderValues(
@@ -870,6 +900,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    initialize(
+      _owner: string,
+      _manager: string,
+      _vaultDefinitions: {
+        vaultId: BigNumberish;
+        assetAmountDecimals: BigNumberish;
+        asset: string;
+        underlying: string;
+        callOrPut: boolean;
+      }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -884,11 +927,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
     managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -926,11 +964,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
   };
 
   populateTransaction: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     addVaults(
       _vaultDefinitions: {
         vaultId: BigNumberish;
@@ -942,8 +975,9 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -951,6 +985,10 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    clearBidding(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     collectOptionHolderValues(
@@ -983,6 +1021,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    initialize(
+      _owner: string,
+      _manager: string,
+      _vaultDefinitions: {
+        vaultId: BigNumberish;
+        assetAmountDecimals: BigNumberish;
+        asset: string;
+        underlying: string;
+        callOrPut: boolean;
+      }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     initiateWithraw(
       _vaultId: BigNumberish,
       _redeemAmount: BigNumberish,
@@ -999,11 +1050,6 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
 
     renounceOwnership(
       overrides?: Overrides & { from?: string | Promise<string> }

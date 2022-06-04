@@ -2,13 +2,12 @@
 pragma solidity =0.8.4;
 import {StructureData} from "../libraries/StructureData.sol";  
 
-interface IOptionVaultManager {
+interface IOptionVaultManagerV2 {
 
-    function addToWhitelist(address[] memory _whitelistAddresses) external;     
-    function removeFromWhitelist(address[] memory _delistAddresses) external;
     function kickOffOptions(StructureData.KickOffOptionParameters[] memory _kickoffs) external;
     function expireOptions(StructureData.ExpiredOptionParameters[] memory _expired) external;
     function collectOptionHolderValues() external;
     function sellOptions(StructureData.OnGoingOptionParameters[] memory _cutoff) external;
-    function buyOptions(uint8[] memory _vaultIds) payable external;
+    function bidOption(uint8 _vaultId, uint16 _premiumRate) external payable;
+    function clearBidding() external payable;
 }

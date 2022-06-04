@@ -5,33 +5,32 @@
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
 import type {
-  OptionVaultManager,
-  OptionVaultManagerInterface,
-} from "../OptionVaultManager";
+  OptionVaultManagerV2,
+  OptionVaultManagerV2Interface,
+} from "../OptionVaultManagerV2";
 
 const _abi = [
   {
     inputs: [
       {
-        internalType: "address[]",
-        name: "_whitelistAddresses",
-        type: "address[]",
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        internalType: "uint16",
+        name: "_premiumRate",
+        type: "uint16",
       },
     ],
-    name: "addToWhitelist",
+    name: "bidOption",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint8[]",
-        name: "_vaultIds",
-        type: "uint8[]",
-      },
-    ],
-    name: "buyOptions",
+    inputs: [],
+    name: "clearBidding",
     outputs: [],
     stateMutability: "payable",
     type: "function",
@@ -109,19 +108,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "address[]",
-        name: "_delistAddresses",
-        type: "address[]",
-      },
-    ],
-    name: "removeFromWhitelist",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         components: [
           {
             internalType: "uint128",
@@ -190,15 +176,19 @@ const _abi = [
   },
 ];
 
-export class OptionVaultManager__factory {
+export class OptionVaultManagerV2__factory {
   static readonly abi = _abi;
-  static createInterface(): OptionVaultManagerInterface {
-    return new utils.Interface(_abi) as OptionVaultManagerInterface;
+  static createInterface(): OptionVaultManagerV2Interface {
+    return new utils.Interface(_abi) as OptionVaultManagerV2Interface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): OptionVaultManager {
-    return new Contract(address, _abi, signerOrProvider) as OptionVaultManager;
+  ): OptionVaultManagerV2 {
+    return new Contract(
+      address,
+      _abi,
+      signerOrProvider
+    ) as OptionVaultManagerV2;
   }
 }

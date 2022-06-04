@@ -43,6 +43,20 @@ abstract contract OptionVaultManager is
         vaultCount = vaultCount_;
     }
 
+    
+    function addToWhitelist(address[] memory _whitelistAddresses) external override managerOnly{
+        for(uint256 i = 0; i < _whitelistAddresses.length; i++) {
+            whitelist[_whitelistAddresses[i]] = true;
+        }
+
+    }
+    function removeFromWhitelist(address[] memory _delistAddresses) external override managerOnly {
+
+        for(uint256 i = 0; i < _delistAddresses.length; i++) {
+            whitelist[_delistAddresses[i]] = false;
+        }
+    }
+
    //only needed for the initial kick off
     function kickOffOptions(StructureData.KickOffOptionParameters[] memory _kickoffs) external override managerOnly {
          for (uint256 i = 0; i < _kickoffs.length; i++){

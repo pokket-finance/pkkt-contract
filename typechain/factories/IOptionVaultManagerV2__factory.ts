@@ -5,33 +5,32 @@
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
 import type {
-  OptionVaultManager,
-  OptionVaultManagerInterface,
-} from "../OptionVaultManager";
+  IOptionVaultManagerV2,
+  IOptionVaultManagerV2Interface,
+} from "../IOptionVaultManagerV2";
 
 const _abi = [
   {
     inputs: [
       {
-        internalType: "address[]",
-        name: "_whitelistAddresses",
-        type: "address[]",
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        internalType: "uint16",
+        name: "_premiumRate",
+        type: "uint16",
       },
     ],
-    name: "addToWhitelist",
+    name: "bidOption",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "uint8[]",
-        name: "_vaultIds",
-        type: "uint8[]",
-      },
-    ],
-    name: "buyOptions",
+    inputs: [],
+    name: "clearBidding",
     outputs: [],
     stateMutability: "payable",
     type: "function",
@@ -59,7 +58,7 @@ const _abi = [
           },
         ],
         internalType: "struct StructureData.ExpiredOptionParameters[]",
-        name: "_expiryParameters",
+        name: "_expired",
         type: "tuple[]",
       },
     ],
@@ -94,32 +93,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "managerRoleAddress",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address[]",
-        name: "_delistAddresses",
-        type: "address[]",
-      },
-    ],
-    name: "removeFromWhitelist",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [
       {
         components: [
@@ -140,7 +113,7 @@ const _abi = [
           },
         ],
         internalType: "struct StructureData.OnGoingOptionParameters[]",
-        name: "_ongoingParameters",
+        name: "_cutoff",
         type: "tuple[]",
       },
     ],
@@ -149,56 +122,21 @@ const _abi = [
     stateMutability: "nonpayable",
     type: "function",
   },
-  {
-    inputs: [
-      {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
-      },
-    ],
-    name: "vaultDefinitions",
-    outputs: [
-      {
-        internalType: "uint8",
-        name: "vaultId",
-        type: "uint8",
-      },
-      {
-        internalType: "uint8",
-        name: "assetAmountDecimals",
-        type: "uint8",
-      },
-      {
-        internalType: "address",
-        name: "asset",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "underlying",
-        type: "address",
-      },
-      {
-        internalType: "bool",
-        name: "callOrPut",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
 ];
 
-export class OptionVaultManager__factory {
+export class IOptionVaultManagerV2__factory {
   static readonly abi = _abi;
-  static createInterface(): OptionVaultManagerInterface {
-    return new utils.Interface(_abi) as OptionVaultManagerInterface;
+  static createInterface(): IOptionVaultManagerV2Interface {
+    return new utils.Interface(_abi) as IOptionVaultManagerV2Interface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): OptionVaultManager {
-    return new Contract(address, _abi, signerOrProvider) as OptionVaultManager;
+  ): IOptionVaultManagerV2 {
+    return new Contract(
+      address,
+      _abi,
+      signerOrProvider
+    ) as IOptionVaultManagerV2;
   }
 }

@@ -22,6 +22,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface SingleDirectionOptionInterface extends ethers.utils.Interface {
   functions: {
+    "addToWhitelist(address[])": FunctionFragment;
     "buyOptions(uint8[])": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
@@ -33,11 +34,16 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     "initiateWithraw(uint8,uint256)": FunctionFragment;
     "kickOffOptions((uint8,uint128)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
+    "removeFromWhitelist(address[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "addToWhitelist",
+    values: [string[]]
+  ): string;
   encodeFunctionData(
     functionFragment: "buyOptions",
     values: [BigNumberish[]]
@@ -83,6 +89,10 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "removeFromWhitelist",
+    values: [string[]]
+  ): string;
+  encodeFunctionData(
     functionFragment: "sellOptions",
     values: [
       {
@@ -101,6 +111,10 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "addToWhitelist",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "buyOptions", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "cancelWithdraw",
@@ -134,6 +148,10 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "managerRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "removeFromWhitelist",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -193,6 +211,11 @@ export class SingleDirectionOption extends BaseContract {
   interface: SingleDirectionOptionInterface;
 
   functions: {
+    addToWhitelist(
+      _whitelistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     buyOptions(
       _vaultIds: BigNumberish[],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -311,6 +334,11 @@ export class SingleDirectionOption extends BaseContract {
 
     managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
 
+    removeFromWhitelist(
+      _delistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     sellOptions(
       _ongoingParameters: {
         strike: BigNumberish;
@@ -339,6 +367,11 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
+
+  addToWhitelist(
+    _whitelistAddresses: string[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   buyOptions(
     _vaultIds: BigNumberish[],
@@ -454,6 +487,11 @@ export class SingleDirectionOption extends BaseContract {
 
   managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
+  removeFromWhitelist(
+    _delistAddresses: string[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   sellOptions(
     _ongoingParameters: {
       strike: BigNumberish;
@@ -483,6 +521,11 @@ export class SingleDirectionOption extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    addToWhitelist(
+      _whitelistAddresses: string[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     buyOptions(
       _vaultIds: BigNumberish[],
       overrides?: CallOverrides
@@ -595,6 +638,11 @@ export class SingleDirectionOption extends BaseContract {
 
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
+    removeFromWhitelist(
+      _delistAddresses: string[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     sellOptions(
       _ongoingParameters: {
         strike: BigNumberish;
@@ -627,6 +675,11 @@ export class SingleDirectionOption extends BaseContract {
   filters: {};
 
   estimateGas: {
+    addToWhitelist(
+      _whitelistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     buyOptions(
       _vaultIds: BigNumberish[],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -681,6 +734,11 @@ export class SingleDirectionOption extends BaseContract {
 
     managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
+    removeFromWhitelist(
+      _delistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     sellOptions(
       _ongoingParameters: {
         strike: BigNumberish;
@@ -703,6 +761,11 @@ export class SingleDirectionOption extends BaseContract {
   };
 
   populateTransaction: {
+    addToWhitelist(
+      _whitelistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     buyOptions(
       _vaultIds: BigNumberish[],
       overrides?: PayableOverrides & { from?: string | Promise<string> }
@@ -757,6 +820,11 @@ export class SingleDirectionOption extends BaseContract {
 
     managerRoleAddress(
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    removeFromWhitelist(
+      _delistAddresses: string[],
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     sellOptions(

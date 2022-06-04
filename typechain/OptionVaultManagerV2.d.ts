@@ -20,26 +20,25 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
-interface OptionVaultManagerInterface extends ethers.utils.Interface {
+interface OptionVaultManagerV2Interface extends ethers.utils.Interface {
   functions: {
-    "addToWhitelist(address[])": FunctionFragment;
-    "buyOptions(uint8[])": FunctionFragment;
+    "bidOption(uint8,uint16)": FunctionFragment;
+    "clearBidding()": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
     "kickOffOptions((uint8,uint128)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
-    "removeFromWhitelist(address[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "addToWhitelist",
-    values: [string[]]
+    functionFragment: "bidOption",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "buyOptions",
-    values: [BigNumberish[]]
+    functionFragment: "clearBidding",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "collectOptionHolderValues",
@@ -58,10 +57,6 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "removeFromWhitelist",
-    values: [string[]]
-  ): string;
-  encodeFunctionData(
     functionFragment: "sellOptions",
     values: [
       {
@@ -76,11 +71,11 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
 
+  decodeFunctionResult(functionFragment: "bidOption", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "addToWhitelist",
+    functionFragment: "clearBidding",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "buyOptions", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "collectOptionHolderValues",
     data: BytesLike
@@ -98,10 +93,6 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "removeFromWhitelist",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "sellOptions",
     data: BytesLike
   ): Result;
@@ -113,7 +104,7 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   events: {};
 }
 
-export class OptionVaultManager extends BaseContract {
+export class OptionVaultManagerV2 extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -154,16 +145,16 @@ export class OptionVaultManager extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: OptionVaultManagerInterface;
+  interface: OptionVaultManagerV2Interface;
 
   functions: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    clearBidding(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -182,11 +173,6 @@ export class OptionVaultManager extends BaseContract {
     ): Promise<ContractTransaction>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     sellOptions(
       _ongoingParameters: {
@@ -211,13 +197,13 @@ export class OptionVaultManager extends BaseContract {
     >;
   };
 
-  addToWhitelist(
-    _whitelistAddresses: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
+  bidOption(
+    _vaultId: BigNumberish,
+    _premiumRate: BigNumberish,
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  buyOptions(
-    _vaultIds: BigNumberish[],
+  clearBidding(
     overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -236,11 +222,6 @@ export class OptionVaultManager extends BaseContract {
   ): Promise<ContractTransaction>;
 
   managerRoleAddress(overrides?: CallOverrides): Promise<string>;
-
-  removeFromWhitelist(
-    _delistAddresses: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   sellOptions(
     _ongoingParameters: {
@@ -265,15 +246,13 @@ export class OptionVaultManager extends BaseContract {
   >;
 
   callStatic: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
-      overrides?: CallOverrides
-    ): Promise<void>;
+    clearBidding(overrides?: CallOverrides): Promise<void>;
 
     collectOptionHolderValues(overrides?: CallOverrides): Promise<void>;
 
@@ -288,11 +267,6 @@ export class OptionVaultManager extends BaseContract {
     ): Promise<void>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     sellOptions(
       _ongoingParameters: {
@@ -320,13 +294,13 @@ export class OptionVaultManager extends BaseContract {
   filters: {};
 
   estimateGas: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    clearBidding(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -346,11 +320,6 @@ export class OptionVaultManager extends BaseContract {
 
     managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     sellOptions(
       _ongoingParameters: {
         strike: BigNumberish;
@@ -367,13 +336,13 @@ export class OptionVaultManager extends BaseContract {
   };
 
   populateTransaction: {
-    addToWhitelist(
-      _whitelistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
+    bidOption(
+      _vaultId: BigNumberish,
+      _premiumRate: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    buyOptions(
-      _vaultIds: BigNumberish[],
+    clearBidding(
       overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -393,11 +362,6 @@ export class OptionVaultManager extends BaseContract {
 
     managerRoleAddress(
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    removeFromWhitelist(
-      _delistAddresses: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     sellOptions(

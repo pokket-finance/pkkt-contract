@@ -13,6 +13,19 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "address[]",
+        name: "_whitelistAddresses",
+        type: "address[]",
+      },
+    ],
+    name: "addToWhitelist",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "uint8[]",
         name: "_vaultIds",
         type: "uint8[]",
@@ -76,6 +89,19 @@ const _abi = [
       },
     ],
     name: "kickOffOptions",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address[]",
+        name: "_delistAddresses",
+        type: "address[]",
+      },
+    ],
+    name: "removeFromWhitelist",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",

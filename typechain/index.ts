@@ -18,6 +18,10 @@ export type { SingleDirectionOptionStatic } from "./SingleDirectionOptionStatic"
 export type { SingleDirectionOptionUpgradeable } from "./SingleDirectionOptionUpgradeable";
 export type { OptionVaultStorage } from "./OptionVaultStorage";
 export type { OptionVaultStorageV1 } from "./OptionVaultStorageV1";
+export type { IOptionVaultManagerV2 } from "./IOptionVaultManagerV2";
+export type { OptionVaultManagerV2 } from "./OptionVaultManagerV2";
+export type { SingleDirectionOptionV2 } from "./SingleDirectionOptionV2";
+export type { SingleDirectionOptionV2Upgradeable } from "./SingleDirectionOptionV2Upgradeable";
 export type { AdminUpgradeabilityProxy } from "./AdminUpgradeabilityProxy";
 export type { Proxy } from "./Proxy";
 export type { UpgradeabilityProxy } from "./UpgradeabilityProxy";
@@ -39,6 +43,10 @@ export { SingleDirectionOptionStatic__factory } from "./factories/SingleDirectio
 export { SingleDirectionOptionUpgradeable__factory } from "./factories/SingleDirectionOptionUpgradeable__factory";
 export { OptionVaultStorage__factory } from "./factories/OptionVaultStorage__factory";
 export { OptionVaultStorageV1__factory } from "./factories/OptionVaultStorageV1__factory";
+export { IOptionVaultManagerV2__factory } from "./factories/IOptionVaultManagerV2__factory";
+export { OptionVaultManagerV2__factory } from "./factories/OptionVaultManagerV2__factory";
+export { SingleDirectionOptionV2__factory } from "./factories/SingleDirectionOptionV2__factory";
+export { SingleDirectionOptionV2Upgradeable__factory } from "./factories/SingleDirectionOptionV2Upgradeable__factory";
 export { AdminUpgradeabilityProxy__factory } from "./factories/AdminUpgradeabilityProxy__factory";
 export { Proxy__factory } from "./factories/Proxy__factory";
 export { UpgradeabilityProxy__factory } from "./factories/UpgradeabilityProxy__factory";
