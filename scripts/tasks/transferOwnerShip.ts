@@ -35,21 +35,21 @@ const main = async ({}, {
       };
 
     var result = await promptHelper(schema); 
-    let hodlBoosterOptionContract;
+    let singleDirectionOptionContract;
     if (!process.env.USE_PROXY) {
-      const hodlBoosterOption = await deployments.get("HodlBoosterOption");  
-      hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address); 
+      const singleDirectionOption = await deployments.get("SingleDirectionOption");  
+      singleDirectionOptionContract = await ethers.getContractAt("SingleDirectionOptionStatic", singleDirectionOption.address); 
     }
     else{
       const optionLifecycle = await deployments.get("OptionLifecycle");
-      var hodlBoosterOptionContractFactory = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+      var singleDirectionOptionContractFactory = await ethers.getContractFactory("SingleDirectionOptionUpgradeable", {
         libraries: {
           OptionLifecycle: optionLifecycle.address,
         }
       });
-      hodlBoosterOptionContract = await hodlBoosterOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
+      singleDirectionOptionContract = await singleDirectionOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
     } 
-    const oldOwner = await hodlBoosterOptionContract.owner(); 
+    const oldOwner = await singleDirectionOptionContract.owner(); 
     if (oldOwner == result.currentOwnerPrivateKey) {
       console.log("owner is the same, no need to change");
       return;
@@ -57,17 +57,17 @@ const main = async ({}, {
     
     var ownerWallet = new ethers.Wallet(result.currentOwnerPrivateKey, ethers.provider); 
     //we need to get the owner private key in this case for ownership transfer 
-    await hodlBoosterOptionContract.connect(ownerWallet).transferOwnership(result.newOwnerAddress);
+    await singleDirectionOptionContract.connect(ownerWallet).transferOwnership(result.newOwnerAddress);
     var fileStorage = getFileStorage();
     await fileStorage.writeValue("ownerAddress", result.newOwnerAddress);
     
-    console.log(`Transfer ownership of HodlBoosterOption on ${network.name} to ${result.newOwnerAddress}`);    
+    console.log(`Transfer ownership of SingleDirectionOption on ${network.name} to ${result.newOwnerAddress}`);    
     var emailer = await getEmailer();
     const emailContent = { 
       to: emailer.emailTos, 
       cc: emailer.emailCcs,
-      subject:`Transfer ownership of HodlBoosterOption on ${network.name}`,
-      content: `<h3>Transfer ownership of HodlBoosterOption on ${network.name} to <b>${result.newOwnerAddress}</b></h3>Please keep make sure that account ${result.newOwnerAddress} is fully secured.`,
+      subject:`Transfer ownership of SingleDirectionOption on ${network.name}`,
+      content: `<h3>Transfer ownership of SingleDirectionOption on ${network.name} to <b>${result.newOwnerAddress}</b></h3>Please keep make sure that account ${result.newOwnerAddress} is fully secured.`,
       isHtml: true
   }
   

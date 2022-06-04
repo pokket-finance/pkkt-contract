@@ -95,10 +95,11 @@ export class OptionVaultStorageV1 extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;
@@ -110,10 +111,11 @@ export class OptionVaultStorageV1 extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [number, number, string, boolean] & {
+    [number, number, string, string, boolean] & {
       vaultId: number;
       assetAmountDecimals: number;
       asset: string;
+      underlying: string;
       callOrPut: boolean;
     }
   >;
@@ -125,10 +127,11 @@ export class OptionVaultStorageV1 extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;

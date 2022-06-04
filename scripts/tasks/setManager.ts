@@ -14,7 +14,7 @@ const main = async ({ forcesettlerkey }, {
     const schema = {
       properties: {
         changeSettlerOnChain: {
-          name:'Change Settler on Chain?',
+          name:'Change Manager on Chain?',
           pattern:/^Y|y|N|n$/,
           message:'Do you want to change the settler on chain?',
           require:true,
@@ -44,62 +44,48 @@ const main = async ({ forcesettlerkey }, {
     }
     const schema3 = {
       properties: { 
-        settlerAddress: {
-          name:'Settler Address',
+        managerAddress: {
+          name:'Manager Address',
           pattern: /^0x[0-9A-Fa-f]{40}$/,
           message: 'Must be a hex starts with 0x',
           required: true
-        } ,
-        settlerPrivateKey: {
-          name: 'Settler Account\'s Private Key',
-          format: ' /^[0-9A-Fa-f]{64}$/', 
-          required: true,
-          hidden: true,
-          message: 'Must be a 64 length hex without 0x as prefix', 
-          replace: '*',
-          conform: function (value) {
-            return true;
-          }
         }
       }
     };
   
-    var storage = getStorage();
     var fileStorage = getFileStorage();  
     
     result = await promptHelper(schema3);    
     if (ownerWallet) {
-      let hodlBoosterOptionContract;
+      let singleDirectionOptionContract;
       if (!process.env.USE_PROXY) {
-        const hodlBoosterOption = await deployments.get("HodlBoosterOption");  
-        hodlBoosterOptionContract = await ethers.getContractAt("HodlBoosterOption", hodlBoosterOption.address); 
+        const singleDirectionOption = await deployments.get("SingleDirectionOption");  
+        singleDirectionOptionContract = await ethers.getContractAt("SingleDirectionOptionStatic", singleDirectionOption.address); 
       }
       else{
         const optionLifecycle = await deployments.get("OptionLifecycle");
-        var hodlBoosterOptionContractFactory = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+        var singleDirectionOptionContractFactory = await ethers.getContractFactory("SingleDirectionOptionUpgradeable", {
           libraries: {
             OptionLifecycle: optionLifecycle.address,
           }
         });
-        hodlBoosterOptionContract = await hodlBoosterOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
-      }
-      await hodlBoosterOptionContract.connect(ownerWallet).setSettler(result.settlerAddress);
-      console.log( `Change settler of HodlBoosterOption on ${network.name} to ${result.settlerAddress}`)
+        singleDirectionOptionContract = await singleDirectionOptionContractFactory.attach(process.env.PROXY_ADDRESS!);
+      } 
+      await singleDirectionOptionContract.connect(ownerWallet).setSettler(result.managerAddress);
+      console.log( `Change manager of SingleDirectionOption on ${network.name} to ${result.managerAddress}`)
       var emailer = await getEmailer();
       const emailContent = { 
         to: emailer.emailTos, 
         cc: emailer.emailCcs,
-        subject:`Change settler of HodlBoosterOption on ${network.name}`,
-        content: `<h3>Change settler of HodlBoosterOption on ${network.name} to <b>${result.settlerAddress}</b></h3>Please keep make sure that account ${result.newOwnerAddress} is fully secured.`,
+        subject:`Change manager of SingleDirectionOption on ${network.name}`,
+        content: `<h3>Change manager of SingleDirectionOption on ${network.name} to <b>${result.managerAddress}</b>`,
         isHtml: true
-      }  
+      }
+      
+       await emailer.emailSender.sendEmail(emailContent);
     }
 
-    await fileStorage.writeValue("settlerAddress", result.settlerAddress); 
-    if (result.settlerPrivateKey) { 
-      console.log(`Settler private key written to secured storage`); 
-      await storage.writeValue("SETTLER_PRIVATE_KEY", result.settlerPrivateKey);
-    }
+    await fileStorage.writeValue("managerAddress", result.managerAddress);
   
   }; 
    

@@ -16,8 +16,7 @@ import upgradeTo from "./scripts/tasks/upgradeTo";
 import sendUserCoins from "./scripts/tasks/sendUserCoins";
 import transferOwnerShip from './scripts/tasks/transferOwnerShip'; 
 import prepareAccounts from './scripts/tasks/prepareAccounts';
-import initiateSettlement from './scripts/tasks/initiateSettlement';
-import setSettler from './scripts/tasks/setSettler';
+import setManager from './scripts/tasks/setManager';
 import configureEmail from './scripts/tasks/configureEmail';
 
 dotenv.config();
@@ -138,11 +137,8 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-/*task("prepare-accounts", "Prepare accounts", prepareAccounts)
-.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
+task("prepare-accounts", "Prepare accounts", prepareAccounts);
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
-
-task("new-epoch", "Initiate a new epoch", initiateSettlement);
  
 task("propose-upgrade", "Proposes the new implementation for upgrade to gnosis safe for approval", proposeUpgrade)
   .addParam("proxyname", "name of proxy in ./deployments")
@@ -158,5 +154,5 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
 task("send-coins", "Send test coins to specific address", sendUserCoins)
 .addParam("target", "target address");
 
-task("set-settler", "Reset the settler", setSettler);
-task("configure-email", "Configure the email server", configureEmail);*/
+task("set-manager", "Reset the manager", setManager);
+task("configure-email", "Configure the email server", configureEmail);

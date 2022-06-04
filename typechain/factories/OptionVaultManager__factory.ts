@@ -149,6 +149,11 @@ const _abi = [
         type: "address",
       },
       {
+        internalType: "address",
+        name: "underlying",
+        type: "address",
+      },
+      {
         internalType: "bool",
         name: "callOrPut",
         type: "bool",

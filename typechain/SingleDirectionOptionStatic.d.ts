@@ -22,7 +22,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
   functions: {
-    "addVaults((uint8,uint8,address,bool)[])": FunctionFragment;
+    "addVaults((uint8,uint8,address,address,bool)[])": FunctionFragment;
     "buyOptions(uint8[])": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
@@ -50,6 +50,7 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
         vaultId: BigNumberish;
         assetAmountDecimals: BigNumberish;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }[]
     ]
@@ -243,6 +244,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
         vaultId: BigNumberish;
         assetAmountDecimals: BigNumberish;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -395,10 +397,11 @@ export class SingleDirectionOptionStatic extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;
@@ -415,6 +418,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
       vaultId: BigNumberish;
       assetAmountDecimals: BigNumberish;
       asset: string;
+      underlying: string;
       callOrPut: boolean;
     }[],
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -563,10 +567,11 @@ export class SingleDirectionOptionStatic extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [number, number, string, boolean] & {
+    [number, number, string, string, boolean] & {
       vaultId: number;
       assetAmountDecimals: number;
       asset: string;
+      underlying: string;
       callOrPut: boolean;
     }
   >;
@@ -583,6 +588,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
         vaultId: BigNumberish;
         assetAmountDecimals: BigNumberish;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }[],
       overrides?: CallOverrides
@@ -724,10 +730,11 @@ export class SingleDirectionOptionStatic extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;
@@ -763,6 +770,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
         vaultId: BigNumberish;
         assetAmountDecimals: BigNumberish;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -865,6 +873,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
         vaultId: BigNumberish;
         assetAmountDecimals: BigNumberish;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }

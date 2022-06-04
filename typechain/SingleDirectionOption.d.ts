@@ -324,10 +324,11 @@ export class SingleDirectionOption extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;
@@ -466,10 +467,11 @@ export class SingleDirectionOption extends BaseContract {
     arg0: BigNumberish,
     overrides?: CallOverrides
   ): Promise<
-    [number, number, string, boolean] & {
+    [number, number, string, string, boolean] & {
       vaultId: number;
       assetAmountDecimals: number;
       asset: string;
+      underlying: string;
       callOrPut: boolean;
     }
   >;
@@ -606,10 +608,11 @@ export class SingleDirectionOption extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [number, number, string, boolean] & {
+      [number, number, string, string, boolean] & {
         vaultId: number;
         assetAmountDecimals: number;
         asset: string;
+        underlying: string;
         callOrPut: boolean;
       }
     >;

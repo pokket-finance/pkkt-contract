@@ -8,7 +8,7 @@ import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
 import {deployUpgradeableContract, postDeployment} from '../helper/deployHelper';
-import { HodlBoosterOptionUpgradeable } from "../../typechain";
+import { SingleDirectionOptionUpgradeable } from "../../typechain";
 import { getFileStorage } from "../helper/storageHelper";
 
 dotenv.config();   
@@ -19,11 +19,11 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, settler, admin } = await getNamedAccounts();    
+  var { deployer, owner, manager, admin } = await getNamedAccounts();    
     
   if (!network.config.chainId || 
     (network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET)) {
-    console.log('Not bsc mainnet/testnet, skip deploying BSC HodlBooster');
+    console.log('Not bsc mainnet/testnet, skip deploying BSC SingleDirectionOption');
     return;
   }   
   const emailer = await getEmailer();
@@ -86,48 +86,66 @@ const main = async ({
     from: deployer, 
   });
   
-  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);   
-  const HODLBOOSTER_ARGS = [owner, settler, [
+  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);  
+
+
+  const SINGLEDIRECTION_ARGS = [owner, manager, [
     { 
-      depositAssetAmountDecimals: ETH_DECIMALS,
-      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
-      depositAsset: ethAddress,
-      counterPartyAsset: busdAddress,
-      callOptionId: 0,
-      putOptionId: 0
+      assetAmountDecimals: ETH_DECIMALS,
+      asset: ethAddress,
+      underlying: ethAddress,
+      vaultId: 0,
+      callOrPut: true
     
     },
     { 
-      depositAssetAmountDecimals: WBTC_DECIMALS,
-      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
-      depositAsset: wbtcAddress,
-      counterPartyAsset: busdAddress,
-      callOptionId: 0,
-      putOptionId: 0
+      assetAmountDecimals: WBTC_DECIMALS,
+      asset: wbtcAddress,
+      underlying: wbtcAddress,
+      vaultId: 0,
+      callOrPut: true
+    },
+    { 
+      assetAmountDecimals: CMI_DECIMALS,
+      asset: cmiAddress,
+      underlying: cmiAddress,
+      vaultId: 0,
+      callOrPut: true
+    },
+    { 
+      assetAmountDecimals: BUSD_DECIMALS,
+      asset: busdAddress,
+      underlying: ethAddress,
+      vaultId: 0,
+      callOrPut: false
     
     },
     { 
-      depositAssetAmountDecimals: CMI_DECIMALS,
-      counterPartyAssetAmountDecimals: BUSD_DECIMALS,
-      depositAsset: cmiAddress,
-      counterPartyAsset: busdAddress,
-      callOptionId: 0,
-      putOptionId: 0
-    
+      assetAmountDecimals: BUSD_DECIMALS,
+      asset: busdAddress,
+      underlying: wbtcAddress,
+      vaultId: 0,
+      callOrPut: false
+    },
+    { 
+      assetAmountDecimals: BUSD_DECIMALS,
+      asset: busdAddress,
+      underlying: cmiAddress,
+      vaultId: 0,
+      callOrPut: false
     }
   ]];
-
-  const optionVaultLogic = await deploy("HodlBoosterOption", {
+  const optionVaultLogic = await deploy("SingleDirectionOption", {
     from: deployer, 
-    contract: "HodlBoosterOptionUpgradeable",
+    contract: "SingleDirectionOptionUpgradeable",
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
 
-  await postDeployment(optionVaultLogic, run, "HodlBoosterOption", network.name);    
+  await postDeployment(optionVaultLogic, run, "SingleDirectionOption", network.name);    
   
-  const optionVault = await ethers.getContractFactory("HodlBoosterOptionUpgradeable", {
+  const optionVault = await ethers.getContractFactory("SingleDirectionOptionUpgradeable", {
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     },
@@ -159,32 +177,27 @@ const main = async ({
   const useNewAdmin = admin && admin != deployer;
   const proxy = 
   useNewAdmin ?
-  await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS, admin) as HodlBoosterOptionUpgradeable:
-  await deployUpgradeableContract(optionVault as ContractFactory, HODLBOOSTER_ARGS) as HodlBoosterOptionUpgradeable;
+  await deployUpgradeableContract(optionVault as ContractFactory, SINGLEDIRECTION_ARGS, admin) as SingleDirectionOptionUpgradeable:
+  await deployUpgradeableContract(optionVault as ContractFactory, SINGLEDIRECTION_ARGS) as SingleDirectionOptionUpgradeable;
   
   if (useNewAdmin) {
-    console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
+    console.log(`Deployed SingleDirectionOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
   }
   else {
-    console.log(`Deployed HodlBoosterOption proxy on ${network.name} to ${proxy.address}`);
+    console.log(`Deployed SingleDirectionOption proxy on ${network.name} to ${proxy.address}`);
   }
 
   if (process.env.FROM_SECURE_STORAGE) { 
     var storage = await getFileStorage();
-    await storage.writeValue("ownerAddress", "");
     await storage.writeValue("deployerPrivateKey", "");
-    await storage.writeValue("adminAddress", "");
-    await storage.writeValue("settlerPrivateKey", "");
   }
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
-    subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` + 
-    (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : "") + 
-    `<ol><li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li>`+
-    `<li>Please set the value of VAULT_ADDRESS to ${proxy.address} in .env at backend</li></ol>`,
+    subject:`SingleDirectionOption deployed on ${network.name}`,
+    content: `<h2>Deployed SingleDirectionOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Manager Address: ${manager}</h3>` + 
+    (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : ""),
     isHtml: true
 }
 
@@ -192,7 +205,7 @@ const main = async ({
   
   console.log(`Deployment notification email sent`);    
 };
-main.tags = ["BSCHodlBoosterOption"];
+main.tags = ["BSCSingleDirectionOption"];
 
 export default main;
 

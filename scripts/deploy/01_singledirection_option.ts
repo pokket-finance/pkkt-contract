@@ -2,7 +2,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER} from "../../constants/constants"; 
 import { BigNumber, BigNumberish, Contract } from "ethers";
 import { ethers } from "hardhat";
-import { HodlBoosterOptionStatic} from "../../typechain";
 import {postDeployment} from "../helper/deployHelper";
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
@@ -15,9 +14,9 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, settler } = await getNamedAccounts();   
+  var { deployer, owner, manager } = await getNamedAccounts();   
   if (network.config.chainId && network.config.chainId != CHAINID.ETH_MAINNET && network.config.chainId != CHAINID.ETH_ROPSTEN) {
-    console.log('Not eth-mainnet/ropsten/hardhat, skip deploying HodlBooster');
+    console.log('Not eth-mainnet/ropsten/hardhat, skip deploying SingleDirectionOption');
     return;
   } 
   const emailer = await getEmailer();
@@ -62,48 +61,65 @@ const main = async ({
   const optionLifecycle = await deploy("OptionLifecycle", {
     from: deployer, 
   });
-  
+  /*change
+    struct VaultDefinition {
+        uint8 vaultId; 
+        uint8 assetAmountDecimals; 
+        address asset;
+        bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral; 
+    } */
   
   await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);    
 
-  const HODLBOOSTER_ARGS = [owner, settler, [
+  const SINGLEDIRECTION_ARGS = [owner, manager, [
     { 
-      depositAssetAmountDecimals: ETH_DECIMALS,
-      counterPartyAssetAmountDecimals: USDC_DECIMALS,
-      depositAsset: NULL_ADDRESS,
-      counterPartyAsset: usdcAddress,
-      callOptionId: 0,
-      putOptionId: 0
+      assetAmountDecimals: ETH_DECIMALS,
+      asset: NULL_ADDRESS,
+      underlying: NULL_ADDRESS,
+      vaultId: 0,
+      callOrPut: true
     
     },
     { 
-      depositAssetAmountDecimals: WBTC_DECIMALS,
-      counterPartyAssetAmountDecimals: USDC_DECIMALS,
-      depositAsset: wbtcAddress,
-      counterPartyAsset: usdcAddress,
-      callOptionId: 0,
-      putOptionId: 0
+      assetAmountDecimals: WBTC_DECIMALS,
+      asset: wbtcAddress,
+      underlying: wbtcAddress,
+      vaultId: 0,
+      callOrPut: true
+    },
+    { 
+      assetAmountDecimals: USDC_DECIMALS,
+      asset: usdcAddress,
+      underlying: NULL_ADDRESS,
+      vaultId: 0,
+      callOrPut: false
     
+    },
+    { 
+      assetAmountDecimals: USDC_DECIMALS,
+      asset: usdcAddress,
+      underlying: wbtcAddress,
+      vaultId: 0,
+      callOrPut: false
     }
   ]];
-  const optionVault = await deploy("HodlBoosterOption", {
+  const optionVault = await deploy("SingleDirectionOption", {
     from: deployer,
-    args: HODLBOOSTER_ARGS,
-    contract: "HodlBoosterOptionStatic",
+    args: SINGLEDIRECTION_ARGS,
+    contract: "SingleDirectionOptionStatic",
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
 
   
-  await postDeployment(optionVault, run, "HodlBoosterOption", network.name, HODLBOOSTER_ARGS);     
+  await postDeployment(optionVault, run, "SingleDirectionOption", network.name, SINGLEDIRECTION_ARGS);     
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
-    subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` +  
-    `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
+    subject:`SingleDirectionOption deployed on ${network.name}`,
+    content: `<h2>Deployed SingleDirectionOption on ${network.name} to ${optionVault.address}</h2><h3>Owner Address: ${owner}</h3><h3>Manager Address: ${manager}</h3>`,
     isHtml: true
 }
 
@@ -111,7 +127,7 @@ const main = async ({
   
   console.log(`Deployment notification email sent`);    
 };
-main.tags = ["HodlBoosterOption"];
+main.tags = ["SingleDirectionOption"];
 
 export default main;
 

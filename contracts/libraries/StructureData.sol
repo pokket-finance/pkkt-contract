@@ -37,6 +37,7 @@ library StructureData {
         uint8 vaultId; 
         uint8 assetAmountDecimals; 
         address asset;
+        address underlying;
         bool callOrPut; //call for collateral -> stablecoin; put for stablecoin->collateral; 
     } 
 
