@@ -33,8 +33,9 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     "getUserState(uint8)": FunctionFragment;
     "getVaultState(uint8)": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
-    "kickOffOptions((uint8,uint128)[])": FunctionFragment;
+    "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
+    "optionHolderValues()": FunctionFragment;
     "owner()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -99,10 +100,20 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
-    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+    values: [
+      {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[]
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "managerRoleAddress",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "optionHolderValues",
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -176,6 +187,10 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "managerRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "optionHolderValues",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -385,11 +400,21 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<ContractTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
+    optionHolderValues(
+      overrides?: CallOverrides
+    ): Promise<
+      [([string, BigNumber] & { asset: string; amount: BigNumber })[]]
+    >;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
 
@@ -565,11 +590,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
   ): Promise<ContractTransaction>;
 
   kickOffOptions(
-    _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    _kickoffs: {
+      vaultId: BigNumberish;
+      maxCapacity: BigNumberish;
+      environment: BigNumberish;
+    }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
+  optionHolderValues(
+    overrides?: CallOverrides
+  ): Promise<([string, BigNumber] & { asset: string; amount: BigNumber })[]>;
 
   owner(overrides?: CallOverrides): Promise<string>;
 
@@ -743,11 +776,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<void>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: CallOverrides
     ): Promise<void>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
+    optionHolderValues(
+      overrides?: CallOverrides
+    ): Promise<([string, BigNumber] & { asset: string; amount: BigNumber })[]>;
 
     owner(overrides?: CallOverrides): Promise<string>;
 
@@ -877,11 +918,17 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<BigNumber>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
+    optionHolderValues(overrides?: CallOverrides): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -990,11 +1037,19 @@ export class SingleDirectionOptionStatic extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     managerRoleAddress(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    optionHolderValues(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

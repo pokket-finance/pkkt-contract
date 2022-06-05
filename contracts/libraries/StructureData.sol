@@ -8,14 +8,13 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 library StructureData {
     bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    uint8 public constant MATUREROUND = 1; //7 for daily settlement, 1 for daily settlement
-    uint8 public constant PRICE_PRECISION = 4; 
    
 
     //struct kick off parameters 
     struct KickOffOptionParameters { 
         uint8 vaultId; 
         uint128 maxCapacity;  
+        uint8 environment;
     }
 
     //parameters for cutoff option
@@ -55,6 +54,7 @@ library StructureData {
         uint32 cutOffAt;  
         uint16 currentRound;
         uint128 maxCapacity;   
+        uint8 environment;
         StructureData.OptionState onGoing;
         StructureData.OptionState expired; 
         mapping(uint16 => uint128) depositPriceAfterExpiryPerRound; 
@@ -83,5 +83,11 @@ library StructureData {
         uint128 maxCapacity;   
         StructureData.OptionState onGoing;
         StructureData.OptionState expired;
+    
+    }
+
+    struct CollectableValue {
+       address asset;
+       uint256 amount;
     }
 }

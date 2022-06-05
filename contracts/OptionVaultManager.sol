@@ -63,9 +63,17 @@ abstract contract OptionVaultManager is
              StructureData.KickOffOptionParameters memory kickoff = _kickoffs[i];
              StructureData.VaultState storage data = vaultStates[kickoff.vaultId];
              require(data.cutOffAt <= block.timestamp, "already kicked off");  
-             
-             data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD));
+             if (kickoff.environment == 0) { //prod
+                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD));
+             }
+             else if (kickoff.environment == 1) { //qa
+                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD_QA));
+             }
+             else { //test
+                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD_TEST));
+             }
              data.maxCapacity = kickoff.maxCapacity;
+             data.environment = kickoff.environment;
          }
     }
  
@@ -94,7 +102,12 @@ abstract contract OptionVaultManager is
              OptionLifecycle.rollToNextRoundIfNeeded(data);  
              StructureData.OptionState storage onGoing = data.onGoing;
              require(onGoing.amount > 0, "Nothing to sell");
-             require(onGoing.buyerAddress == address(0), "Already sold"); 
+             require(onGoing.buyerAddress == address(0), "Already sold");
+             //if there is any auto rolling, we must wait until expiry level specified
+             if (data.expired.amount - data.expired.queuedRedeemAmount > 0){
+               require(data.depositPriceAfterExpiryPerRound[data.currentRound - 2] > 0, "Expiry level not specified yet");
+             }
+
              uint256 premium = uint256(onGoing.amount).premium(onGoing.premiumRate); 
              address asset = vaultDefinitions[vaultId].asset;
              if (asset == address(0)) {
@@ -165,6 +178,37 @@ abstract contract OptionVaultManager is
                  OptionLifecycle.withdraw(msg.sender, assetAmount, asset);
              }
          } 
+    }
+
+    
+    function optionHolderValues() external override view whitelisted returns(StructureData.CollectableValue[] memory) {
+        
+        StructureData.OptionBuyerState storage buyerState = buyerStates[msg.sender];  
+        uint256 count = 0;
+        for (uint256 i = 0; i < vaultCount; i++){
+             address asset = vaultDefinitions[uint8(i)].asset;
+             uint256 assetAmount = buyerState.optionValueToCollect[asset];
+             if (assetAmount > 0) {
+                 count++;
+             }
+         } 
+         StructureData.CollectableValue[] memory values = new StructureData.CollectableValue[](count);
+         if (count == 0) {
+             return values;
+         }
+         count = 0;
+         for (uint256 i = 0; i < vaultCount; i++){
+             address asset = vaultDefinitions[uint8(i)].asset;
+             uint256 assetAmount = buyerState.optionValueToCollect[asset];
+             if (assetAmount > 0) {
+                 values[count] = StructureData.CollectableValue({
+                     asset: asset,
+                     amount: assetAmount
+                 });
+                 count++;
+             }
+         }
+         return values; 
     }
 
     modifier lock {

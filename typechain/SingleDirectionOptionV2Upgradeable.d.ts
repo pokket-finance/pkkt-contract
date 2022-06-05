@@ -35,7 +35,7 @@ interface SingleDirectionOptionV2UpgradeableInterface
     "getVaultState(uint8)": FunctionFragment;
     "initialize(address,address,(uint8,uint8,address,address,bool)[])": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
-    "kickOffOptions((uint8,uint128)[])": FunctionFragment;
+    "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
@@ -114,7 +114,13 @@ interface SingleDirectionOptionV2UpgradeableInterface
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
-    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+    values: [
+      {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[]
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "managerRoleAddress",
@@ -406,7 +412,11 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
     ): Promise<ContractTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -594,7 +604,11 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
   ): Promise<ContractTransaction>;
 
   kickOffOptions(
-    _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    _kickoffs: {
+      vaultId: BigNumberish;
+      maxCapacity: BigNumberish;
+      environment: BigNumberish;
+    }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -778,7 +792,11 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
     ): Promise<void>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -920,7 +938,11 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
     ): Promise<BigNumber>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1041,7 +1063,11 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

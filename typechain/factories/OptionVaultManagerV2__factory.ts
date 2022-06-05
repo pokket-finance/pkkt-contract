@@ -81,6 +81,11 @@ const _abi = [
             name: "maxCapacity",
             type: "uint128",
           },
+          {
+            internalType: "uint8",
+            name: "environment",
+            type: "uint8",
+          },
         ],
         internalType: "struct StructureData.KickOffOptionParameters[]",
         name: "_kickoffs",

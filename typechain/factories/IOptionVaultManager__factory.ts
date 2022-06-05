@@ -82,6 +82,11 @@ const _abi = [
             name: "maxCapacity",
             type: "uint128",
           },
+          {
+            internalType: "uint8",
+            name: "environment",
+            type: "uint8",
+          },
         ],
         internalType: "struct StructureData.KickOffOptionParameters[]",
         name: "_kickoffs",
@@ -91,6 +96,31 @@ const _abi = [
     name: "kickOffOptions",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "optionHolderValues",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "asset",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "amount",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct StructureData.CollectableValue[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {

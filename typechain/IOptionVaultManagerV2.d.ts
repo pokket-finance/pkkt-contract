@@ -26,7 +26,7 @@ interface IOptionVaultManagerV2Interface extends ethers.utils.Interface {
     "clearBidding()": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
-    "kickOffOptions((uint8,uint128)[])": FunctionFragment;
+    "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
   };
 
@@ -48,7 +48,13 @@ interface IOptionVaultManagerV2Interface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
-    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+    values: [
+      {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[]
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "sellOptions",
@@ -150,7 +156,11 @@ export class IOptionVaultManagerV2 extends BaseContract {
     ): Promise<ContractTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -184,7 +194,11 @@ export class IOptionVaultManagerV2 extends BaseContract {
   ): Promise<ContractTransaction>;
 
   kickOffOptions(
-    _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    _kickoffs: {
+      vaultId: BigNumberish;
+      maxCapacity: BigNumberish;
+      environment: BigNumberish;
+    }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -214,7 +228,11 @@ export class IOptionVaultManagerV2 extends BaseContract {
     ): Promise<void>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -251,7 +269,11 @@ export class IOptionVaultManagerV2 extends BaseContract {
     ): Promise<BigNumber>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -286,7 +308,11 @@ export class IOptionVaultManagerV2 extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

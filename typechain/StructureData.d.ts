@@ -21,9 +21,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface StructureDataInterface extends ethers.utils.Interface {
   functions: {
     "MANAGER_ROLE()": FunctionFragment;
-    "MATUREROUND()": FunctionFragment;
     "OPTION_ROLE()": FunctionFragment;
-    "PRICE_PRECISION()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -31,15 +29,7 @@ interface StructureDataInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "MATUREROUND",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "OPTION_ROLE",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "PRICE_PRECISION",
     values?: undefined
   ): string;
 
@@ -48,15 +38,7 @@ interface StructureDataInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "MATUREROUND",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "OPTION_ROLE",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "PRICE_PRECISION",
     data: BytesLike
   ): Result;
 
@@ -109,29 +91,17 @@ export class StructureData extends BaseContract {
   functions: {
     MANAGER_ROLE(overrides?: CallOverrides): Promise<[string]>;
 
-    MATUREROUND(overrides?: CallOverrides): Promise<[number]>;
-
     OPTION_ROLE(overrides?: CallOverrides): Promise<[string]>;
-
-    PRICE_PRECISION(overrides?: CallOverrides): Promise<[number]>;
   };
 
   MANAGER_ROLE(overrides?: CallOverrides): Promise<string>;
 
-  MATUREROUND(overrides?: CallOverrides): Promise<number>;
-
   OPTION_ROLE(overrides?: CallOverrides): Promise<string>;
-
-  PRICE_PRECISION(overrides?: CallOverrides): Promise<number>;
 
   callStatic: {
     MANAGER_ROLE(overrides?: CallOverrides): Promise<string>;
 
-    MATUREROUND(overrides?: CallOverrides): Promise<number>;
-
     OPTION_ROLE(overrides?: CallOverrides): Promise<string>;
-
-    PRICE_PRECISION(overrides?: CallOverrides): Promise<number>;
   };
 
   filters: {};
@@ -139,20 +109,12 @@ export class StructureData extends BaseContract {
   estimateGas: {
     MANAGER_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
 
-    MATUREROUND(overrides?: CallOverrides): Promise<BigNumber>;
-
     OPTION_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
-
-    PRICE_PRECISION(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
     MANAGER_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    MATUREROUND(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     OPTION_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    PRICE_PRECISION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

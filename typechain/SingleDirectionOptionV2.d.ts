@@ -32,7 +32,7 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
     "getUserState(uint8)": FunctionFragment;
     "getVaultState(uint8)": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
-    "kickOffOptions((uint8,uint128)[])": FunctionFragment;
+    "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
@@ -81,7 +81,13 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
-    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+    values: [
+      {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[]
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "managerRoleAddress",
@@ -319,7 +325,11 @@ export class SingleDirectionOptionV2 extends BaseContract {
     ): Promise<ContractTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -467,7 +477,11 @@ export class SingleDirectionOptionV2 extends BaseContract {
   ): Promise<ContractTransaction>;
 
   kickOffOptions(
-    _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    _kickoffs: {
+      vaultId: BigNumberish;
+      maxCapacity: BigNumberish;
+      environment: BigNumberish;
+    }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -611,7 +625,11 @@ export class SingleDirectionOptionV2 extends BaseContract {
     ): Promise<void>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -702,7 +720,11 @@ export class SingleDirectionOptionV2 extends BaseContract {
     ): Promise<BigNumber>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -783,7 +805,11 @@ export class SingleDirectionOptionV2 extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     kickOffOptions(
-      _kickoffs: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      _kickoffs: {
+        vaultId: BigNumberish;
+        maxCapacity: BigNumberish;
+        environment: BigNumberish;
+      }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

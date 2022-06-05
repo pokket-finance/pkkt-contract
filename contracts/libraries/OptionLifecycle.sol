@@ -16,9 +16,11 @@ library OptionLifecycle {
     using SafeMath for uint256;
     using SafeCast for uint256;
     using StructureData for StructureData.UserState;
-    /// @notice 7 day period between each options sale.
     uint256 public constant PERIOD = 7 days;
     uint256 public constant ROUND_PRICE_DECIMALS = 8;
+    uint256 public constant PERIOD_TEST = 10 seconds;
+    uint256 public constant PERIOD_QA = 1 hours;
+    
 
   
 
@@ -186,7 +188,15 @@ library OptionLifecycle {
        }
         _vaultState.expired = onGoing;
         _vaultState.totalPending = 0; 
-        _vaultState.cutOffAt = uint32(PERIOD.add(_vaultState.cutOffAt)); 
+        if (_vaultState.environment == 0 ) { //prod
+           _vaultState.cutOffAt = uint32(PERIOD.add(_vaultState.cutOffAt));   
+        }
+        else if (_vaultState.environment == 1) { //qa
+           _vaultState.cutOffAt = uint32(PERIOD_QA.add(_vaultState.cutOffAt)); 
+        }
+        else { //test
+           _vaultState.cutOffAt = uint32(PERIOD_TEST.add(_vaultState.cutOffAt));             
+        }
         _vaultState.currentRound = _vaultState.currentRound + 1; 
 
     }
@@ -223,7 +233,16 @@ library OptionLifecycle {
        }
         snapShot.expired = onGoing;
         snapShot.totalPending = 0; 
-        snapShot.cutOffAt = uint32(PERIOD.add(snapShot.cutOffAt)); 
+
+        if (_vaultState.environment == 0 ) { //prod
+           snapShot.cutOffAt = uint32(PERIOD.add(snapShot.cutOffAt));   
+        }
+        else if (_vaultState.environment == 1) { //qa
+           snapShot.cutOffAt = uint32(PERIOD_QA.add(snapShot.cutOffAt)); 
+        }
+        else { //test
+           snapShot.cutOffAt = uint32(PERIOD_TEST.add(snapShot.cutOffAt));             
+        }
         snapShot.currentRound = snapShot.currentRound + 1; 
         return snapShot;
 
