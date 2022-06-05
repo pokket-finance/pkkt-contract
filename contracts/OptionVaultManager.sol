@@ -63,15 +63,19 @@ abstract contract OptionVaultManager is
              StructureData.KickOffOptionParameters memory kickoff = _kickoffs[i];
              StructureData.VaultState storage data = vaultStates[kickoff.vaultId];
              require(data.cutOffAt <= block.timestamp, "already kicked off");  
+             uint256 cutOffAt = 0;
              if (kickoff.environment == 0) { //prod
-                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD));
+                cutOffAt = block.timestamp.add(OptionLifecycle.PERIOD);
              }
              else if (kickoff.environment == 1) { //qa
-                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD_QA));
+                cutOffAt = block.timestamp.add(OptionLifecycle.PERIOD_QA);
              }
              else { //test
-                data.cutOffAt = uint32(block.timestamp.add(OptionLifecycle.PERIOD_TEST));
+                cutOffAt = block.timestamp.add(OptionLifecycle.PERIOD_TEST);
              }
+             require(cutOffAt <= type(uint32).max, "Overflow cutOffAt");
+             data.cutOffAt = uint32(cutOffAt);
+
              data.maxCapacity = kickoff.maxCapacity;
              data.environment = kickoff.environment;
          }
@@ -153,16 +157,21 @@ abstract contract OptionVaultManager is
              StructureData.OptionBuyerState storage buyerState = buyerStates[expired.buyerAddress];
 
              uint256 depositPriceAfterExpiry = diff.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expiryParameters.expiryLevel);
+             Utils.assertUint128(depositPriceAfterExpiry);
              data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = uint128(depositPriceAfterExpiry);
 
              uint256 optionHolderValue = diff.mul(expired.amount).div(expiryParameters.expiryLevel);
+             Utils.assertUint128(optionHolderValue);
              buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(buyerState.optionValueToCollect[asset]));
 
              uint256 remaining = uint256(expired.amount).withPremium(expired.premiumRate).sub(optionHolderValue);
              uint256 redeemed = remaining.mul(expired.queuedRedeemAmount).div(expired.amount);
-             data.totalRedeemed = uint128(redeemed.add(data.totalRedeemed));
-
-             data.onGoing.amount = uint128(remaining.sub(redeemed).add(data.onGoing.amount)); 
+             uint256 totalRedeemed = redeemed.add(data.totalRedeemed);
+             Utils.assertUint128(totalRedeemed);
+             data.totalRedeemed = uint128(totalRedeemed);
+             uint256 totalOnGoing = remaining.sub(redeemed).add(data.onGoing.amount);
+             Utils.assertUint128(totalOnGoing);
+             data.onGoing.amount = uint128(totalOnGoing); 
          }
         
     }

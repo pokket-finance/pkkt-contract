@@ -64,14 +64,20 @@ library OptionLifecycle {
         if (price == 0) {
             //first redeem from the sold options
             if (_amountToRedeem <= maxInstantRedeemable) {
-                state.expiredQueuedRedeemAmount = uint128(_amountToRedeem.add(state.expiredQueuedRedeemAmount));
-                _vault.expired.queuedRedeemAmount = uint128(_amountToRedeem.add(_vault.expired.queuedRedeemAmount));
+                uint256 expiredQueuedRedeemAmount = _amountToRedeem.add(state.expiredQueuedRedeemAmount);
+                Utils.assertUint128(expiredQueuedRedeemAmount);
+                state.expiredQueuedRedeemAmount = uint128(expiredQueuedRedeemAmount);
+                uint256 totalExpiredQueuedRedeemAmount = _amountToRedeem.add(_vault.expired.queuedRedeemAmount);
+                Utils.assertUint128(totalExpiredQueuedRedeemAmount);
+                _vault.expired.queuedRedeemAmount = uint128(totalExpiredQueuedRedeemAmount);
                 
             }
             else {
                 uint256 amountToRemdeemNextRound = _amountToRedeem - maxInstantRedeemable;
                 state.expiredQueuedRedeemAmount = state.expiredAmount;
-                state.onGoingQueuedRedeemAmount = uint128(amountToRemdeemNextRound.add(state.onGoingQueuedRedeemAmount));
+                uint256 onGoingQueuedRedeemAmount = amountToRemdeemNextRound.add(state.onGoingQueuedRedeemAmount);
+                Utils.assertUint128(onGoingQueuedRedeemAmount);
+                state.onGoingQueuedRedeemAmount = uint128(onGoingQueuedRedeemAmount);
                 _vault.expired.queuedRedeemAmount = uint128(uint256(_vault.expired.queuedRedeemAmount).sub(maxInstantRedeemable));
                 _vault.onGoing.queuedRedeemAmount = uint128(uint256(_vault.onGoing.queuedRedeemAmount).sub(amountToRemdeemNextRound));
             }
@@ -80,8 +86,13 @@ library OptionLifecycle {
         //user could terminate all the selling options
         //user would be able to redeem all the selling options after next expiry
         else{
-            state.onGoingQueuedRedeemAmount = uint128(_amountToRedeem.add(state.onGoingQueuedRedeemAmount));
-            _vault.onGoing.queuedRedeemAmount = uint128(_amountToRedeem.add(_vault.onGoing.queuedRedeemAmount));
+            
+            uint256 onGoingQueuedRedeemAmount = _amountToRedeem.add(state.onGoingQueuedRedeemAmount);
+            Utils.assertUint128(onGoingQueuedRedeemAmount);
+            state.onGoingQueuedRedeemAmount = uint128(onGoingQueuedRedeemAmount);
+            uint256 totalOnGoingQueuedRedeemAmount = _amountToRedeem.add(_vault.onGoing.queuedRedeemAmount);
+            Utils.assertUint128(totalOnGoingQueuedRedeemAmount);
+            _vault.onGoing.queuedRedeemAmount = uint128(totalOnGoingQueuedRedeemAmount);
         } 
 
     }
@@ -160,9 +171,13 @@ library OptionLifecycle {
 
         uint256 pending = _vaultState.totalPending;
         uint256 currentTVL = pending.add(_vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
-        require(_amount.add(state.pending) <= currentTVL, "Exceeds capacity");
-        state.pending = uint128(_amount.add(state.pending)); 
-       _vaultState.totalPending =  uint128(_amount.add(_vaultState.totalPending));  
+        uint256 newUserPending = _amount.add(state.pending); 
+        require(newUserPending <= currentTVL, "Exceeds capacity");
+        Utils.assertUint128(newUserPending);
+        state.pending = uint128(newUserPending);
+        uint256 newTotalPending =  _amount.add(_vaultState.totalPending);
+        Utils.assertUint128(newTotalPending);
+       _vaultState.totalPending =  uint128(newTotalPending);  
     }
 
     function rollToNextRoundIfNeeded(StructureData.VaultState storage _vaultState) public { 
@@ -181,22 +196,29 @@ library OptionLifecycle {
 
        //premium not sent, simply bring it to next round
        if (_vaultState.currentRound > 1 &&  _vaultState.expired.buyerAddress == address(0)) { 
-            _vaultState.onGoing.amount = uint128(uint256( _vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount));
-            _vaultState.totalRedeemed = uint128(uint256(_vaultState.totalRedeemed).add(_vaultState.expired.queuedRedeemAmount));
+           uint256 onGoingAmount = uint256( _vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
+           Utils.assertUint128(onGoingAmount);
+            _vaultState.onGoing.amount = uint128(onGoingAmount);
+           uint256 totalRedeemed = uint256(_vaultState.totalRedeemed).add(_vaultState.expired.queuedRedeemAmount);
+           Utils.assertUint128(totalRedeemed);
+            _vaultState.totalRedeemed = uint128(totalRedeemed);
             _vaultState.depositPriceAfterExpiryPerRound[_vaultState.currentRound - 1] = uint128(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS);
             
        }
         _vaultState.expired = onGoing;
         _vaultState.totalPending = 0; 
-        if (_vaultState.environment == 0 ) { //prod
-           _vaultState.cutOffAt = uint32(PERIOD.add(_vaultState.cutOffAt));   
+        uint256 cutOffAt = 0;
+        if (_vaultState.environment == 0) { //prod
+            cutOffAt = PERIOD.add(_vaultState.cutOffAt);
         }
         else if (_vaultState.environment == 1) { //qa
-           _vaultState.cutOffAt = uint32(PERIOD_QA.add(_vaultState.cutOffAt)); 
+            cutOffAt = PERIOD_QA.add(_vaultState.cutOffAt);
         }
         else { //test
-           _vaultState.cutOffAt = uint32(PERIOD_TEST.add(_vaultState.cutOffAt));             
+            cutOffAt = PERIOD_TEST.add(_vaultState.cutOffAt);
         }
+        require(cutOffAt <= type(uint32).max, "Overflow cutOffAt");
+        _vaultState.cutOffAt = uint32(cutOffAt);
         _vaultState.currentRound = _vaultState.currentRound + 1; 
 
     }
@@ -227,22 +249,29 @@ library OptionLifecycle {
 
        //premium not sent, simply bring it to next round
        if (snapShot.currentRound > 1 &&  snapShot.expired.buyerAddress == address(0)) { 
-            snapShot.onGoing.amount = uint128(uint256(snapShot.onGoing.amount).add(snapShot.expired.amount).sub(snapShot.expired.queuedRedeemAmount));
-            snapShot.totalRedeemed = uint128(uint256(snapShot.totalRedeemed).add(snapShot.expired.queuedRedeemAmount));
+           uint256 onGoingAmount = uint256( snapShot.onGoing.amount).add(snapShot.expired.amount).sub(snapShot.expired.queuedRedeemAmount);
+           Utils.assertUint128(onGoingAmount);
+            snapShot.onGoing.amount = uint128(onGoingAmount);
+           uint256 totalRedeemed = uint256(snapShot.totalRedeemed).add(snapShot.expired.queuedRedeemAmount);
+           Utils.assertUint128(totalRedeemed);
+            snapShot.totalRedeemed = uint128(totalRedeemed);
             
        }
         snapShot.expired = onGoing;
         snapShot.totalPending = 0; 
 
-        if (_vaultState.environment == 0 ) { //prod
-           snapShot.cutOffAt = uint32(PERIOD.add(snapShot.cutOffAt));   
+        uint256 cutOffAt = 0;
+        if (_vaultState.environment == 0) { //prod
+            cutOffAt = PERIOD.add(snapShot.cutOffAt);
         }
         else if (_vaultState.environment == 1) { //qa
-           snapShot.cutOffAt = uint32(PERIOD_QA.add(snapShot.cutOffAt)); 
+            cutOffAt = PERIOD_QA.add(snapShot.cutOffAt);
         }
         else { //test
-           snapShot.cutOffAt = uint32(PERIOD_TEST.add(snapShot.cutOffAt));             
+            cutOffAt = PERIOD_TEST.add(snapShot.cutOffAt);
         }
+        require(cutOffAt <= type(uint32).max, "Overflow cutOffAt");
+        snapShot.cutOffAt = uint32(cutOffAt);
         snapShot.currentRound = snapShot.currentRound + 1; 
         return snapShot;
 
@@ -304,6 +333,12 @@ library OptionLifecycle {
                 }
             }
         }
+        Utils.assertUint128(pendingAmount);
+        Utils.assertUint128(redeemed);
+        Utils.assertUint128(expiredAmount);
+        Utils.assertUint128(expiredQueuedRedeemAmount);
+        Utils.assertUint128(onGoingAmount);
+        Utils.assertUint128(onGoingQueuedRedeemAmount);
         StructureData.UserState memory updatedUserState = StructureData.UserState({
             lastUpdateRound: _currentRound,
             pending: uint128(pendingAmount),

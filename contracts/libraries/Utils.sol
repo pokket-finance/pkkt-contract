@@ -49,12 +49,12 @@ library Utils {
        return _base >= _substractor ? _base - _substractor : 0;
    }
   
-    /*function assertUint104(uint256 num) internal pure {
+    function assertUint104(uint256 num) internal pure {
         require(num <= type(uint104).max, "Overflow uint104");
     }
 
     function assertUint128(uint256 num) internal pure {
         require(num <= type(uint128).max, "Overflow uint128");
-    }*/
+    }
 
 }
