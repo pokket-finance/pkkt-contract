@@ -8,7 +8,7 @@ import {  GWEI, BUSD_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, BUS
 import { Table } from 'console-table-printer';
 import { Contract, ContractFactory } from "ethers";
 import { ethers, upgrades } from "hardhat";   
-import { advanceTime } from "./utilities/timer";
+import { advanceTime, latest } from "./utilities/timer";
    
 const BUSDMultiplier = BigNumber.from(10).pow(BUSD_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
@@ -148,18 +148,23 @@ describe.only("BSC Single Direction Option", async function () {
           await wbtc.transfer(alice.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(bob.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(carol.address, BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.transfer(trader.address, BigNumber.from(100).mul(WBTCMultiplier));
+
           await wbtc.connect(alice as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(bob as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(carol as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.connect(trader as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
 
           await busd.connect(alice as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.connect(bob as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.connect(carol as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
+          await busd.connect(trader as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
 
           
           await eth.connect(alice as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.connect(bob as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.connect(carol as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier)); 
+          await eth.connect(trader as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier)); 
 
         });
 
@@ -170,33 +175,35 @@ describe.only("BSC Single Direction Option", async function () {
         it("end user perspective", async function () { 
         });
         it("manager and trader perspective", async function () {
-          await expect(vault.connect(alice as Signer).deposit(1, 1000 * 10 ** BUSD_DECIMALS)).to.be.revertedWith("!Started");
-          //round 1
+          await expect(vault.connect(alice as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier))).to.be.revertedWith("!started");
+        
+            //round 1
           await vault.connect(manager as Signer).kickOffOptions([{
             vaultId: 0,
-            maxCapacity: 100,
+            maxCapacity: BigNumber.from(100).mul(ETHMultiplier),
             environment:2
           }, {
             vaultId: 1,
-            maxCapacity: 100* 1800 * 10 * BUSD_DECIMALS,
+            maxCapacity: BigNumber.from(100).mul(1800).mul(BUSDMultiplier),
             environment:2
           }, {
             vaultId: 2,
-            maxCapacity: 10,
+            maxCapacity: BigNumber.from(10).mul(WBTCMultiplier),
             environment:2
           }, {
             vaultId: 3,
-            maxCapacity: 10 * 30000 * 10 ** BUSD_DECIMALS,
+            maxCapacity: BigNumber.from(10).mul(30000).mul(BUSDMultiplier),
             environment:2
           }]);
 
-          await vault.connect(alice as Signer).deposit(0, 10 * 10 ** ETH_DECIMALS);
-          await vault.connect(alice as Signer).deposit(1, 1000 * 10 ** BUSD_DECIMALS);
-          await vault.connect(alice as Signer).deposit(2, 10 * 10 ** WBTC_DECIMALS);
-          await vault.connect(alice as Signer).deposit(3, 1000 * 10 ** BUSD_DECIMALS);
+          await vault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(ETHMultiplier));
+          await vault.connect(alice as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier));
+          await vault.connect(alice as Signer).deposit(2, WBTCMultiplier);
+          await vault.connect(alice as Signer).deposit(3, BigNumber.from(1000).mul(BUSDMultiplier));
+        
           //round 2
-          await advanceTime(60);
-
+          await advanceTime(60); 
+        
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1.1,
@@ -213,7 +220,8 @@ describe.only("BSC Single Direction Option", async function () {
             vaultId: 3,
             strike: btcPrice * 0.91,
             premiumRate: 0.01 * 10000
-          }]);
+          }]); 
+          
           await vault.connect(manager as Signer).addToWhitelist([trader.address, carol.address]);
           
           await expect(vault.connect(bob as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("!whitelisted");
@@ -223,33 +231,37 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(trader as Signer).buyOptions([0,1,2,3]);
           await expect(vault.connect(carol as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("Already sold");
           const newBalances = await Promise.all(vaultDefinitions.map(v=> contracts[v.asset].balanceOf(trader.address)));
-          for(let i = 0; i < newBalances.length; i++) {
-            assert.equal(newBalances[i].add(premiums[i]).toString(), oldBalances[i].toString());
+          const combined1 = reduceBalances(premiums, newBalances, [0,1,2,3]);
+          const combined2 = reduceBalances(premiums, oldBalances, [0,1,2,3]);
+          for(let key in combined1) {
+            const calculation = combined1[key];
+            const calculation2 = combined2[key];
+            assert.equal(calculation.balance.add(calculation.calculation).toString(), calculation2.balance.toString());
+          }
+          for(let i = 0; i < 4; i++) {
             assert.equal(vaultStates[i].currentRound, 2);
           }
+          await vault.connect(bob as Signer).deposit(2, BigNumber.from(1).mul(WBTCMultiplier));
 
           //round 3
           await advanceTime(60);
           const expiries = [{
-            expiryLevel: ethPrice * 0.95,
+            expiryLevel: ethPrice * 0.85,
             vaultId: 0
           }, {
-            expiryLevel: ethPrice * 0.95,
+            expiryLevel: ethPrice * 0.85,
             vaultId: 1
           }, {
-            expiryLevel: btcPrice * 0.98,
+            expiryLevel: btcPrice * 0.88,
             vaultId: 2
           }, {
-            expiryLevel: btcPrice * 0.98,
+            expiryLevel: btcPrice * 0.88,
             vaultId: 3
           }];
 
-          
-          await vault.connect(bob as Signer).deposit(2, 10 * 10 ** WBTC_DECIMALS);
           await expect(vault.connect(trader as Signer).buyOptions([0])).to.be.revertedWith("Nothing to sell");
           await expect(vault.connect(trader as Signer).buyOptions([2])).to.be.revertedWith("Expiry level not specified yet");
-
-          //we need to expire previous first, market is dropping down
+          //we need to expire previous first, market is dropping down greatly, all the put option invester would lose
           await vault.connect(manager as Signer).expireOptions(expiries);
 
           const carolOldBalances = await Promise.all(vaultDefinitions.map(v=> contracts[v.asset].balanceOf(carol.address)));
@@ -259,29 +271,31 @@ describe.only("BSC Single Direction Option", async function () {
             assert.equal(carolOldBalances[i].toString(), carolNewBalances[i].toString());
           }
 
-
-
-          const vaultStates2 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId)));
-          const collectables = await vault.connect(trader as Signer).optionHolderValues();
-          await vault.connect(trader as Signer).collectOptionHolderValues();
-
-          const traderNewBalances = await Promise.all(vaultDefinitions.map(v=> contracts[v.asset].balanceOf(trader.address)));
+          const busdOldBalance = await busd.balanceOf(trader.address);
+          const vaultStates2 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId))); 
+          const collectables = await vault.connect(trader as Signer).optionHolderValues(); 
+          await vault.connect(trader as Signer).collectOptionHolderValues(); 
+          
+          assert.equal(collectables.length, 1);
+          assert.equal(collectables[0].asset, busd.address);
           const collectables2 = await vault.connect(trader as Signer).optionHolderValues();
-          for(let i = 0; i < traderNewBalances.length; i++) {
-              const collectable = collectables[i].amount;
-              assert.equal(traderNewBalances[i].add(collectable).toString(), newBalances[i].toString());
+          assert.equal(collectables2.length, 0)
+
+          const busdNewBalance = await busd.balanceOf(trader.address);
+          let totalCollectableCalculated= BigNumber.from(0);
+          for(let i = 1; i < 4; i=i+2) {
               const callOrPut = vaultDefinitions[i].callOrPut;
               const expiryLevel = expiries[i].expiryLevel;
               const strike = vaultStates2[i].expired.strike.toNumber();
               const diff = callOrPut ? (expiryLevel > strike ? expiryLevel - strike: 0) : 
                            (strike > expiryLevel ? strike - expiryLevel : 0);
-              const calculated = vaultStates2[i].expired.amount.mul(diff).div(expiryLevel);
-              assert.equal(calculated.toString(), collectable.toString());
-              assert.isTrue(collectable.gt(0));
-              assert.equal(collectables2[i].amount.toString(), "0");
-              assert.equal(vaultStates2[i].currentRound, 3);
-          }
-
+              const calculated = vaultStates2[i].expired.amount.mul(diff).div(expiryLevel); 
+              totalCollectableCalculated = totalCollectableCalculated.add(calculated);
+              //assert.equal(vaultStates2[i].currentRound, 3);
+          } 
+          assert.equal(collectables[0].amount.toString(), totalCollectableCalculated.toString());
+          assert.equal(busdOldBalance.add(collectables[0].amount).toString(), busdNewBalance.toString());
+ 
           const expiries2 = [{
             vaultId: 0,
             strike: ethPrice * 1,
@@ -307,8 +321,10 @@ describe.only("BSC Single Direction Option", async function () {
 
           //round 4
           await advanceTime(60);
-
           const vaultStates3 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId)));
+
+          //market is dropping up greatly, all the call option invester would lose
+          //await vault.connect(manager as Signer).expireOptions(expiries2);
 
         });
 
@@ -387,6 +403,26 @@ describe.only("BSC Single Direction Option", async function () {
         });
       }); 
         
+      function reduceBalances(calculations:BigNumber[], balances:BigNumber[], vaultIds:number[]){
+        let newCalculatedBalance: {[key:string]: {
+          calculation: BigNumber,
+          balance:BigNumber}
+        } = {};
+        for(let i = 0; i < vaultIds.length; i ++) {
+          const vault = vaultDefinitions[vaultIds[i]];
+          let calculated = newCalculatedBalance[vault.asset];
+          if (!calculated) {
+            calculated = {
+              calculation: BigNumber.from(0),
+              balance: BigNumber.from(0)
+            };
+            newCalculatedBalance[vault.asset] = calculated;
+          }
+          calculated.calculation = calculated.calculation.add(calculations[i]);
+          calculated.balance = balances[i];
+        }
+        return newCalculatedBalance;
+      } 
 
   });
 

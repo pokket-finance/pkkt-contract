@@ -34,13 +34,26 @@ abstract contract OptionVaultManager is
     ) internal { 
         uint256 length = _vaultDefinitions.length;
         uint8 vaultCount_ = vaultCount; 
+        uint8 assetCount_ = assetCount;
         for (uint256 i = 0; i < length; i++) {
             StructureData.VaultDefinition
                 memory vault = _vaultDefinitions[i]; 
             vault.vaultId = vaultCount_;
             vaultDefinitions[vaultCount_++] = vault;
+            bool knownAsset = false;
+            for(uint256 j= 0; j < assetCount_; j++) {
+                if (assets[uint8(j)] == vault.asset) {
+                    knownAsset = true;
+                    break;
+                }
+            }
+            if (!knownAsset) {
+                assets[assetCount_ ++] = vault.asset;
+            }
+
         }
         vaultCount = vaultCount_;
+        assetCount = assetCount_;
     }
 
     
@@ -62,7 +75,7 @@ abstract contract OptionVaultManager is
          for (uint256 i = 0; i < _kickoffs.length; i++){
              StructureData.KickOffOptionParameters memory kickoff = _kickoffs[i];
              StructureData.VaultState storage data = vaultStates[kickoff.vaultId];
-             require(data.cutOffAt <= block.timestamp, "already kicked off");  
+             require(data.currentRound == 0, "already kicked off");  
              uint256 cutOffAt = 0;
              if (kickoff.environment == 0) { //prod
                 cutOffAt = block.timestamp.add(OptionLifecycle.PERIOD);
@@ -78,11 +91,12 @@ abstract contract OptionVaultManager is
 
              data.maxCapacity = kickoff.maxCapacity;
              data.environment = kickoff.environment;
+             data.currentRound = 1;
          }
     }
  
     //parameters for option to sell, todo: whitelist
-    function sellOptions(StructureData.OnGoingOptionParameters[] memory _ongoingParameters) external override{
+    function sellOptions(StructureData.OnGoingOptionParameters[] memory _ongoingParameters) external override managerOnly{
         for (uint256 i = 0; i < _ongoingParameters.length; i++){
              StructureData.OnGoingOptionParameters memory ongoingParameters = _ongoingParameters[i];
              require(ongoingParameters.premiumRate > 0, "!premium");
@@ -161,6 +175,7 @@ abstract contract OptionVaultManager is
              data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = uint128(depositPriceAfterExpiry);
 
              uint256 optionHolderValue = diff.mul(expired.amount).div(expiryParameters.expiryLevel);
+
              Utils.assertUint128(optionHolderValue);
              buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(buyerState.optionValueToCollect[asset]));
 
@@ -179,8 +194,8 @@ abstract contract OptionVaultManager is
     
     function collectOptionHolderValues() external override whitelisted lock { 
         StructureData.OptionBuyerState storage buyerState = buyerStates[msg.sender];  
-        for (uint256 i = 0; i < vaultCount; i++){
-             address asset = vaultDefinitions[uint8(i)].asset;
+        for (uint256 i = 0; i < assetCount; i++){
+             address asset = assets[uint8(i)];
              uint256 assetAmount = buyerState.optionValueToCollect[asset];
              if (assetAmount > 0) {
                  buyerState.optionValueToCollect[asset] = 0;
@@ -194,8 +209,8 @@ abstract contract OptionVaultManager is
         
         StructureData.OptionBuyerState storage buyerState = buyerStates[msg.sender];  
         uint256 count = 0;
-        for (uint256 i = 0; i < vaultCount; i++){
-             address asset = vaultDefinitions[uint8(i)].asset;
+        for (uint256 i = 0; i < assetCount; i++){
+             address asset =  assets[uint8(i)];
              uint256 assetAmount = buyerState.optionValueToCollect[asset];
              if (assetAmount > 0) {
                  count++;
@@ -206,8 +221,8 @@ abstract contract OptionVaultManager is
              return values;
          }
          count = 0;
-         for (uint256 i = 0; i < vaultCount; i++){
-             address asset = vaultDefinitions[uint8(i)].asset;
+         for (uint256 i = 0; i < assetCount; i++){
+             address asset =  assets[uint8(i)];
              uint256 assetAmount = buyerState.optionValueToCollect[asset];
              if (assetAmount > 0) {
                  values[count] = StructureData.CollectableValue({

@@ -6,8 +6,10 @@ abstract contract OptionVaultStorageV1 {
     uint256 internal locked;
     address public managerRoleAddress;
     uint8 internal vaultCount;  
+    uint8 internal assetCount;
  
     mapping(uint8 => StructureData.VaultDefinition) public vaultDefinitions;
+    mapping(uint8 => address) internal assets;
   
     mapping(uint8 => StructureData.VaultState) internal vaultStates;
 

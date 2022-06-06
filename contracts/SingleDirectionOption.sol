@@ -19,7 +19,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
  
 
     modifier validateVaultId(uint8 _vaultId) {
-        require(_vaultId != 0 && _vaultId < vaultCount);
+        require(_vaultId < vaultCount, "Invalid vaultId");
         _;
     }
 

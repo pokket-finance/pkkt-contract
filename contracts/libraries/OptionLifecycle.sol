@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Utils.sol";
 import "./StructureData.sol";
-//import "hardhat/console.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 library OptionLifecycle {
@@ -18,7 +18,7 @@ library OptionLifecycle {
     using StructureData for StructureData.UserState;
     uint256 public constant PERIOD = 7 days;
     uint256 public constant ROUND_PRICE_DECIMALS = 8;
-    uint256 public constant PERIOD_TEST = 10 seconds;
+    uint256 public constant PERIOD_TEST = 60 seconds;
     uint256 public constant PERIOD_QA = 1 hours;
     
 
@@ -170,9 +170,9 @@ library OptionLifecycle {
         state = _vaultState.userStates[_user];
 
         uint256 pending = _vaultState.totalPending;
-        uint256 currentTVL = pending.add(_vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
+        uint256 newTVL = _amount.add(pending).add(_vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
         uint256 newUserPending = _amount.add(state.pending); 
-        require(newUserPending <= currentTVL, "Exceeds capacity");
+        require(newTVL <= _vaultState.maxCapacity, "Exceeds capacity");
         Utils.assertUint128(newUserPending);
         state.pending = uint128(newUserPending);
         uint256 newTotalPending =  _amount.add(_vaultState.totalPending);
@@ -195,7 +195,7 @@ library OptionLifecycle {
        });
 
        //premium not sent, simply bring it to next round
-       if (_vaultState.currentRound > 1 &&  _vaultState.expired.buyerAddress == address(0)) { 
+       if (_vaultState.currentRound > 1 &&  _vaultState.expired.amount > 0 && _vaultState.expired.buyerAddress == address(0)) { 
            uint256 onGoingAmount = uint256( _vaultState.onGoing.amount).add(_vaultState.expired.amount).sub(_vaultState.expired.queuedRedeemAmount);
            Utils.assertUint128(onGoingAmount);
             _vaultState.onGoing.amount = uint128(onGoingAmount);
@@ -248,7 +248,7 @@ library OptionLifecycle {
        });
 
        //premium not sent, simply bring it to next round
-       if (snapShot.currentRound > 1 &&  snapShot.expired.buyerAddress == address(0)) { 
+       if (snapShot.currentRound > 1 &&  snapShot.expired.amount > 0 && snapShot.expired.buyerAddress == address(0)) { 
            uint256 onGoingAmount = uint256( snapShot.onGoing.amount).add(snapShot.expired.amount).sub(snapShot.expired.queuedRedeemAmount);
            Utils.assertUint128(onGoingAmount);
             snapShot.onGoing.amount = uint128(onGoingAmount);
