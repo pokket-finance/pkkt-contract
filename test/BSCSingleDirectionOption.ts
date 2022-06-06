@@ -202,7 +202,7 @@ describe.only("BSC Single Direction Option", async function () {
                     
           //round 2
           await advanceTime(60); 
-        
+          //sell round 1
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1.05,
@@ -246,11 +246,67 @@ describe.only("BSC Single Direction Option", async function () {
           assert.equal(aliceState.onGoingAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).mul(10150).div(10000).toString());
           assert.isTrue(aliceState.expiredAmount.eq(0));
           assert.isTrue(aliceState.pending.eq(0));
+          const oldAliceOnGoing = aliceState.onGoingAmount;
           bobState = await vault.connect(bob as Signer).getUserState(1);
           assert.equal(bobState.onGoingAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).mul(10100).div(10000).toString()); 
           assert.isTrue(bobState.expiredAmount.eq(0));
           assert.isTrue(bobState.pending.eq(0));
+          const oldBobOnGoing = bobState.onGoingAmount;
 
+          //alice initiate withdraw after expiry, will terminate until next expire: round 2
+          await vault.connect(alice as Signer).initiateWithraw(0, oldAliceOnGoing.div(10));
+          //bob invest more for next round: round 3
+          await vault.connect(bob as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier));
+
+          //sell round 2
+          const sellings = [{
+            vaultId: 0,
+            strike: ethPrice * 1.1,
+            premiumRate: 0.01 * 10000 //1%
+          }, {
+            vaultId: 1,
+            strike: ethPrice * 1,
+            premiumRate: 0.015 * 10000
+          }];
+          await vault.connect(manager as Signer).sellOptions(sellings); 
+
+          await vault.connect(trader as Signer).buyOptions([0,1]);
+          
+          await advanceTime(60);
+
+          //round 4
+          const expires = [{
+            expiryLevel: (ethPrice * 1.12).toFixed(0),
+            vaultId: 0
+          }, {
+            expiryLevel: (ethPrice * 1.12).toFixed(0),
+            vaultId: 1
+          }];
+          await  vault.connect(manager as Signer).expireOptions(expires);
+
+           //trader has some value to collect for call option
+
+           aliceState = await vault.connect(alice as Signer).getUserState(0);
+           const optionHolderValue = BigNumber.from(expires[0].expiryLevel).sub(BigNumber.from(sellings[0].strike)).
+           mul(oldAliceOnGoing).div(BigNumber.from(expires[0].expiryLevel));
+           const remaining = oldAliceOnGoing.mul(BigNumber.from(10100)).div(10000).sub(optionHolderValue);
+           const expiryPrice =  remaining.mul(10 ** 8).div(oldAliceOnGoing);
+           const newOnGoing = oldAliceOnGoing.mul(expiryPrice).mul(9).div(10).div(10 ** 8);
+           const redeemded = oldAliceOnGoing.mul(expiryPrice).mul(1).div(10).div(10 ** 8);
+           assert.equal(aliceState.onGoingAmount.toString(), newOnGoing.toString());
+           assert.isTrue(redeemded.gt(0));
+           assert.isTrue(aliceState.redeemed.eq(redeemded));
+           assert.isTrue(aliceState.pending.eq(0));
+           bobState = await vault.connect(bob as Signer).getUserState(1);
+           assert.equal(bobState.onGoingAmount.toString(), oldBobOnGoing.mul(10150).div(10000).add(BigNumber.from(1000).mul(BUSDMultiplier)).toString()); 
+           assert.isTrue(bobState.expiredAmount.eq(0));
+           assert.isTrue(bobState.redeemed.eq(0));
+           assert.isTrue(bobState.pending.eq(0));
+           const oldAliceBalance = await eth.balanceOf(alice.address);
+           await expect(vault.connect(alice as Signer).withdraw(0, redeemded.add(1))).to.be.revertedWith("Not enough to withdraw");
+           await vault.connect(alice as Signer).withdraw(0, redeemded);
+           const newAliceBalance = await eth.balanceOf(alice.address);
+           assert.equal(newAliceBalance.sub(oldAliceBalance).toString(), redeemded.toString());
 
         });
         it("manager and trader perspective", async function () {
