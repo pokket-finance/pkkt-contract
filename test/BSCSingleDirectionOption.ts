@@ -8,7 +8,7 @@ import {  GWEI, BUSD_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, BUS
 import { Table } from 'console-table-printer';
 import { Contract, ContractFactory } from "ethers";
 import { ethers, upgrades } from "hardhat";   
-import { advanceTime, latest } from "./utilities/timer";
+import { advanceBlock, advanceTime, latest } from "./utilities/timer";
    
 const BUSDMultiplier = BigNumber.from(10).pow(BUSD_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
@@ -261,6 +261,7 @@ describe.only("BSC Single Direction Option", async function () {
 
           await expect(vault.connect(trader as Signer).buyOptions([0])).to.be.revertedWith("Nothing to sell");
           await expect(vault.connect(trader as Signer).buyOptions([2])).to.be.revertedWith("Expiry level not specified yet");
+          const vaultStates2 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId))); 
           //we need to expire previous first, market is dropping down greatly, all the put option invester would lose
           await vault.connect(manager as Signer).expireOptions(expiries);
 
@@ -272,7 +273,6 @@ describe.only("BSC Single Direction Option", async function () {
           }
 
           const busdOldBalance = await busd.balanceOf(trader.address);
-          const vaultStates2 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId))); 
           const collectables = await vault.connect(trader as Signer).optionHolderValues(); 
           await vault.connect(trader as Signer).collectOptionHolderValues(); 
           
@@ -291,12 +291,13 @@ describe.only("BSC Single Direction Option", async function () {
                            (strike > expiryLevel ? strike - expiryLevel : 0);
               const calculated = vaultStates2[i].expired.amount.mul(diff).div(expiryLevel); 
               totalCollectableCalculated = totalCollectableCalculated.add(calculated);
-              //assert.equal(vaultStates2[i].currentRound, 3);
+              assert.isTrue(calculated.gt(0));
           } 
           assert.equal(collectables[0].amount.toString(), totalCollectableCalculated.toString());
           assert.equal(busdOldBalance.add(collectables[0].amount).toString(), busdNewBalance.toString());
- 
-          const expiries2 = [{
+  
+          
+          await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1,
             premiumRate: 0.015 * 10000 //1%
@@ -312,19 +313,57 @@ describe.only("BSC Single Direction Option", async function () {
             vaultId: 3,
             strike: btcPrice * 0.88,
             premiumRate: 0.01 * 10000
-          }];
-          
-          await vault.connect(manager as Signer).sellOptions(expiries2);
+          }]);
           await vault.connect(manager as Signer).removeFromWhitelist([trader.address]);
           
           await expect(vault.connect(trader as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("!whitelisted");
 
+          await vault.connect(carol as Signer).buyOptions([0,1,2,3]);
           //round 4
           await advanceTime(60);
+          const expiries2 = [{
+            expiryLevel: ethPrice * 1.02,
+            vaultId: 0
+          }, {
+            expiryLevel: ethPrice * 1.02,
+            vaultId: 1
+          }, {
+            expiryLevel: btcPrice * 1.05,
+            vaultId: 2
+          }, {
+            expiryLevel: btcPrice * 1.05,
+            vaultId: 3
+          }];
+          await advanceBlock();
           const vaultStates3 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId)));
 
-          //market is dropping up greatly, all the call option invester would lose
-          //await vault.connect(manager as Signer).expireOptions(expiries2);
+          //market is going up greatly, all the call option invester would lose
+          await vault.connect(manager as Signer).expireOptions(expiries2);
+          
+          const collectables3 = await vault.connect(carol as Signer).optionHolderValues();
+           
+          const oldBalances2 = [await eth.balanceOf(carol.address), 
+            await wbtc.balanceOf(carol.address)];
+          assert.equal(collectables3.length, 2);
+          assert.equal(collectables3[0].asset, eth.address);
+          assert.equal(collectables3[1].asset, wbtc.address);
+          await vault.connect(carol as Signer).collectOptionHolderValues();
+           
+          const newBalances2 = [await eth.balanceOf(carol.address), 
+            await wbtc.balanceOf(carol.address)];
+          for(let i = 0; i < 2; i++) {
+              const callOrPut = vaultDefinitions[i*2].callOrPut;
+              const expiryLevel = expiries2[i*2].expiryLevel;
+              const strike = vaultStates3[i*2].expired.strike.toNumber();
+              const diff = callOrPut ? (expiryLevel > strike ? expiryLevel - strike: 0) : 
+                           (strike > expiryLevel ? strike - expiryLevel : 0);
+              const calculated = vaultStates3[i*2].expired.amount.mul(diff).div(expiryLevel); 
+              assert.isTrue(calculated.gt(0));
+              assert.equal(collectables3[i].amount.toString(), calculated.toString());
+              
+              assert.equal(oldBalances2[i].add(calculated).toString(), newBalances2[i].toString());
+          } 
+  
 
         });
 

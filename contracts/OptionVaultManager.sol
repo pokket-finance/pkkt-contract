@@ -187,6 +187,8 @@ abstract contract OptionVaultManager is
              uint256 totalOnGoing = remaining.sub(redeemed).add(data.onGoing.amount);
              Utils.assertUint128(totalOnGoing);
              data.onGoing.amount = uint128(totalOnGoing); 
+             expired.amount = 0;
+             expired.queuedRedeemAmount = 0;
          }
         
     }
