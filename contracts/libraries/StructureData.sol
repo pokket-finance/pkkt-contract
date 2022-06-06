@@ -30,7 +30,10 @@ library StructureData {
         uint8 vaultId; 
     }
 
-
+    struct CapacityParameters {
+        uint8 vaultId;
+        uint128 maxCapacity;
+    }
     //information that won't change
     struct VaultDefinition {
         uint8 vaultId; 

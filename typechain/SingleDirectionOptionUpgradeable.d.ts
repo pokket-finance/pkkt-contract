@@ -42,8 +42,10 @@ interface SingleDirectionOptionUpgradeableInterface
     "removeFromWhitelist(address[])": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "setCapacities((uint8,uint128)[])": FunctionFragment;
     "setManager(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
+    "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
@@ -151,10 +153,18 @@ interface SingleDirectionOptionUpgradeableInterface
       }[]
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "setCapacities",
+    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+  ): string;
   encodeFunctionData(functionFragment: "setManager", values: [string]): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "vaultCount",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "vaultDefinitions",
@@ -223,11 +233,16 @@ interface SingleDirectionOptionUpgradeableInterface
     functionFragment: "sellOptions",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "setCapacities",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setManager", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
     data: BytesLike
@@ -466,6 +481,11 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setManager(
       _manager: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -475,6 +495,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<[number]>;
 
     vaultDefinitions(
       arg0: BigNumberish,
@@ -667,6 +689,11 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setCapacities(
+    _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setManager(
     _manager: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -676,6 +703,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     newOwner: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  vaultCount(overrides?: CallOverrides): Promise<number>;
 
   vaultDefinitions(
     arg0: BigNumberish,
@@ -864,12 +893,19 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setManager(_manager: string, overrides?: CallOverrides): Promise<void>;
 
     transferOwnership(
       newOwner: string,
       overrides?: CallOverrides
     ): Promise<void>;
+
+    vaultCount(overrides?: CallOverrides): Promise<number>;
 
     vaultDefinitions(
       arg0: BigNumberish,
@@ -1019,6 +1055,11 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setManager(
       _manager: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1028,6 +1069,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    vaultCount(overrides?: CallOverrides): Promise<BigNumber>;
 
     vaultDefinitions(
       arg0: BigNumberish,
@@ -1155,6 +1198,11 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setManager(
       _manager: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1164,6 +1212,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     vaultDefinitions(
       arg0: BigNumberish,

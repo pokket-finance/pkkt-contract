@@ -182,6 +182,44 @@ const _abi = [
   {
     inputs: [
       {
+        components: [
+          {
+            internalType: "uint8",
+            name: "vaultId",
+            type: "uint8",
+          },
+          {
+            internalType: "uint128",
+            name: "maxCapacity",
+            type: "uint128",
+          },
+        ],
+        internalType: "struct StructureData.CapacityParameters[]",
+        name: "_capacities",
+        type: "tuple[]",
+      },
+    ],
+    name: "setCapacities",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "vaultCount",
+    outputs: [
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "uint8",
         name: "",
         type: "uint8",

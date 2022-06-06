@@ -42,6 +42,7 @@ interface SingleDirectionOptionV2UpgradeableInterface
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "setManager(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
+    "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
@@ -147,6 +148,10 @@ interface SingleDirectionOptionV2UpgradeableInterface
     values: [string]
   ): string;
   encodeFunctionData(
+    functionFragment: "vaultCount",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "vaultDefinitions",
     values: [BigNumberish]
   ): string;
@@ -210,6 +215,7 @@ interface SingleDirectionOptionV2UpgradeableInterface
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
     data: BytesLike
@@ -447,6 +453,8 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    vaultCount(overrides?: CallOverrides): Promise<[number]>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -639,6 +647,8 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  vaultCount(overrides?: CallOverrides): Promise<number>;
+
   vaultDefinitions(
     arg0: BigNumberish,
     overrides?: CallOverrides
@@ -822,6 +832,8 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    vaultCount(overrides?: CallOverrides): Promise<number>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -973,6 +985,8 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    vaultCount(overrides?: CallOverrides): Promise<BigNumber>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -1099,6 +1113,8 @@ export class SingleDirectionOptionV2Upgradeable extends BaseContract {
       newOwner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     vaultDefinitions(
       arg0: BigNumberish,

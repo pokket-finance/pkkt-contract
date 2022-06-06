@@ -30,6 +30,7 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
     "optionHolderValues()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "setCapacities((uint8,uint128)[])": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -76,6 +77,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
       }[]
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "setCapacities",
+    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "addToWhitelist",
@@ -104,6 +109,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "sellOptions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setCapacities",
     data: BytesLike
   ): Result;
 
@@ -201,6 +210,11 @@ export class IOptionVaultManager extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
   addToWhitelist(
@@ -249,6 +263,11 @@ export class IOptionVaultManager extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setCapacities(
+    _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
     addToWhitelist(
       _whitelistAddresses: string[],
@@ -291,6 +310,11 @@ export class IOptionVaultManager extends BaseContract {
         premiumRate: BigNumberish;
         vaultId: BigNumberish;
       }[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
   };
@@ -341,6 +365,11 @@ export class IOptionVaultManager extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -387,6 +416,11 @@ export class IOptionVaultManager extends BaseContract {
         premiumRate: BigNumberish;
         vaultId: BigNumberish;
       }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

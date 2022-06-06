@@ -337,7 +337,10 @@ describe.only("BSC Single Direction Option", async function () {
            const aliceExpiredAmount = aliceState.onGoingAmount;
            //they will be redeemable instantly after expiry
            await vault.connect(alice as Signer).initiateWithraw(0, aliceExpiredAmount);
+           await vault.connect(alice as Signer).cancelWithdraw(0, aliceExpiredAmount.div(2));
            await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount);
+           await vault.connect(bob as Signer).cancelWithdraw(1, bobExpiredAmount.div(2));
+           await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount.div(2));
            
           const expires2 = [{
             expiryLevel: (ethPrice * 0.95).toFixed(0),
@@ -354,8 +357,8 @@ describe.only("BSC Single Direction Option", async function () {
            bobState = await vault.connect(bob as Signer).getUserState(0);
            
            
-           assert.equal(aliceState.redeemed.toString(), aliceExpiredAmount.mul(10100).div(10000).toString());
-           assert.isTrue(aliceState.onGoingAmount.eq(0));
+           assert.equal(aliceState.redeemed.toString(), aliceExpiredAmount.div(2).mul(10100).div(10000).toString());
+           assert.isTrue(aliceState.onGoingAmount.eq(aliceState.redeemed));
            assert.isTrue(aliceState.expiredQueuedRedeemAmount.eq(0));
            assert.isTrue(aliceState.expiredAmount.eq(0));
            assert.isTrue(aliceState.onGoingQueuedRedeemAmount.eq(0));
@@ -563,6 +566,20 @@ describe.only("BSC Single Direction Option", async function () {
               assert.equal(oldBalances2[i].add(calculated).toString(), newBalances2[i].toString());
           } 
   
+          const ethState = await vault.getVaultState(0);
+          const currentTVL = ethState.totalPending.add(ethState.onGoing.amount).add(ethState.expired.amount).sub(ethState.expired.queuedRedeemAmount);
+          assert.isTrue(currentTVL.gt(0));
+          await expect(vault.connect(manager as Signer).setCapacities([{
+            vaultId: 0,
+            maxCapacity: currentTVL.sub(1)
+          }])).to.be.revertedWith("Max Cap too small");
+          await vault.connect(manager as Signer).setCapacities([{
+            vaultId: 0,
+            maxCapacity: currentTVL.add(100)
+          }]);
+          await vault.connect(alice as Signer).deposit(0, BigNumber.from(100));
+          await expect(vault.connect(alice as Signer).deposit(0, BigNumber.from(1))).to.be.revertedWith("Exceeds capacity");
+
 
         });
 

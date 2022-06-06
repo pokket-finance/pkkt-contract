@@ -236,9 +236,8 @@ library OptionLifecycle {
         );
         state = _vaultState.userStates[_user];
 
-        uint256 pending = _vaultState.totalPending;
         uint256 newTVL = _amount
-            .add(pending)
+            .add(_vaultState.totalPending)
             .add(_vaultState.onGoing.amount)
             .add(_vaultState.expired.amount)
             .sub(_vaultState.expired.queuedRedeemAmount);

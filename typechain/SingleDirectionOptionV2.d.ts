@@ -35,6 +35,7 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
@@ -104,6 +105,10 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "vaultCount",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "vaultDefinitions",
     values: [BigNumberish]
   ): string;
@@ -155,6 +160,7 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
     functionFragment: "sellOptions",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
     data: BytesLike
@@ -344,6 +350,8 @@ export class SingleDirectionOptionV2 extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    vaultCount(overrides?: CallOverrides): Promise<[number]>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -496,6 +504,8 @@ export class SingleDirectionOptionV2 extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  vaultCount(overrides?: CallOverrides): Promise<number>;
+
   vaultDefinitions(
     arg0: BigNumberish,
     overrides?: CallOverrides
@@ -644,6 +654,8 @@ export class SingleDirectionOptionV2 extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    vaultCount(overrides?: CallOverrides): Promise<number>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -739,6 +751,8 @@ export class SingleDirectionOptionV2 extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    vaultCount(overrides?: CallOverrides): Promise<BigNumber>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -825,6 +839,8 @@ export class SingleDirectionOptionV2 extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     vaultDefinitions(
       arg0: BigNumberish,

@@ -21,11 +21,16 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
   functions: {
     "managerRoleAddress()": FunctionFragment;
+    "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "managerRoleAddress",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "vaultCount",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -37,6 +42,7 @@ interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
     functionFragment: "managerRoleAddress",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
     data: BytesLike
@@ -91,6 +97,8 @@ export class OptionVaultStorageV1 extends BaseContract {
   functions: {
     managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
 
+    vaultCount(overrides?: CallOverrides): Promise<[number]>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -107,6 +115,8 @@ export class OptionVaultStorageV1 extends BaseContract {
 
   managerRoleAddress(overrides?: CallOverrides): Promise<string>;
 
+  vaultCount(overrides?: CallOverrides): Promise<number>;
+
   vaultDefinitions(
     arg0: BigNumberish,
     overrides?: CallOverrides
@@ -122,6 +132,8 @@ export class OptionVaultStorageV1 extends BaseContract {
 
   callStatic: {
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
+    vaultCount(overrides?: CallOverrides): Promise<number>;
 
     vaultDefinitions(
       arg0: BigNumberish,
@@ -142,6 +154,8 @@ export class OptionVaultStorageV1 extends BaseContract {
   estimateGas: {
     managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
+    vaultCount(overrides?: CallOverrides): Promise<BigNumber>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -152,6 +166,8 @@ export class OptionVaultStorageV1 extends BaseContract {
     managerRoleAddress(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     vaultDefinitions(
       arg0: BigNumberish,

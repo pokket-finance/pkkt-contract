@@ -37,6 +37,8 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     "optionHolderValues()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "setCapacities((uint8,uint128)[])": FunctionFragment;
+    "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
@@ -114,6 +116,14 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "setCapacities",
+    values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "vaultCount",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "vaultDefinitions",
     values: [BigNumberish]
   ): string;
@@ -173,6 +183,11 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     functionFragment: "sellOptions",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "setCapacities",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
     data: BytesLike
@@ -373,6 +388,13 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<[number]>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -534,6 +556,13 @@ export class SingleDirectionOption extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setCapacities(
+    _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  vaultCount(overrides?: CallOverrides): Promise<number>;
+
   vaultDefinitions(
     arg0: BigNumberish,
     overrides?: CallOverrides
@@ -693,6 +722,13 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    vaultCount(overrides?: CallOverrides): Promise<number>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -795,6 +831,13 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    vaultCount(overrides?: CallOverrides): Promise<BigNumber>;
+
     vaultDefinitions(
       arg0: BigNumberish,
       overrides?: CallOverrides
@@ -890,6 +933,13 @@ export class SingleDirectionOption extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    setCapacities(
+      _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    vaultCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     vaultDefinitions(
       arg0: BigNumberish,
