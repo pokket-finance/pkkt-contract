@@ -285,7 +285,6 @@ describe.only("BSC Single Direction Option", async function () {
           await  vault.connect(manager as Signer).expireOptions(expires);
 
            //trader has some value to collect for call option
-
            aliceState = await vault.connect(alice as Signer).getUserState(0);
            const optionHolderValue = BigNumber.from(expires[0].expiryLevel).sub(BigNumber.from(sellings[0].strike)).
            mul(oldAliceOnGoing).div(BigNumber.from(expires[0].expiryLevel));
@@ -304,9 +303,74 @@ describe.only("BSC Single Direction Option", async function () {
            assert.isTrue(bobState.pending.eq(0));
            const oldAliceBalance = await eth.balanceOf(alice.address);
            await expect(vault.connect(alice as Signer).withdraw(0, redeemded.add(1))).to.be.revertedWith("Not enough to withdraw");
-           await vault.connect(alice as Signer).withdraw(0, redeemded);
+           await vault.connect(alice as Signer).withdraw(0, redeemded.div(2));
            const newAliceBalance = await eth.balanceOf(alice.address);
-           assert.equal(newAliceBalance.sub(oldAliceBalance).toString(), redeemded.toString());
+           assert.equal(newAliceBalance.sub(oldAliceBalance).toString(), redeemded.div(2).toString());
+
+           await vault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(ETHMultiplier));
+           aliceState = await vault.connect(alice as Signer).getUserState(0);
+           assert.equal(aliceState.pending.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
+           assert.equal(aliceState.redeemed.toString(), redeemded.div(2).toString());
+
+           await vault.connect(alice as Signer).withdraw(0, redeemded.div(2).add(BigNumber.from(10).mul(ETHMultiplier)));
+           aliceState = await vault.connect(alice as Signer).getUserState(0);
+           assert.isTrue(aliceState.redeemed.eq(0));
+           assert.isTrue(aliceState.pending.eq(0));
+
+           const selling2 = [{
+            vaultId: 0,
+            strike: ethPrice * 1.05,
+            premiumRate: 0.01 * 10000 //1%
+          }, {
+            vaultId: 1,
+            strike: ethPrice,
+            premiumRate: 0.015 * 10000
+          }];;
+           await vault.connect(manager as Signer).sellOptions(selling2);
+           await vault.connect(trader as Signer).buyOptions([0,1]);
+
+           //round 5
+           await advanceTimeAndBlock(60);
+           
+           bobState = await vault.connect(bob as Signer).getUserState(0);
+           const bobExpiredAmount = bobState.expiredAmount;
+           const aliceExpiredAmount = aliceState.onGoingAmount;
+           //they will be redeemable instantly after expiry
+           await vault.connect(alice as Signer).initiateWithraw(0, aliceExpiredAmount);
+           await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount);
+           
+          const expires2 = [{
+            expiryLevel: (ethPrice * 0.95).toFixed(0),
+            vaultId: 0
+          }, {
+            expiryLevel: (ethPrice * 0.95).toFixed(0),
+            vaultId: 1
+          }];
+          await  vault.connect(manager as Signer).expireOptions(expires2);
+ 
+
+           //trader has some value to collect for put option
+           aliceState = await vault.connect(alice as Signer).getUserState(0);
+           bobState = await vault.connect(bob as Signer).getUserState(0);
+           
+           
+           assert.equal(aliceState.redeemed.toString(), aliceExpiredAmount.mul(10100).div(10000).toString());
+           assert.isTrue(aliceState.onGoingAmount.eq(0));
+           assert.isTrue(aliceState.expiredQueuedRedeemAmount.eq(0));
+           assert.isTrue(aliceState.expiredAmount.eq(0));
+           assert.isTrue(aliceState.onGoingQueuedRedeemAmount.eq(0));
+
+
+           const optionHolderValue2 = BigNumber.from(selling2[1].strike).sub(BigNumber.from(expires2[1].expiryLevel)).
+           mul(bobExpiredAmount).div(BigNumber.from(selling2[1].strike));
+           const remaining2 = bobExpiredAmount.mul(BigNumber.from(10150)).div(10000).sub(optionHolderValue2);
+
+           assert.equal(bobState.redeemed.toString(), remaining2.toString());
+           assert.isTrue(bobState.onGoingAmount.eq(0));
+           assert.isTrue(bobState.expiredQueuedRedeemAmount.eq(0));
+           assert.isTrue(bobState.expiredAmount.eq(0));
+           assert.isTrue(bobState.onGoingQueuedRedeemAmount.eq(0));
+
 
         });
         it("manager and trader perspective", async function () {
@@ -424,7 +488,7 @@ describe.only("BSC Single Direction Option", async function () {
               const strike = vaultStates2[i].expired.strike.toNumber();
               const diff = callOrPut ? (expiryLevel > strike ? expiryLevel - strike: 0) : 
                            (strike > expiryLevel ? strike - expiryLevel : 0);
-              const calculated = vaultStates2[i].expired.amount.mul(diff).div(expiryLevel); 
+              const calculated = vaultStates2[i].expired.amount.mul(diff).div(callOrPut ? expiryLevel : strike); 
               totalCollectableCalculated = totalCollectableCalculated.add(calculated);
               assert.isTrue(calculated.gt(0));
           } 
@@ -492,7 +556,7 @@ describe.only("BSC Single Direction Option", async function () {
               const strike = vaultStates3[i*2].expired.strike.toNumber();
               const diff = callOrPut ? (expiryLevel > strike ? expiryLevel - strike: 0) : 
                            (strike > expiryLevel ? strike - expiryLevel : 0);
-              const calculated = vaultStates3[i*2].expired.amount.mul(diff).div(expiryLevel); 
+              const calculated = vaultStates3[i*2].expired.amount.mul(diff).div(callOrPut ? expiryLevel: strike); 
               assert.isTrue(calculated.gt(0));
               assert.equal(collectables3[i].amount.toString(), calculated.toString());
               

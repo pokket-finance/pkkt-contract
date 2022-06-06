@@ -170,7 +170,8 @@ abstract contract OptionVaultManager is
               //can be withdrawn by trader 
              StructureData.OptionBuyerState storage buyerState = buyerStates[expired.buyerAddress];
 
-             uint256 optionHolderValue = diff.mul(expired.amount).div(expiryParameters.expiryLevel);
+             uint256 optionHolderValue = diff.mul(expired.amount).div(vaultDefinitions[expiryParameters.vaultId].callOrPut ? 
+             expiryParameters.expiryLevel: expired.strike);
              Utils.assertUint128(optionHolderValue);
              buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(buyerState.optionValueToCollect[asset]));
 
