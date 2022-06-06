@@ -70,7 +70,7 @@ contract SingleDirectionOptionV2 is OptionVaultManagerV2, IDOVOption {
         address asset = vaultDefinitions[_vaultId].asset; 
         require(asset == address(0), "!ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];
-        require(data.cutOffAt > 0, "!Started");
+        require(data.cutOffAt > 0, "!started");
         //todo: check for cap
         OptionLifecycle.depositFor(
             data,

@@ -70,7 +70,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         address asset = vaultDefinitions[_vaultId].asset; 
         require(asset == address(0), "!ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];
-        require(data.cutOffAt > 0, "!Started");
+        require(data.cutOffAt > 0, "!started");
         //todo: check for cap
         OptionLifecycle.depositFor(
             data,
@@ -102,10 +102,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     function getUserState(uint8 _vaultId) external override view validateVaultId(_vaultId) returns (StructureData.UserState memory) {
 
         StructureData.VaultState storage data = vaultStates[_vaultId];
-        uint16 currentRound = data.currentRound;
-        if (data.cutOffAt <= block.timestamp) {
-            currentRound = currentRound + 1;
-        }
+        (,uint16 currentRound) = OptionLifecycle.getRealRound(data);
         StructureData.UserState storage state = data.userStates[msg.sender];
         return OptionLifecycle.recalcState(data, state, currentRound);
 

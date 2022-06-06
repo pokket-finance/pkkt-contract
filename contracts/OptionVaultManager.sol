@@ -170,16 +170,16 @@ abstract contract OptionVaultManager is
               //can be withdrawn by trader 
              StructureData.OptionBuyerState storage buyerState = buyerStates[expired.buyerAddress];
 
-             uint256 depositPriceAfterExpiry = diff.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expiryParameters.expiryLevel);
-             Utils.assertUint128(depositPriceAfterExpiry);
-             data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = uint128(depositPriceAfterExpiry);
-
              uint256 optionHolderValue = diff.mul(expired.amount).div(expiryParameters.expiryLevel);
-
              Utils.assertUint128(optionHolderValue);
              buyerState.optionValueToCollect[asset] = uint128(optionHolderValue.add(buyerState.optionValueToCollect[asset]));
 
              uint256 remaining = uint256(expired.amount).withPremium(expired.premiumRate).sub(optionHolderValue);
+             uint256 depositPriceAfterExpiry = remaining.mul(10 ** OptionLifecycle.ROUND_PRICE_DECIMALS).div(expired.amount);
+             Utils.assertUint128(depositPriceAfterExpiry);
+             data.depositPriceAfterExpiryPerRound[data.currentRound - 2] = uint128(depositPriceAfterExpiry);
+
+
              uint256 redeemed = remaining.mul(expired.queuedRedeemAmount).div(expired.amount);
              uint256 totalRedeemed = redeemed.add(data.totalRedeemed);
              Utils.assertUint128(totalRedeemed);

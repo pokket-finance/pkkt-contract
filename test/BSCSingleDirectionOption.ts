@@ -8,7 +8,7 @@ import {  GWEI, BUSD_DECIMALS, ETH_DECIMALS, WBTC_DECIMALS, OptionExecution, BUS
 import { Table } from 'console-table-printer';
 import { Contract, ContractFactory } from "ethers";
 import { ethers, upgrades } from "hardhat";   
-import { advanceBlock, advanceTime, latest } from "./utilities/timer";
+import { advanceBlock, advanceTime, advanceTimeAndBlock, latest } from "./utilities/timer";
    
 const BUSDMultiplier = BigNumber.from(10).pow(BUSD_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
@@ -173,6 +173,85 @@ describe.only("BSC Single Direction Option", async function () {
 
 
         it("end user perspective", async function () { 
+        
+            //round 1
+            await vault.connect(manager as Signer).kickOffOptions([{
+              vaultId: 0,
+              maxCapacity: BigNumber.from(20).mul(ETHMultiplier),
+              environment:2
+            }, {
+              vaultId: 1,
+              maxCapacity: BigNumber.from(20).mul(1800).mul(BUSDMultiplier),
+              environment:2
+            }, {
+              vaultId: 2,
+              maxCapacity: BigNumber.from(10).mul(WBTCMultiplier),
+              environment:2
+            }, {
+              vaultId: 3,
+              maxCapacity: BigNumber.from(10).mul(30000).mul(BUSDMultiplier),
+              environment:2
+            }]);
+  
+            await vault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(ETHMultiplier));
+            await vault.connect(bob as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier));
+            let aliceState = await vault.connect(alice as Signer).getUserState(0);
+            assert.equal(aliceState.pending.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
+            let bobState = await vault.connect(bob as Signer).getUserState(1);
+            assert.equal(bobState.pending.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString()); 
+                    
+          //round 2
+          await advanceTime(60); 
+        
+          await vault.connect(manager as Signer).sellOptions([{
+            vaultId: 0,
+            strike: ethPrice * 1.05,
+            premiumRate: 0.015 * 10000 //1%
+          }, {
+            vaultId: 1,
+            strike: ethPrice * 0.96,
+            premiumRate: 0.01 * 10000
+          }]); 
+          
+          aliceState = await vault.connect(alice as Signer).getUserState(0);
+          assert.isTrue(aliceState.pending.eq(0));
+          bobState = await vault.connect(bob as Signer).getUserState(1);
+          assert.equal(bobState.onGoingAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString()); 
+          assert.isTrue(bobState.pending.eq(0));
+
+          await vault.connect(manager as Signer).addToWhitelist([trader.address]);
+          await vault.connect(trader as Signer).buyOptions([0,1]);
+
+          //round 3
+          await advanceTimeAndBlock(60);
+          
+          aliceState = await vault.connect(alice as Signer).getUserState(0);
+          assert.equal(aliceState.expiredAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
+          assert.isTrue(aliceState.onGoingAmount.eq(0));
+          assert.isTrue(aliceState.pending.eq(0));
+          bobState = await vault.connect(bob as Signer).getUserState(1);
+          assert.equal(bobState.expiredAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString()); 
+          assert.isTrue(bobState.onGoingAmount.eq(0));
+          assert.isTrue(bobState.pending.eq(0));
+
+          await  vault.connect(manager as Signer).expireOptions([{
+            expiryLevel: ethPrice * 1.04,
+            vaultId: 0
+          }, {
+            expiryLevel: ethPrice * 1.04,
+            vaultId: 1
+          }]);
+          //nothing to collect, user get premium
+          aliceState = await vault.connect(alice as Signer).getUserState(0);
+          assert.equal(aliceState.onGoingAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).mul(10150).div(10000).toString());
+          assert.isTrue(aliceState.expiredAmount.eq(0));
+          assert.isTrue(aliceState.pending.eq(0));
+          bobState = await vault.connect(bob as Signer).getUserState(1);
+          assert.equal(bobState.onGoingAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).mul(10100).div(10000).toString()); 
+          assert.isTrue(bobState.expiredAmount.eq(0));
+          assert.isTrue(bobState.pending.eq(0));
+
+
         });
         it("manager and trader perspective", async function () {
           await expect(vault.connect(alice as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier))).to.be.revertedWith("!started");
