@@ -10,7 +10,10 @@ const main = async ({  }, {
     getNamedAccounts,
     ethers
   }) => { 
-
+    const provider = new ethers.providers.JsonRpcProvider(
+        network.config.url,
+        network.config.chainId
+      ); 
     if (process.env.FROM_SECURE_STORAGE) {
 
       var storage = getStorage();
@@ -20,7 +23,7 @@ const main = async ({  }, {
       var managerAddress = await storage.readValue("managerAddress");
       var adminAddress = process.env.USE_PROXY ? await storage.readValue("adminAddress") : null;
       var deployerPrivateKey = await storage.readValue("deployerPrivateKey"); 
-      let deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, network.provider)).getAddress() : null;
+      let deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, provider).getAddress()) : null;
       if (!deployerAddress) {
         console.error('deployerPrivateKey missing')
         return;
@@ -43,13 +46,7 @@ const main = async ({  }, {
     }
   
     var schema = {
-      properties: {
-        deployerAddress: {
-          name:'Deployer Address',
-          pattern: /^0x[0-9A-Fa-f]{40}$/,
-          message: 'Must be a hex starts with 0x',
-          required: true
-        },
+      properties: { 
         deployerPrivateKey: {
           name: 'Deployer Account\'s Private Key',
           format: ' /^[0-9A-Fa-f]{64}$/', 
@@ -85,25 +82,30 @@ const main = async ({  }, {
     } 
     var storage = getStorage();
     var fileStorage = getFileStorage();
-    var deployerAddress = await fileStorage.readValue("deployerAddress");
     var ownerAddress = await fileStorage.readValue("ownerAddress");
     var managerAddress = await fileStorage.readValue("managerAddress");
     var adminAddress = process.env.USE_PROXY ? await fileStorage.readValue("adminAddress") : null;
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
+    var deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, provider).getAddress()) : null;
+
     if (deployerAddress && ownerAddress && managerAddress && deployerPrivateKey){
       let message = `Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${managerAddress}`;
       if (adminAddress && adminAddress != deployerAddress) {
         message += `; Proxy Admin Address: ${adminAddress}`;
       } 
       console.log(message); 
+      return;
     }
-
+    
     const result = await promptHelper(schema);   
-    if (!result.adminAddress && result.adminAddress != result.deployerAddress) {
-      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}`); 
+    
+    deployerAddress = result.deployerPrivateKey ? (await new ethers.Wallet(result.deployerPrivateKey, provider).getAddress()) : null;
+
+    if (!result.adminAddress && result.adminAddress != deployerAddress) {
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}`); 
     }
     else{
-      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
  
     }
     await fileStorage.writeValue("deployerAddress", result.deployerAddress);
