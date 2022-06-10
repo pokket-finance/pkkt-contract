@@ -56,7 +56,7 @@ var accounts = data.deployerPrivateKey ?
       chainId: 3
     }, 
     bsctest: { 
-      url: process.env.BSCTEST_RPC_URL || `https://data-seed-prebsc-1-s1.binance.org:8545`,
+      url: process.env.BSCTEST_RPC_URL || `https://data-seed-prebsc-2-s1.binance.org:8545/`,
       gas: 2100000,
       gasPrice: 20e9,
       accounts: accounts,
@@ -86,7 +86,7 @@ var accounts = data.deployerPrivateKey ?
       default: data.ownerAddress || 1,
     },
     manager: { 
-      default: data.settlerAddress || 2,
+      default: data.managerAddress || 2,
     },
     admin : {
       default: 3,
