@@ -35,6 +35,7 @@ interface SingleDirectionOptionUpgradeableInterface
     "getVaultState(uint8)": FunctionFragment;
     "initialize(address,address,(uint8,uint8,address,address,bool)[])": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
+    "isWhitelisted()": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
@@ -115,6 +116,10 @@ interface SingleDirectionOptionUpgradeableInterface
   encodeFunctionData(
     functionFragment: "initiateWithraw",
     values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "isWhitelisted",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
@@ -206,6 +211,10 @@ interface SingleDirectionOptionUpgradeableInterface
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "initiateWithraw",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "isWhitelisted",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -444,6 +453,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    isWhitelisted(overrides?: CallOverrides): Promise<[boolean]>;
+
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -654,6 +665,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
+
   kickOffOptions(
     _kickoffs: {
       vaultId: BigNumberish;
@@ -860,6 +873,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
+
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -1022,6 +1037,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    isWhitelisted(overrides?: CallOverrides): Promise<BigNumber>;
+
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -1160,6 +1177,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       _redeemAmount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    isWhitelisted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     kickOffOptions(
       _kickoffs: {

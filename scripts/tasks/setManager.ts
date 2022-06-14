@@ -4,7 +4,7 @@ import promptHelper from '../helper/promptHelper';
 import { ethers } from "ethers";
 import {getEmailer} from '../helper/emailHelper';
  
-const main = async ({ forcesettlerkey }, {
+const main = async ({  }, {
     network,
     deployments,
     getNamedAccounts,

@@ -69,6 +69,19 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "isWhitelisted",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [
       {
         components: [

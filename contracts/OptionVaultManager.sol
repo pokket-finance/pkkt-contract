@@ -314,6 +314,10 @@ abstract contract OptionVaultManager is
         return values;
     }
 
+    function isWhitelisted() external override view returns(bool){
+      return whitelist[msg.sender];
+    }
+
     modifier lock() {
         require(locked == 0, "locked");
         locked = 1;

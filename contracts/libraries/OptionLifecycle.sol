@@ -263,13 +263,13 @@ library OptionLifecycle {
         while (cutOffAt <= block.timestamp) {
             if (_vaultState.environment == 0) {
                 //prod
-                cutOffAt = PERIOD.add(_vaultState.cutOffAt);
+                cutOffAt = PERIOD.add(cutOffAt);
             } else if (_vaultState.environment == 1) {
                 //qa
-                cutOffAt = PERIOD_QA.add(_vaultState.cutOffAt);
+                cutOffAt = PERIOD_QA.add(cutOffAt);
             } else {
                 //test
-                cutOffAt = PERIOD_TEST.add(_vaultState.cutOffAt);
+                cutOffAt = PERIOD_TEST.add(cutOffAt);
             }
             require(cutOffAt <= type(uint32).max, "Overflow cutOffAt");
             currentRound++;
