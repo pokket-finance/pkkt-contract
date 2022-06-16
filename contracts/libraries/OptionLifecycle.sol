@@ -374,6 +374,7 @@ library OptionLifecycle {
                 snapShot.totalRedeemed = uint128(totalRedeemed); 
             }
             snapShot.expired = onGoing;
+            snapShot.totalPending = 0;
             lastUpdateRound = lastUpdateRound + 1;
         }
 
