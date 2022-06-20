@@ -13,6 +13,6 @@ interface IOptionVaultManager {
     //trader methods
     function collectOptionHolderValues() external;
     function optionHolderValues() external view returns(StructureData.CollectableValue[] memory);
-    function buyOptions(uint8[] memory _vaultIds) payable external;
-    function isWhitelisted() external view returns(bool);
+    function buyOptions(uint8[] memory _vaultIds) payable external; 
+    function whitelistTraders() external view returns(address[] memory);
 }

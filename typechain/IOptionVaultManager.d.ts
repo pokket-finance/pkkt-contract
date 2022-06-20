@@ -26,12 +26,12 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
     "buyOptions(uint8[])": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
-    "isWhitelisted()": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
     "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
     "setCapacities((uint8,uint128)[])": FunctionFragment;
+    "whitelistTraders()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -49,10 +49,6 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "expireOptions",
     values: [{ expiryLevel: BigNumberish; vaultId: BigNumberish }[]]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isWhitelisted",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
@@ -86,6 +82,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
     functionFragment: "setCapacities",
     values: [{ vaultId: BigNumberish; maxCapacity: BigNumberish }[]]
   ): string;
+  encodeFunctionData(
+    functionFragment: "whitelistTraders",
+    values?: undefined
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "addToWhitelist",
@@ -98,10 +98,6 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "expireOptions",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "isWhitelisted",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -122,6 +118,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setCapacities",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistTraders",
     data: BytesLike
   ): Result;
 
@@ -191,8 +191,6 @@ export class IOptionVaultManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<[boolean]>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -226,6 +224,8 @@ export class IOptionVaultManager extends BaseContract {
       _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<[string[]]>;
   };
 
   addToWhitelist(
@@ -246,8 +246,6 @@ export class IOptionVaultManager extends BaseContract {
     _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
 
   kickOffOptions(
     _kickoffs: {
@@ -281,6 +279,8 @@ export class IOptionVaultManager extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
+
   callStatic: {
     addToWhitelist(
       _whitelistAddresses: string[],
@@ -298,8 +298,6 @@ export class IOptionVaultManager extends BaseContract {
       _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
 
     kickOffOptions(
       _kickoffs: {
@@ -332,6 +330,8 @@ export class IOptionVaultManager extends BaseContract {
       _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
   };
 
   filters: {};
@@ -355,8 +355,6 @@ export class IOptionVaultManager extends BaseContract {
       _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<BigNumber>;
 
     kickOffOptions(
       _kickoffs: {
@@ -387,6 +385,8 @@ export class IOptionVaultManager extends BaseContract {
       _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -408,8 +408,6 @@ export class IOptionVaultManager extends BaseContract {
       _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     kickOffOptions(
       _kickoffs: {
@@ -442,5 +440,7 @@ export class IOptionVaultManager extends BaseContract {
       _capacities: { vaultId: BigNumberish; maxCapacity: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

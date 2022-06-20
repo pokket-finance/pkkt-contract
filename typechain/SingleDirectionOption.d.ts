@@ -32,7 +32,6 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     "getUserState(uint8)": FunctionFragment;
     "getVaultState(uint8)": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
-    "isWhitelisted()": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
@@ -41,6 +40,7 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     "setCapacities((uint8,uint128)[])": FunctionFragment;
     "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
+    "whitelistTraders()": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
   };
 
@@ -83,10 +83,6 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "initiateWithraw",
     values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isWhitelisted",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
@@ -133,6 +129,10 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "whitelistTraders",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "withdraw",
     values: [BigNumberish, BigNumberish]
   ): string;
@@ -169,10 +169,6 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "isWhitelisted",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "kickOffOptions",
     data: BytesLike
   ): Result;
@@ -199,6 +195,10 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistTraders",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
@@ -366,8 +366,6 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<[boolean]>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -418,6 +416,8 @@ export class SingleDirectionOption extends BaseContract {
         callOrPut: boolean;
       }
     >;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<[string[]]>;
 
     withdraw(
       _vaultId: BigNumberish,
@@ -538,8 +538,6 @@ export class SingleDirectionOption extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
-
   kickOffOptions(
     _kickoffs: {
       vaultId: BigNumberish;
@@ -588,6 +586,8 @@ export class SingleDirectionOption extends BaseContract {
       callOrPut: boolean;
     }
   >;
+
+  whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
 
   withdraw(
     _vaultId: BigNumberish,
@@ -706,8 +706,6 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -756,6 +754,8 @@ export class SingleDirectionOption extends BaseContract {
         callOrPut: boolean;
       }
     >;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
 
     withdraw(
       _vaultId: BigNumberish,
@@ -819,8 +819,6 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<BigNumber>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -859,6 +857,8 @@ export class SingleDirectionOption extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<BigNumber>;
 
     withdraw(
       _vaultId: BigNumberish,
@@ -920,8 +920,6 @@ export class SingleDirectionOption extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -964,6 +962,8 @@ export class SingleDirectionOption extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     withdraw(
       _vaultId: BigNumberish,

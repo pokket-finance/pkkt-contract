@@ -425,6 +425,10 @@ describe.only("BSC Single Direction Option", async function () {
           }]); 
           
           await vault.connect(manager as Signer).addToWhitelist([trader.address, carol.address]);
+          const whitelistedTraders = await vault.whitelistTraders();
+          assert.equal(whitelistedTraders.length, 2);
+          assert.equal(whitelistedTraders[0], trader.address)
+          assert.equal(whitelistedTraders[1], carol.address)
           
           await expect(vault.connect(bob as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("!whitelisted");
           const vaultStates = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId)));
@@ -517,6 +521,9 @@ describe.only("BSC Single Direction Option", async function () {
             premiumRate: 0.01 * 10000
           }]);
           await vault.connect(manager as Signer).removeFromWhitelist([trader.address]);
+          const whitelistedTraders2 = await vault.whitelistTraders();
+          assert.equal(whitelistedTraders2.length, 1); 
+          assert.equal(whitelistedTraders2[0], carol.address)
           
           await expect(vault.connect(trader as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("!whitelisted");
 
@@ -584,22 +591,9 @@ describe.only("BSC Single Direction Option", async function () {
         });
 
 
-        it("new upgrader perspecitve", async function () {          
+      /* it("new upgrader perspecitve", async function () {          
           const proxyAddress = vault.address;  
-          await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address);
-          /*
-          let optionVaultV2 = await ethers.getContractFactory("SingleDirectionOptionV2Upgradeable", { 
-            libraries: {
-              OptionLifecycle: optionLifecycleAddress
-            },
-          }) as ContractFactory; 
-           await expect(function(){
-            upgrades.upgradeProxy(proxyAddress, optionVaultV2, { 
-              unsafeAllow: ['delegatecall'], 
-              unsafeAllowLinkedLibraries: true, 
-             })
-           }).to.throw(); */
- 
+          await upgrades.admin.changeProxyAdmin(proxyAddress, admin.address); 
            let optionVaultV2 = await ethers.getContractFactory("SingleDirectionOptionV2Upgradeable", {
             signer: admin as Signer,
             libraries: {
@@ -618,7 +612,8 @@ describe.only("BSC Single Direction Option", async function () {
            await expect(v2.connect(manager as Signer).clearBidding()).to.be.revertedWith("Nothing to bid");
 
           console.log("SingleDirectionOption upgraded successfully");
-        })
+        }) */
+
         it("hacker perspective", async function () { 
           const notOwner = "Ownable: caller is not the owner";
           const notManager = "!manager";
@@ -656,7 +651,7 @@ describe.only("BSC Single Direction Option", async function () {
           await expect(vault.connect(bob as Signer).addToWhitelist([alice.address])).to.be.revertedWith(notManager);  
 
         });
-      }); 
+      });
         
       function reduceBalances(calculations:BigNumber[], balances:BigNumber[], vaultIds:number[]){
         let newCalculatedBalance: {[key:string]: {

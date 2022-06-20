@@ -39,8 +39,8 @@ abstract contract OptionVaultManager is
             vault.vaultId = vaultCount_;
             vaultDefinitions[vaultCount_++] = vault;
             bool knownAsset = false;
-            for (uint256 j = 0; j < assetCount_; j++) {
-                if (assets[uint8(j)] == vault.asset) {
+            for (uint8 j = 0; j < assetCount_; j++) {
+                if (assets[j] == vault.asset) {
                     knownAsset = true;
                     break;
                 }
@@ -58,19 +58,53 @@ abstract contract OptionVaultManager is
         override
         managerOnly
     {
+        uint8 traderCount_ = traderCount;
         for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
-            whitelist[_whitelistAddresses[i]] = true;
+            address trader = _whitelistAddresses[i];
+            if (!whitelist[trader]) { 
+               whitelist[trader] = true;
+               bool existingTrader = false;
+               for(uint8 j=0; j < traderCount_; j++) {
+                   if (traders[j] == trader) {   
+                       existingTrader = true;
+                       break;
+                   }
+               }
+               if (!existingTrader) {
+                   traders[traderCount_++] = trader;
+               }
+            }
         }
+        traderCount = traderCount_;
     }
 
     function removeFromWhitelist(address[] memory _delistAddresses)
         external
         override
         managerOnly
-    {
-        for (uint256 i = 0; i < _delistAddresses.length; i++) {
-            whitelist[_delistAddresses[i]] = false;
+    { 
+        for (uint256 i = 0; i < _delistAddresses.length; i++) { 
+            whitelist[_delistAddresses[i]] = false; 
         }
+    }
+    function whitelistTraders() external override view returns(address[] memory) {
+       if (traderCount == 0) {
+           return new address[](0);
+       }
+       uint256 count = 0;
+       for(uint8 i = 0; i < traderCount; i++) {
+           if (whitelist[traders[i]]) {
+               count++;
+           }
+       }
+       address[] memory whitelistData = new address[](count);
+       count = 0;
+       for(uint8 i = 0; i < traderCount; i++) {
+           if (whitelist[traders[i]]) {
+               whitelistData[count++] = traders[i];
+           }
+       }
+       return whitelistData;
     }
 
     //only needed for the initial kick off
@@ -314,9 +348,6 @@ abstract contract OptionVaultManager is
         return values;
     }
 
-    function isWhitelisted() external override view returns(bool){
-      return whitelist[msg.sender];
-    }
 
     modifier lock() {
         require(locked == 0, "locked");

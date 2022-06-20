@@ -26,7 +26,6 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     "buyOptions(uint8[])": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
-    "isWhitelisted()": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
@@ -35,6 +34,7 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     "setCapacities((uint8,uint128)[])": FunctionFragment;
     "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
+    "whitelistTraders()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -52,10 +52,6 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "expireOptions",
     values: [{ expiryLevel: BigNumberish; vaultId: BigNumberish }[]]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "isWhitelisted",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
@@ -101,6 +97,10 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     functionFragment: "vaultDefinitions",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "whitelistTraders",
+    values?: undefined
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "addToWhitelist",
@@ -113,10 +113,6 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "expireOptions",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "isWhitelisted",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -146,6 +142,10 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "vaultCount", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "vaultDefinitions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "whitelistTraders",
     data: BytesLike
   ): Result;
 
@@ -215,8 +215,6 @@ export class OptionVaultManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    isWhitelisted(overrides?: CallOverrides): Promise<[boolean]>;
-
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -267,6 +265,8 @@ export class OptionVaultManager extends BaseContract {
         callOrPut: boolean;
       }
     >;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<[string[]]>;
   };
 
   addToWhitelist(
@@ -287,8 +287,6 @@ export class OptionVaultManager extends BaseContract {
     _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
-
-  isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
 
   kickOffOptions(
     _kickoffs: {
@@ -339,6 +337,8 @@ export class OptionVaultManager extends BaseContract {
     }
   >;
 
+  whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
+
   callStatic: {
     addToWhitelist(
       _whitelistAddresses: string[],
@@ -356,8 +356,6 @@ export class OptionVaultManager extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<boolean>;
 
     kickOffOptions(
       _kickoffs: {
@@ -407,6 +405,8 @@ export class OptionVaultManager extends BaseContract {
         callOrPut: boolean;
       }
     >;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
   };
 
   filters: {};
@@ -430,8 +430,6 @@ export class OptionVaultManager extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<BigNumber>;
 
     kickOffOptions(
       _kickoffs: {
@@ -471,6 +469,8 @@ export class OptionVaultManager extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -492,8 +492,6 @@ export class OptionVaultManager extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
-
-    isWhitelisted(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     kickOffOptions(
       _kickoffs: {
@@ -537,5 +535,7 @@ export class OptionVaultManager extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    whitelistTraders(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
