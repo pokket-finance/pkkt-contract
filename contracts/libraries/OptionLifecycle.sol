@@ -49,7 +49,7 @@ library OptionLifecycle {
             state,
             _vault.currentRound
         );
-        state = _vault.userStates[_user];
+        state = _vault.userStates[_user]; 
 
         uint256 maxInstantRedeemable = uint256(state.expiredAmount).sub(
             state.expiredQueuedRedeemAmount
@@ -123,7 +123,7 @@ library OptionLifecycle {
             _vault.onGoing.queuedRedeemAmount = uint128(
                 totalOnGoingQueuedRedeemAmount
             );
-        }
+        } 
     }
 
     function cancelWithrawStorage(
@@ -282,19 +282,22 @@ library OptionLifecycle {
     ) public {
         if (_vaultState.cutOffAt > block.timestamp || _vaultState.currentRound == 0) {
             return;
-        }
+        } 
         (uint32 cutOffAt,uint16 currentRound) = getRealRound(_vaultState);
         uint256 lastUpdateRound = _vaultState.currentRound;
+        uint256 pending = _vaultState.totalPending;
+        _vaultState.totalPending = 0;
         while (lastUpdateRound < currentRound) {
             StructureData.OptionState memory onGoing = _vaultState.onGoing;
+
             _vaultState.onGoing = StructureData.OptionState({
-                amount: _vaultState.totalPending,
+                amount: uint128(pending),
                 queuedRedeemAmount: 0,
                 strike: 0,
                 premiumRate: 0,
                 buyerAddress: address(0)
             });
-
+            pending = 0;
             //premium not sent, simply bring it to next round
             if (
                 lastUpdateRound > 1 &&
@@ -313,15 +316,14 @@ library OptionLifecycle {
                 _vaultState.totalRedeemed = uint128(totalRedeemed);
                 _vaultState.depositPriceAfterExpiryPerRound[
                     uint16(lastUpdateRound - 1)
-                ] = uint128(10**OptionLifecycle.ROUND_PRICE_DECIMALS);
+                ] = 0;
             }
             _vaultState.expired = onGoing;
-            lastUpdateRound = lastUpdateRound + 1;
+            lastUpdateRound = lastUpdateRound + 1; 
         }
 
-        _vaultState.totalPending = 0;
         _vaultState.cutOffAt = cutOffAt;
-        _vaultState.currentRound = currentRound;
+        _vaultState.currentRound = currentRound; 
     }
 
     function recalcVault(StructureData.VaultState storage _vaultState)
@@ -417,8 +419,8 @@ library OptionLifecycle {
                     }
                 }
                 redeemed = redeemed.add(expiredQueuedRedeemAmount);
-                expiredQueuedRedeemAmount = 0;
                 onGoingAmount = expiredAmount.sub(expiredQueuedRedeemAmount);
+                expiredQueuedRedeemAmount = 0; 
             }
 
             if (pendingAmount > 0) {
@@ -436,7 +438,7 @@ library OptionLifecycle {
 
             lastUpdateRound = lastUpdateRound + 1;
         }
-
+ 
         //then check if the expiry level is specified
         if (expiredAmount > 0) {
             uint256 price = _vaultState.depositPriceAfterExpiryPerRound[

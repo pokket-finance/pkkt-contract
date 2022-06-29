@@ -182,7 +182,7 @@ describe.only("BSC Single Direction Option", async function () {
           await advanceTimeAndBlock(60);
           //round 3
           await advanceTimeAndBlock(60);
-
+          console.log('Alice deposit 1 ETH')
           await vault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(ETHMultiplier));
           await printState(vault, 0, alice)
 
@@ -190,13 +190,19 @@ describe.only("BSC Single Direction Option", async function () {
           await advanceTimeAndBlock(60);
 
           await printState(vault, 0, alice)
+          console.log('Alice deposit 2 ETH')
           await vault.connect(alice as Signer).deposit(0, BigNumber.from(2).mul(ETHMultiplier));
           await printState(vault, 0, alice)
           //round 5
           await advanceTimeAndBlock(60);
           
           await printState(vault, 0, alice)
+          console.log('Alice initiate 3 ETH withdraw')
           await vault.connect(alice as Signer).initiateWithraw(0, BigNumber.from(3).mul(ETHMultiplier));
+          console.log('Alice cancel 1.5 ETH withdraw')
+          await vault.connect(alice as Signer).cancelWithdraw(0, BigNumber.from(15).mul(ETHMultiplier).div(10)); 
+          console.log('Alice deposit 2 ETH')
+          await vault.connect(alice as Signer).deposit(0, BigNumber.from(2).mul(ETHMultiplier));
           await printState(vault, 0, alice)
           //round 6
           await advanceTimeAndBlock(60);
@@ -209,7 +215,21 @@ describe.only("BSC Single Direction Option", async function () {
           //round 8
           await advanceTimeAndBlock(60);
           await printState(vault, 0, alice)
-          
+          //round 9
+          await advanceTimeAndBlock(60);
+          await printState(vault, 0, alice)
+          //round 10
+          await advanceTimeAndBlock(60); 
+          await advanceTimeAndBlock(60); 
+          await advanceTimeAndBlock(60); 
+          await printState(vault, 0, alice)
+          console.log('Alice initiate 3 ETH withdraw')
+          await vault.connect(alice as Signer).initiateWithraw(0, BigNumber.from(3).mul(ETHMultiplier));
+          await printState(vault, 0, alice)
+          await advanceTimeAndBlock(60);  
+          await advanceTimeAndBlock(60);  
+          await advanceTimeAndBlock(60);
+          await printState(vault, 0, alice)
 
 
         });
