@@ -94,12 +94,12 @@ library OptionLifecycle {
                     onGoingQueuedRedeemAmount
                 );
                 _vault.expired.queuedRedeemAmount = uint128(
-                    uint256(_vault.expired.queuedRedeemAmount).sub(
+                    uint256(_vault.expired.queuedRedeemAmount).add(
                         maxInstantRedeemable
                     )
                 );
                 _vault.onGoing.queuedRedeemAmount = uint128(
-                    uint256(_vault.onGoing.queuedRedeemAmount).sub(
+                    uint256(_vault.onGoing.queuedRedeemAmount).add(
                         amountToRemdeemNextRound
                     )
                 );

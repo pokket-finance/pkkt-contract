@@ -171,6 +171,48 @@ describe.only("BSC Single Direction Option", async function () {
         afterEach(async function () {
         });
 
+        it("mutiple rounds", async function () {
+          //round 1
+          await vault.connect(manager as Signer).kickOffOptions([{
+            vaultId: 0,
+            maxCapacity: BigNumber.from(100).mul(ETHMultiplier),
+            environment:2
+          }]);
+          //round 2
+          await advanceTimeAndBlock(60);
+          //round 3
+          await advanceTimeAndBlock(60);
+
+          await vault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(ETHMultiplier));
+          await printState(vault, 0, alice)
+
+          //round 4
+          await advanceTimeAndBlock(60);
+
+          await printState(vault, 0, alice)
+          await vault.connect(alice as Signer).deposit(0, BigNumber.from(2).mul(ETHMultiplier));
+          await printState(vault, 0, alice)
+          //round 5
+          await advanceTimeAndBlock(60);
+          
+          await printState(vault, 0, alice)
+          await vault.connect(alice as Signer).initiateWithraw(0, BigNumber.from(3).mul(ETHMultiplier));
+          await printState(vault, 0, alice)
+          //round 6
+          await advanceTimeAndBlock(60);
+          await printState(vault, 0, alice)
+          
+          //round 7
+          await advanceTimeAndBlock(60);
+          await printState(vault, 0, alice)
+          
+          //round 8
+          await advanceTimeAndBlock(60);
+          await printState(vault, 0, alice)
+          
+
+
+        });
 
         it("end user perspective", async function () { 
         
@@ -653,6 +695,22 @@ describe.only("BSC Single Direction Option", async function () {
         });
       });
         
+      async function printState(vault: SingleDirectionOptionUpgradeable, vaultId:number, ...signers: Signer[]) { 
+        const vaultDefinition = await vault.vaultDefinitions(vaultId);
+        const decimals = vaultDefinition.assetAmountDecimals;
+        const vaultState = await vault.getVaultState(vaultId);
+        console.log(`Round ${vaultState.currentRound}`);
+        console.log(`\tpending: ${ethers.utils.formatUnits(vaultState.totalPending, decimals)}, redeemed: ${ethers.utils.formatUnits(vaultState.totalRedeemed, decimals)}, 
+        onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(vaultState.onGoing.amount)}/${ethers.utils.formatUnits(vaultState.onGoing.queuedRedeemAmount)},  
+        expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(vaultState.expired.amount)}/${ethers.utils.formatUnits(vaultState.expired.queuedRedeemAmount)}`)
+        for(let signer of signers) {
+
+          const userState = await vault.connect(signer).getUserState(vaultId);
+          console.log(`\t${await signer.getAddress()}: pending: ${ethers.utils.formatUnits(userState.pending, decimals)}, redeemed: ${ethers.utils.formatUnits(userState.redeemed, decimals)}, 
+          onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(userState.onGoingAmount)}/${ethers.utils.formatUnits(userState.onGoingQueuedRedeemAmount)},  
+          expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(userState.expiredAmount)}/${ethers.utils.formatUnits(userState.expiredQueuedRedeemAmount)}`)
+        } 
+      }
       function reduceBalances(calculations:BigNumber[], balances:BigNumber[], vaultIds:number[]){
         let newCalculatedBalance: {[key:string]: {
           calculation: BigNumber,
