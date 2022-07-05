@@ -644,11 +644,11 @@ describe.only("BSC Single Direction Option", async function () {
   
           const ethState = await vault.getVaultState(0);
           const currentTVL = ethState.totalPending.add(ethState.onGoing.amount).add(ethState.expired.amount).sub(ethState.expired.queuedRedeemAmount);
-          assert.isTrue(currentTVL.gt(0));
+          assert.isTrue(currentTVL.gt(0)); 
           await expect(vault.connect(manager as Signer).setCapacities([{
             vaultId: 0,
             maxCapacity: currentTVL.sub(1)
-          }])).to.be.revertedWith("Max Cap too small");
+          }])).to.be.revertedWith("Max Cap less than tvl");
           await vault.connect(manager as Signer).setCapacities([{
             vaultId: 0,
             maxCapacity: currentTVL.add(100)

@@ -155,7 +155,7 @@ abstract contract OptionVaultManager is
                 uint256(data.totalPending)
                     .add(data.onGoing.amount)
                     .add(data.expired.amount)
-                    .sub(data.expired.queuedRedeemAmount);
+                    .sub(data.expired.queuedRedeemAmount); 
             require(
                 currentTVL <= capacity.maxCapacity,
                 "Max Cap less than tvl"
@@ -201,7 +201,9 @@ abstract contract OptionVaultManager is
             require(onGoing.amount > 0, "Nothing to sell");
             require(onGoing.buyerAddress == address(0), "Already sold");
             //if there is any auto rolling, we must wait until expiry level specified
-            if ( data.expired.amount - data.expired.queuedRedeemAmount > 0
+            if (
+                data.expired.buyerAddress != address(0) &&
+                data.expired.amount - data.expired.queuedRedeemAmount > 0
             ) {
                 require(
                     data.depositPriceAfterExpiryPerRound[
