@@ -26,6 +26,7 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
     "buyOptions(uint8[])": FunctionFragment;
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
+    "expiredHistory()": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
@@ -49,6 +50,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "expireOptions",
     values: [{ expiryLevel: BigNumberish; vaultId: BigNumberish }[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "expiredHistory",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "kickOffOptions",
@@ -98,6 +103,10 @@ interface IOptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "expireOptions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "expiredHistory",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -191,6 +200,30 @@ export class IOptionVaultManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    expiredHistory(
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        ([
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          number,
+          number,
+          number,
+          BigNumber
+        ] & {
+          amount: BigNumber;
+          strike: BigNumber;
+          expiryLevel: BigNumber;
+          round: number;
+          vaultId: number;
+          premiumRate: number;
+          optionHolderValue: BigNumber;
+        })[]
+      ]
+    >;
+
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -247,6 +280,20 @@ export class IOptionVaultManager extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  expiredHistory(
+    overrides?: CallOverrides
+  ): Promise<
+    ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+      amount: BigNumber;
+      strike: BigNumber;
+      expiryLevel: BigNumber;
+      round: number;
+      vaultId: number;
+      premiumRate: number;
+      optionHolderValue: BigNumber;
+    })[]
+  >;
+
   kickOffOptions(
     _kickoffs: {
       vaultId: BigNumberish;
@@ -298,6 +345,20 @@ export class IOptionVaultManager extends BaseContract {
       _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    expiredHistory(
+      overrides?: CallOverrides
+    ): Promise<
+      ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+        amount: BigNumber;
+        strike: BigNumber;
+        expiryLevel: BigNumber;
+        round: number;
+        vaultId: number;
+        premiumRate: number;
+        optionHolderValue: BigNumber;
+      })[]
+    >;
 
     kickOffOptions(
       _kickoffs: {
@@ -356,6 +417,8 @@ export class IOptionVaultManager extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    expiredHistory(overrides?: CallOverrides): Promise<BigNumber>;
+
     kickOffOptions(
       _kickoffs: {
         vaultId: BigNumberish;
@@ -408,6 +471,8 @@ export class IOptionVaultManager extends BaseContract {
       _expired: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    expiredHistory(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     kickOffOptions(
       _kickoffs: {

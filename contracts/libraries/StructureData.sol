@@ -65,7 +65,8 @@ library StructureData {
     }
 
     struct OptionBuyerState {
-       mapping(address=>uint256) optionValueToCollect;
+       mapping(address=>uint256) optionValueToCollect; 
+       StructureData.ExpiredVaultState[] history;
     } 
 
     struct UserState {
@@ -87,6 +88,16 @@ library StructureData {
         StructureData.OptionState onGoing;
         StructureData.OptionState expired;
     
+    }
+
+    struct ExpiredVaultState {
+        uint128 amount;
+        uint128 strike;
+        uint128 expiryLevel;
+        uint16 round;
+        uint8 vaultId; 
+        uint16 premiumRate;
+        uint256 optionHolderValue; 
     }
 
     struct CollectableValue {

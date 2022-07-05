@@ -31,6 +31,7 @@ interface SingleDirectionOptionUpgradeableInterface
     "deposit(uint8,uint256)": FunctionFragment;
     "depositETH(uint8)": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
+    "expiredHistory()": FunctionFragment;
     "getUserState(uint8)": FunctionFragment;
     "getVaultState(uint8)": FunctionFragment;
     "initialize(address,address,(uint8,uint8,address,address,bool)[])": FunctionFragment;
@@ -90,6 +91,10 @@ interface SingleDirectionOptionUpgradeableInterface
   encodeFunctionData(
     functionFragment: "expireOptions",
     values: [{ expiryLevel: BigNumberish; vaultId: BigNumberish }[]]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "expiredHistory",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getUserState",
@@ -198,6 +203,10 @@ interface SingleDirectionOptionUpgradeableInterface
   decodeFunctionResult(functionFragment: "depositETH", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "expireOptions",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "expiredHistory",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -359,6 +368,30 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    expiredHistory(
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        ([
+          BigNumber,
+          BigNumber,
+          BigNumber,
+          number,
+          number,
+          number,
+          BigNumber
+        ] & {
+          amount: BigNumber;
+          strike: BigNumber;
+          expiryLevel: BigNumber;
+          round: number;
+          vaultId: number;
+          premiumRate: number;
+          optionHolderValue: BigNumber;
+        })[]
+      ]
+    >;
 
     getUserState(
       _vaultId: BigNumberish,
@@ -576,6 +609,20 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  expiredHistory(
+    overrides?: CallOverrides
+  ): Promise<
+    ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+      amount: BigNumber;
+      strike: BigNumber;
+      expiryLevel: BigNumber;
+      round: number;
+      vaultId: number;
+      premiumRate: number;
+      optionHolderValue: BigNumber;
+    })[]
+  >;
+
   getUserState(
     _vaultId: BigNumberish,
     overrides?: CallOverrides
@@ -783,6 +830,20 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    expiredHistory(
+      overrides?: CallOverrides
+    ): Promise<
+      ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+        amount: BigNumber;
+        strike: BigNumber;
+        expiryLevel: BigNumber;
+        round: number;
+        vaultId: number;
+        premiumRate: number;
+        optionHolderValue: BigNumber;
+      })[]
+    >;
 
     getUserState(
       _vaultId: BigNumberish,
@@ -1008,6 +1069,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    expiredHistory(overrides?: CallOverrides): Promise<BigNumber>;
+
     getUserState(
       _vaultId: BigNumberish,
       overrides?: CallOverrides
@@ -1148,6 +1211,8 @@ export class SingleDirectionOptionUpgradeable extends BaseContract {
       _expiryParameters: { expiryLevel: BigNumberish; vaultId: BigNumberish }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    expiredHistory(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getUserState(
       _vaultId: BigNumberish,

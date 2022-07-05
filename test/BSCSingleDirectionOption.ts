@@ -547,7 +547,14 @@ describe.only("BSC Single Direction Option", async function () {
           assert.equal(collectables.length, 1);
           assert.equal(collectables[0].asset, busd.address);
           const collectables2 = await vault.connect(trader as Signer).optionHolderValues();
-          assert.equal(collectables2.length, 0)
+          assert.equal(collectables2.length, 0);
+
+          const history = await vault.connect(trader as Signer).expiredHistory();
+          for(let item of history) { 
+            const vaultDefinition = vaultDefinitions[item.vaultId];
+            const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
+            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
+          }
 
           const busdNewBalance = await busd.balanceOf(trader.address);
           let totalCollectableCalculated= BigNumber.from(0);

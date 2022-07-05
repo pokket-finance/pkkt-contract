@@ -2,7 +2,9 @@
 pragma solidity =0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 //import "hardhat/console.sol";
 
@@ -61,18 +63,18 @@ abstract contract OptionVaultManager is
         uint8 traderCount_ = traderCount;
         for (uint256 i = 0; i < _whitelistAddresses.length; i++) {
             address trader = _whitelistAddresses[i];
-            if (!whitelist[trader]) { 
-               whitelist[trader] = true;
-               bool existingTrader = false;
-               for(uint8 j=0; j < traderCount_; j++) {
-                   if (traders[j] == trader) {   
-                       existingTrader = true;
-                       break;
-                   }
-               }
-               if (!existingTrader) {
-                   traders[traderCount_++] = trader;
-               }
+            if (!whitelist[trader]) {
+                whitelist[trader] = true;
+                bool existingTrader = false;
+                for (uint8 j = 0; j < traderCount_; j++) {
+                    if (traders[j] == trader) {
+                        existingTrader = true;
+                        break;
+                    }
+                }
+                if (!existingTrader) {
+                    traders[traderCount_++] = trader;
+                }
             }
         }
         traderCount = traderCount_;
@@ -82,29 +84,35 @@ abstract contract OptionVaultManager is
         external
         override
         managerOnly
-    { 
-        for (uint256 i = 0; i < _delistAddresses.length; i++) { 
-            whitelist[_delistAddresses[i]] = false; 
+    {
+        for (uint256 i = 0; i < _delistAddresses.length; i++) {
+            whitelist[_delistAddresses[i]] = false;
         }
     }
-    function whitelistTraders() external override view returns(address[] memory) {
-       if (traderCount == 0) {
-           return new address[](0);
-       }
-       uint256 count = 0;
-       for(uint8 i = 0; i < traderCount; i++) {
-           if (whitelist[traders[i]]) {
-               count++;
-           }
-       }
-       address[] memory whitelistData = new address[](count);
-       count = 0;
-       for(uint8 i = 0; i < traderCount; i++) {
-           if (whitelist[traders[i]]) {
-               whitelistData[count++] = traders[i];
-           }
-       }
-       return whitelistData;
+
+    function whitelistTraders()
+        external
+        view
+        override
+        returns (address[] memory)
+    {
+        if (traderCount == 0) {
+            return new address[](0);
+        }
+        uint256 count = 0;
+        for (uint8 i = 0; i < traderCount; i++) {
+            if (whitelist[traders[i]]) {
+                count++;
+            }
+        }
+        address[] memory whitelistData = new address[](count);
+        count = 0;
+        for (uint8 i = 0; i < traderCount; i++) {
+            if (whitelist[traders[i]]) {
+                whitelistData[count++] = traders[i];
+            }
+        }
+        return whitelistData;
     }
 
     //only needed for the initial kick off
@@ -113,9 +121,8 @@ abstract contract OptionVaultManager is
     ) external override managerOnly {
         for (uint256 i = 0; i < _kickoffs.length; i++) {
             StructureData.KickOffOptionParameters memory kickoff = _kickoffs[i];
-            StructureData.VaultState storage data = vaultStates[
-                kickoff.vaultId
-            ];
+            StructureData.VaultState storage data =
+                vaultStates[kickoff.vaultId];
             require(data.currentRound == 0, "already kicked off");
             uint256 cutOffAt = 0;
             if (kickoff.environment == 0) {
@@ -142,14 +149,17 @@ abstract contract OptionVaultManager is
     ) external override managerOnly {
         for (uint256 i = 0; i < _capacities.length; i++) {
             StructureData.CapacityParameters memory capacity = _capacities[i];
-            StructureData.VaultState storage data = vaultStates[
-                capacity.vaultId
-            ];
-            uint256 currentTVL = uint256(data.totalPending)
-                .add(data.onGoing.amount)
-                .add(data.expired.amount)
-                .sub(data.expired.queuedRedeemAmount);
-            require(currentTVL <= capacity.maxCapacity, "Max Cap too small");
+            StructureData.VaultState storage data =
+                vaultStates[capacity.vaultId];
+            uint256 currentTVL =
+                uint256(data.totalPending)
+                    .add(data.onGoing.amount)
+                    .add(data.expired.amount)
+                    .sub(data.expired.queuedRedeemAmount);
+            require(
+                currentTVL <= capacity.maxCapacity,
+                "Max Cap less than tvl"
+            );
             data.maxCapacity = capacity.maxCapacity;
         }
     }
@@ -159,13 +169,12 @@ abstract contract OptionVaultManager is
         StructureData.OnGoingOptionParameters[] memory _ongoingParameters
     ) external override managerOnly {
         for (uint256 i = 0; i < _ongoingParameters.length; i++) {
-            StructureData.OnGoingOptionParameters
-                memory ongoingParameters = _ongoingParameters[i];
+            StructureData.OnGoingOptionParameters memory ongoingParameters =
+                _ongoingParameters[i];
             require(ongoingParameters.premiumRate > 0, "!premium");
             require(ongoingParameters.strike > 0, "!strike");
-            StructureData.VaultState storage data = vaultStates[
-                ongoingParameters.vaultId
-            ];
+            StructureData.VaultState storage data =
+                vaultStates[ongoingParameters.vaultId];
             OptionLifecycle.rollToNextRoundIfNeeded(data);
             require(data.currentRound > 1, "No selling round");
             StructureData.OptionState storage onGoing = data.onGoing;
@@ -192,7 +201,8 @@ abstract contract OptionVaultManager is
             require(onGoing.amount > 0, "Nothing to sell");
             require(onGoing.buyerAddress == address(0), "Already sold");
             //if there is any auto rolling, we must wait until expiry level specified
-            if (data.expired.amount - data.expired.queuedRedeemAmount > 0) {
+            if ( data.expired.amount - data.expired.queuedRedeemAmount > 0
+            ) {
                 require(
                     data.depositPriceAfterExpiryPerRound[
                         data.currentRound - 2
@@ -200,10 +210,11 @@ abstract contract OptionVaultManager is
                     "Expiry level not specified yet"
                 );
             }
-
-            uint256 premium = uint256(onGoing.amount).premium(
-                onGoing.premiumRate
-            );
+            uint256 total =
+                uint256(onGoing.amount).add(data.expired.amount).sub(
+                    data.expired.queuedRedeemAmount
+                );
+            uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
             if (asset == address(0)) {
                 ethToSend = ethToSend.add(premium);
@@ -227,12 +238,11 @@ abstract contract OptionVaultManager is
         StructureData.ExpiredOptionParameters[] memory _expiryParameters
     ) external override managerOnly {
         for (uint256 i = 0; i < _expiryParameters.length; i++) {
-            StructureData.ExpiredOptionParameters
-                memory expiryParameters = _expiryParameters[i];
+            StructureData.ExpiredOptionParameters memory expiryParameters =
+                _expiryParameters[i];
             require(expiryParameters.expiryLevel > 0, "!expiryLevel");
-            StructureData.VaultState storage data = vaultStates[
-                expiryParameters.vaultId
-            ];
+            StructureData.VaultState storage data =
+                vaultStates[expiryParameters.vaultId];
             OptionLifecycle.rollToNextRoundIfNeeded(data);
             require(data.currentRound > 2, "No expired round");
             StructureData.OptionState storage expired = data.expired;
@@ -242,53 +252,64 @@ abstract contract OptionVaultManager is
 
             require(expired.strike > 0, "!strike");
             address asset = vaultDefinitions[expiryParameters.vaultId].asset;
-            uint256 diff = vaultDefinitions[expiryParameters.vaultId].callOrPut
-                ? (
-                    expiryParameters.expiryLevel > expired.strike
-                        ? expiryParameters.expiryLevel - expired.strike
-                        : 0
-                )
-                : (
-                    expired.strike > expiryParameters.expiryLevel
-                        ? expired.strike - expiryParameters.expiryLevel
-                        : 0
-                );
+            uint256 diff =
+                vaultDefinitions[expiryParameters.vaultId].callOrPut
+                    ? (
+                        expiryParameters.expiryLevel > expired.strike
+                            ? expiryParameters.expiryLevel - expired.strike
+                            : 0
+                    )
+                    : (
+                        expired.strike > expiryParameters.expiryLevel
+                            ? expired.strike - expiryParameters.expiryLevel
+                            : 0
+                    );
 
             //can be withdrawn by trader
-            StructureData.OptionBuyerState storage buyerState = buyerStates[
-                expired.buyerAddress
-            ];
+            StructureData.OptionBuyerState storage buyerState =
+                buyerStates[expired.buyerAddress];
 
-            uint256 optionHolderValue = diff.mul(expired.amount).div(
-                vaultDefinitions[expiryParameters.vaultId].callOrPut
-                    ? expiryParameters.expiryLevel
-                    : expired.strike
-            );
+            uint256 optionHolderValue =
+                diff.mul(expired.amount).div(
+                    vaultDefinitions[expiryParameters.vaultId].callOrPut
+                        ? expiryParameters.expiryLevel
+                        : expired.strike
+                );
             Utils.assertUint128(optionHolderValue);
             buyerState.optionValueToCollect[asset] = uint128(
                 optionHolderValue.add(buyerState.optionValueToCollect[asset])
             );
-
-            uint256 remaining = uint256(expired.amount)
-                .withPremium(expired.premiumRate)
-                .sub(optionHolderValue);
-            uint256 depositPriceAfterExpiry = remaining
-                .mul(10**OptionLifecycle.ROUND_PRICE_DECIMALS)
-                .div(expired.amount);
+            buyerState.history.push(
+                StructureData.ExpiredVaultState({
+                    amount: expired.amount,
+                    strike: expired.strike,
+                    expiryLevel: expiryParameters.expiryLevel,
+                    premiumRate: expired.premiumRate,
+                    vaultId: expiryParameters.vaultId,
+                    round: data.currentRound - 2,
+                    optionHolderValue: optionHolderValue
+                })
+            ); 
+            uint256 remaining =
+                uint256(expired.amount).withPremium(expired.premiumRate).sub(
+                    optionHolderValue
+                );
+            uint256 depositPriceAfterExpiry =
+                remaining.mul(10**OptionLifecycle.ROUND_PRICE_DECIMALS).div(
+                    expired.amount
+                );
             Utils.assertUint128(depositPriceAfterExpiry);
             data.depositPriceAfterExpiryPerRound[
                 data.currentRound - 2
             ] = uint128(depositPriceAfterExpiry);
 
-            uint256 redeemed = remaining.mul(expired.queuedRedeemAmount).div(
-                expired.amount
-            );
+            uint256 redeemed =
+                remaining.mul(expired.queuedRedeemAmount).div(expired.amount);
             uint256 totalRedeemed = redeemed.add(data.totalRedeemed);
             Utils.assertUint128(totalRedeemed);
             data.totalRedeemed = uint128(totalRedeemed);
-            uint256 totalOnGoing = remaining.sub(redeemed).add(
-                data.onGoing.amount
-            );
+            uint256 totalOnGoing =
+                remaining.sub(redeemed).add(data.onGoing.amount);
             Utils.assertUint128(totalOnGoing);
             data.onGoing.amount = uint128(totalOnGoing);
             expired.amount = 0;
@@ -297,9 +318,8 @@ abstract contract OptionVaultManager is
     }
 
     function collectOptionHolderValues() external override whitelisted lock {
-        StructureData.OptionBuyerState storage buyerState = buyerStates[
-            msg.sender
-        ];
+        StructureData.OptionBuyerState storage buyerState =
+            buyerStates[msg.sender];
         for (uint256 i = 0; i < assetCount; i++) {
             address asset = assets[uint8(i)];
             uint256 assetAmount = buyerState.optionValueToCollect[asset];
@@ -314,12 +334,10 @@ abstract contract OptionVaultManager is
         external
         view
         override
-        whitelisted
         returns (StructureData.CollectableValue[] memory)
     {
-        StructureData.OptionBuyerState storage buyerState = buyerStates[
-            msg.sender
-        ];
+        StructureData.OptionBuyerState storage buyerState =
+            buyerStates[msg.sender];
         uint256 count = 0;
         for (uint256 i = 0; i < assetCount; i++) {
             address asset = assets[uint8(i)];
@@ -328,8 +346,8 @@ abstract contract OptionVaultManager is
                 count++;
             }
         }
-        StructureData.CollectableValue[]
-            memory values = new StructureData.CollectableValue[](count);
+        StructureData.CollectableValue[] memory values =
+            new StructureData.CollectableValue[](count);
         if (count == 0) {
             return values;
         }
@@ -348,6 +366,21 @@ abstract contract OptionVaultManager is
         return values;
     }
 
+    function expiredHistory()
+        external
+        view
+        override
+        returns (StructureData.ExpiredVaultState[] memory)
+    {
+         StructureData.OptionBuyerState storage buyerState =
+            buyerStates[msg.sender];
+        StructureData.ExpiredVaultState[] memory values =
+            new StructureData.ExpiredVaultState[](buyerState.history.length); 
+        for (uint256 i = 0; i < buyerState.history.length; i++) {
+           values[i] = buyerState.history[i];
+        }
+        return values;
+    }
 
     modifier lock() {
         require(locked == 0, "locked");
