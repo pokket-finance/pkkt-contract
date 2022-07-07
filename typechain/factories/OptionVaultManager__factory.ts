@@ -11,6 +11,61 @@ import type {
 
 const _abi = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_buyerAddress",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint128",
+        name: "_strike",
+        type: "uint128",
+      },
+      {
+        indexed: false,
+        internalType: "uint128",
+        name: "_expiryLevel",
+        type: "uint128",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_premiumRate",
+        type: "uint16",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_optionHolderValue",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_currentRound",
+        type: "uint16",
+      },
+    ],
+    name: "OptionExpired",
+    type: "event",
+  },
+  {
     inputs: [
       {
         internalType: "address[]",

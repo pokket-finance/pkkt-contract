@@ -16,8 +16,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     using SafeCast for uint256;
     using SafeMath for uint256;
     using Utils for uint256; 
- 
-
+  
     modifier validateVaultId(uint8 _vaultId) {
         require(_vaultId < vaultCount, "Invalid vaultId");
         _;
@@ -33,6 +32,8 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             msg.sender,
             _redeemAmount
         );
+ 
+        emit InitiateWithdraw(msg.sender, _vaultId, _redeemAmount, vaultStates[_vaultId].currentRound);
     }
 
  
@@ -47,6 +48,9 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             msg.sender,
             _redeemAmount
         );
+
+        emit CancelWithdraw(msg.sender, _vaultId, _redeemAmount, vaultStates[_vaultId].currentRound);
+         
     }
     
     //withdraw pending and expired amount
@@ -60,6 +64,8 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             msg.sender,
             _amount);
         OptionLifecycle.withdraw(msg.sender, _amount, vaultDefinitions[_vaultId].asset);
+        
+        emit Withdraw(msg.sender, _vaultId, _amount, vaultStates[_vaultId].currentRound);
     }
 
     //deposit eth
@@ -77,6 +83,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             msg.sender,
             msg.value);
   
+        emit Deposit(msg.sender, _vaultId,  msg.value, data.currentRound);
     }
 
     //deposit other erc20 coin, take wbtc
@@ -97,6 +104,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
             data,
             msg.sender,
             _amount); 
+        emit Deposit(msg.sender, _vaultId,  _amount, data.currentRound);
     }
  
     function getUserState(uint8 _vaultId) external override view validateVaultId(_vaultId) returns (StructureData.UserState memory) {

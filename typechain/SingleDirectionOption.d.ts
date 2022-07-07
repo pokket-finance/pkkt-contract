@@ -212,8 +212,78 @@ interface SingleDirectionOptionInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
-  events: {};
+  events: {
+    "CancelWithdraw(address,uint8,uint256,uint16)": EventFragment;
+    "Deposit(address,uint8,uint256,uint16)": EventFragment;
+    "InitiateWithdraw(address,uint8,uint256,uint16)": EventFragment;
+    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)": EventFragment;
+    "Withdraw(address,uint8,uint256,uint16)": EventFragment;
+  };
+
+  getEvent(nameOrSignatureOrTopic: "CancelWithdraw"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Deposit"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "InitiateWithdraw"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "OptionExpired"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Withdraw"): EventFragment;
 }
+
+export type CancelWithdrawEvent = TypedEvent<
+  [string, number, BigNumber, number] & {
+    _account: string;
+    _vaultId: number;
+    _redeemAmount: BigNumber;
+    _round: number;
+  }
+>;
+
+export type DepositEvent = TypedEvent<
+  [string, number, BigNumber, number] & {
+    _account: string;
+    _vaultId: number;
+    _amount: BigNumber;
+    _round: number;
+  }
+>;
+
+export type InitiateWithdrawEvent = TypedEvent<
+  [string, number, BigNumber, number] & {
+    _account: string;
+    _vaultId: number;
+    _redeemAmount: BigNumber;
+    _round: number;
+  }
+>;
+
+export type OptionExpiredEvent = TypedEvent<
+  [
+    string,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    number,
+    BigNumber,
+    number
+  ] & {
+    _buyerAddress: string;
+    _vaultId: number;
+    _amount: BigNumber;
+    _strike: BigNumber;
+    _expiryLevel: BigNumber;
+    _premiumRate: number;
+    _optionHolderValue: BigNumber;
+    _currentRound: number;
+  }
+>;
+
+export type WithdrawEvent = TypedEvent<
+  [string, number, BigNumber, number] & {
+    _account: string;
+    _vaultId: number;
+    _amount: BigNumber;
+    _round: number;
+  }
+>;
 
 export class SingleDirectionOption extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -825,7 +895,171 @@ export class SingleDirectionOption extends BaseContract {
     ): Promise<void>;
   };
 
-  filters: {};
+  filters: {
+    "CancelWithdraw(address,uint8,uint256,uint16)"(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _redeemAmount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      {
+        _account: string;
+        _vaultId: number;
+        _redeemAmount: BigNumber;
+        _round: number;
+      }
+    >;
+
+    CancelWithdraw(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _redeemAmount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      {
+        _account: string;
+        _vaultId: number;
+        _redeemAmount: BigNumber;
+        _round: number;
+      }
+    >;
+
+    "Deposit(address,uint8,uint256,uint16)"(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _amount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      { _account: string; _vaultId: number; _amount: BigNumber; _round: number }
+    >;
+
+    Deposit(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _amount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      { _account: string; _vaultId: number; _amount: BigNumber; _round: number }
+    >;
+
+    "InitiateWithdraw(address,uint8,uint256,uint16)"(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _redeemAmount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      {
+        _account: string;
+        _vaultId: number;
+        _redeemAmount: BigNumber;
+        _round: number;
+      }
+    >;
+
+    InitiateWithdraw(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _redeemAmount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      {
+        _account: string;
+        _vaultId: number;
+        _redeemAmount: BigNumber;
+        _round: number;
+      }
+    >;
+
+    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)"(
+      _buyerAddress?: string | null,
+      _vaultId?: null,
+      _amount?: null,
+      _strike?: null,
+      _expiryLevel?: null,
+      _premiumRate?: null,
+      _optionHolderValue?: null,
+      _currentRound?: null
+    ): TypedEventFilter<
+      [
+        string,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ],
+      {
+        _buyerAddress: string;
+        _vaultId: number;
+        _amount: BigNumber;
+        _strike: BigNumber;
+        _expiryLevel: BigNumber;
+        _premiumRate: number;
+        _optionHolderValue: BigNumber;
+        _currentRound: number;
+      }
+    >;
+
+    OptionExpired(
+      _buyerAddress?: string | null,
+      _vaultId?: null,
+      _amount?: null,
+      _strike?: null,
+      _expiryLevel?: null,
+      _premiumRate?: null,
+      _optionHolderValue?: null,
+      _currentRound?: null
+    ): TypedEventFilter<
+      [
+        string,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ],
+      {
+        _buyerAddress: string;
+        _vaultId: number;
+        _amount: BigNumber;
+        _strike: BigNumber;
+        _expiryLevel: BigNumber;
+        _premiumRate: number;
+        _optionHolderValue: BigNumber;
+        _currentRound: number;
+      }
+    >;
+
+    "Withdraw(address,uint8,uint256,uint16)"(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _amount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      { _account: string; _vaultId: number; _amount: BigNumber; _round: number }
+    >;
+
+    Withdraw(
+      _account?: string | null,
+      _vaultId?: BigNumberish | null,
+      _amount?: null,
+      _round?: null
+    ): TypedEventFilter<
+      [string, number, BigNumber, number],
+      { _account: string; _vaultId: number; _amount: BigNumber; _round: number }
+    >;
+  };
 
   estimateGas: {
     addToWhitelist(

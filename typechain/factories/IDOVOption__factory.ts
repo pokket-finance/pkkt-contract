@@ -8,6 +8,130 @@ import type { IDOVOption, IDOVOptionInterface } from "../IDOVOption";
 
 const _abi = [
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_account",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_redeemAmount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_round",
+        type: "uint16",
+      },
+    ],
+    name: "CancelWithdraw",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_account",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_round",
+        type: "uint16",
+      },
+    ],
+    name: "Deposit",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_account",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_redeemAmount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_round",
+        type: "uint16",
+      },
+    ],
+    name: "InitiateWithdraw",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_account",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint16",
+        name: "_round",
+        type: "uint16",
+      },
+    ],
+    name: "Withdraw",
+    type: "event",
+  },
+  {
     inputs: [
       {
         internalType: "uint8",

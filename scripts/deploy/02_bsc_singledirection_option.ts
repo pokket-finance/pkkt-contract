@@ -87,9 +87,7 @@ const main = async ({
   });
   
 
-  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);  
-
-
+  await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);   
   const SINGLEDIRECTION_ARGS = [owner, manager, [
     { 
       assetAmountDecimals: ETH_DECIMALS,

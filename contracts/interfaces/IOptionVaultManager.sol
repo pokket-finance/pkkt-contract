@@ -16,4 +16,7 @@ interface IOptionVaultManager {
     function expiredHistory() external view returns(StructureData.ExpiredVaultState[] memory);
     function buyOptions(uint8[] memory _vaultIds) payable external; 
     function whitelistTraders() external view returns(address[] memory);
+
+    event OptionExpired(address indexed _buyerAddress,  uint8 _vaultId, uint256 _amount, uint128 _strike, 
+    uint128 _expiryLevel, uint16 _premiumRate, uint256 _optionHolderValue, uint16 _currentRound);
 }

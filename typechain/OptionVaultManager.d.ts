@@ -158,8 +158,34 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
 
-  events: {};
+  events: {
+    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)": EventFragment;
+  };
+
+  getEvent(nameOrSignatureOrTopic: "OptionExpired"): EventFragment;
 }
+
+export type OptionExpiredEvent = TypedEvent<
+  [
+    string,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    number,
+    BigNumber,
+    number
+  ] & {
+    _buyerAddress: string;
+    _vaultId: number;
+    _amount: BigNumber;
+    _strike: BigNumber;
+    _expiryLevel: BigNumber;
+    _premiumRate: number;
+    _optionHolderValue: BigNumber;
+    _currentRound: number;
+  }
+>;
 
 export class OptionVaultManager extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -470,7 +496,71 @@ export class OptionVaultManager extends BaseContract {
     whitelistTraders(overrides?: CallOverrides): Promise<string[]>;
   };
 
-  filters: {};
+  filters: {
+    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)"(
+      _buyerAddress?: string | null,
+      _vaultId?: null,
+      _amount?: null,
+      _strike?: null,
+      _expiryLevel?: null,
+      _premiumRate?: null,
+      _optionHolderValue?: null,
+      _currentRound?: null
+    ): TypedEventFilter<
+      [
+        string,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ],
+      {
+        _buyerAddress: string;
+        _vaultId: number;
+        _amount: BigNumber;
+        _strike: BigNumber;
+        _expiryLevel: BigNumber;
+        _premiumRate: number;
+        _optionHolderValue: BigNumber;
+        _currentRound: number;
+      }
+    >;
+
+    OptionExpired(
+      _buyerAddress?: string | null,
+      _vaultId?: null,
+      _amount?: null,
+      _strike?: null,
+      _expiryLevel?: null,
+      _premiumRate?: null,
+      _optionHolderValue?: null,
+      _currentRound?: null
+    ): TypedEventFilter<
+      [
+        string,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ],
+      {
+        _buyerAddress: string;
+        _vaultId: number;
+        _amount: BigNumber;
+        _strike: BigNumber;
+        _expiryLevel: BigNumber;
+        _premiumRate: number;
+        _optionHolderValue: BigNumber;
+        _currentRound: number;
+      }
+    >;
+  };
 
   estimateGas: {
     addToWhitelist(

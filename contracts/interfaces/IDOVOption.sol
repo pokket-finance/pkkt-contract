@@ -23,7 +23,12 @@ interface IDOVOption {
     function getUserState(uint8 _vaultId) external view returns (StructureData.UserState memory); 
  
     function getVaultState(uint8 _vaultId) external view returns(StructureData.VaultSnapShot memory); 
- 
+
+    
+    event Deposit(address indexed _account, uint8 indexed _vaultId, uint256 _amount, uint16 _round);
+    event InitiateWithdraw(address indexed _account, uint8 indexed _vaultId, uint256 _redeemAmount, uint16 _round);
+    event CancelWithdraw(address indexed _account, uint8 indexed _vaultId, uint256 _redeemAmount, uint16 _round);
+    event Withdraw(address indexed _account, uint8 indexed _vaultId, uint256 _amount, uint16 _round); 
  
 }
 

@@ -24,6 +24,7 @@ abstract contract OptionVaultManager is
     using Utils for uint256;
     using SafeCast for uint256;
     using SafeCast for int256;
+ 
 
     function setManagerInternal(address _manager) internal {
         require(_manager != address(0), "!manager");
@@ -135,7 +136,7 @@ abstract contract OptionVaultManager is
                 //test
                 cutOffAt = block.timestamp.add(OptionLifecycle.PERIOD_TEST);
             }
-            require(cutOffAt <= type(uint32).max, "Overflow cutOffAt");
+            require(cutOffAt <= type(uint32).max, "cutOffAt Overflow");
             data.cutOffAt = uint32(cutOffAt);
 
             data.maxCapacity = kickoff.maxCapacity;
@@ -281,6 +282,8 @@ abstract contract OptionVaultManager is
             buyerState.optionValueToCollect[asset] = uint128(
                 optionHolderValue.add(buyerState.optionValueToCollect[asset])
             );
+            emit OptionExpired(expired.buyerAddress,  expiryParameters.vaultId, expired.amount, 
+            expired.strike, expiryParameters.expiryLevel, expired.premiumRate, optionHolderValue, data.currentRound - 2);
             buyerState.history.push(
                 StructureData.ExpiredVaultState({
                     amount: expired.amount,
