@@ -217,8 +217,22 @@ abstract contract OptionVaultManager is
                 uint256(onGoing.amount).add(data.expired.amount).sub(
                     data.expired.queuedRedeemAmount
                 );
+            Utils.assertUint128(total);
             uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
+             
+            StructureData.SoldVaultState memory soldState = StructureData.SoldVaultState({
+                amount: uint128(total),
+                strike: onGoing.strike,
+                premiumRate: onGoing.premiumRate,
+                buyerAddress: msg.sender,
+                expiryLevel: 0,
+                optionHolderValue: 0 
+            });
+            soldVaultStates[vaultId][data.currentRound - 1] = soldState;
+            
+            emit OptionBought(vaultId, data.currentRound - 1, msg.sender, total, onGoing.strike, onGoing.premiumRate);
+
             if (asset == address(0)) {
                 ethToSend = ethToSend.add(premium);
             } else {
@@ -281,20 +295,13 @@ abstract contract OptionVaultManager is
             Utils.assertUint128(optionHolderValue);
             buyerState.optionValueToCollect[asset] = uint128(
                 optionHolderValue.add(buyerState.optionValueToCollect[asset])
-            );
-            emit OptionExpired(expired.buyerAddress,  expiryParameters.vaultId, expired.amount, 
-            expired.strike, expiryParameters.expiryLevel, expired.premiumRate, optionHolderValue, data.currentRound - 2);
-            buyerState.history.push(
-                StructureData.ExpiredVaultState({
-                    amount: expired.amount,
-                    strike: expired.strike,
-                    expiryLevel: expiryParameters.expiryLevel,
-                    premiumRate: expired.premiumRate,
-                    vaultId: expiryParameters.vaultId,
-                    round: data.currentRound - 2,
-                    optionHolderValue: optionHolderValue
-                })
             ); 
+   
+           StructureData.SoldVaultState storage soldState = soldVaultStates[expiryParameters.vaultId][data.currentRound - 2];
+           soldState.expiryLevel = expiryParameters.expiryLevel;
+           soldState.optionHolderValue = uint128(optionHolderValue);
+           emit OptionExpired(expiryParameters.vaultId, data.currentRound - 2, expiryParameters.expiryLevel, uint128(optionHolderValue));
+
             uint256 remaining =
                 uint256(expired.amount).withPremium(expired.premiumRate).sub(
                     optionHolderValue
@@ -377,13 +384,61 @@ abstract contract OptionVaultManager is
         override
         returns (StructureData.ExpiredVaultState[] memory)
     {
-         StructureData.OptionBuyerState storage buyerState =
-            buyerStates[msg.sender];
-        StructureData.ExpiredVaultState[] memory values =
-            new StructureData.ExpiredVaultState[](buyerState.history.length); 
-        for (uint256 i = 0; i < buyerState.history.length; i++) {
-           values[i] = buyerState.history[i];
+        uint256 count = 0;
+        for(uint8 vaultId = 0; vaultId < vaultCount; vaultId++) {
+
+             StructureData.VaultState storage data = vaultStates[vaultId];
+             StructureData.VaultSnapShot memory vaultSnapshot = OptionLifecycle.recalcVault(data); 
+             if (vaultSnapshot.currentRound < 3){
+                 continue;
+             }
+             for(uint16 round = 1; round <= vaultSnapshot.currentRound - 2; round++) {  
+                  StructureData.SoldVaultState storage soldState = soldVaultStates[vaultId][round];
+                 if (soldState.buyerAddress == msg.sender && 
+                     (soldState.expiryLevel != 0 || round < vaultSnapshot.currentRound - 2)) {
+                     count++;
+                 }
+             }
         }
+
+        StructureData.ExpiredVaultState[] memory values = new StructureData.ExpiredVaultState[](count);
+        if (count == 0) {
+            return values;   
+        }   
+        count = 0;
+        for(uint8 vaultId = 0; vaultId <vaultCount; vaultId++) {
+
+             StructureData.VaultState storage data = vaultStates[vaultId];
+             StructureData.VaultSnapShot memory vaultSnapshot = OptionLifecycle.recalcVault(data); 
+             if (vaultSnapshot.currentRound < 3){
+                 continue;
+             }
+             for(uint16 round = 1; round <= vaultSnapshot.currentRound - 2; round++) {  
+                 StructureData.SoldVaultState memory soldState = soldVaultStates[vaultId][round];
+                 if (soldState.buyerAddress != msg.sender) {
+                     continue;
+                 }
+                 if (soldState.expiryLevel == 0) {
+                     //expiryLevel not specified 
+                     if (round == vaultSnapshot.currentRound - 2) {
+                         continue;
+                     }
+                     //expiryLevel not specified, but already passed cutoff, set it to strike
+                     soldState.expiryLevel = soldState.strike;
+                 }
+                 StructureData.ExpiredVaultState memory value = StructureData.ExpiredVaultState({
+                     amount: soldState.amount, 
+                     strike: soldState.strike,
+                     premiumRate: soldState.premiumRate,
+                     round: round,
+                     vaultId: vaultId,
+                     expiryLevel: soldState.expiryLevel,
+                     optionHolderValue: soldState.optionHolderValue
+                 });
+                 values[count++] = value;
+             }
+        }
+        
         return values;
     }
 

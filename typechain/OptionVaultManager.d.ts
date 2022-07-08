@@ -159,31 +159,31 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
 
   events: {
-    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)": EventFragment;
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)": EventFragment;
+    "OptionExpired(uint8,uint16,uint128,uint256)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "OptionBought"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OptionExpired"): EventFragment;
 }
 
-export type OptionExpiredEvent = TypedEvent<
-  [
-    string,
-    number,
-    BigNumber,
-    BigNumber,
-    BigNumber,
-    number,
-    BigNumber,
-    number
-  ] & {
-    _buyerAddress: string;
+export type OptionBoughtEvent = TypedEvent<
+  [number, number, string, BigNumber, BigNumber, number] & {
     _vaultId: number;
+    _currentRound: number;
+    _buyerAddress: string;
     _amount: BigNumber;
     _strike: BigNumber;
-    _expiryLevel: BigNumber;
     _premiumRate: number;
-    _optionHolderValue: BigNumber;
+  }
+>;
+
+export type OptionExpiredEvent = TypedEvent<
+  [number, number, BigNumber, BigNumber] & {
+    _vaultId: number;
     _currentRound: number;
+    _expiryLevel: BigNumber;
+    _optionHolderValue: BigNumber;
   }
 >;
 
@@ -258,18 +258,18 @@ export class OptionVaultManager extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
+          BigNumber,
           number,
           number,
-          number,
-          BigNumber
+          number
         ] & {
           amount: BigNumber;
           strike: BigNumber;
           expiryLevel: BigNumber;
-          round: number;
-          vaultId: number;
-          premiumRate: number;
           optionHolderValue: BigNumber;
+          round: number;
+          premiumRate: number;
+          vaultId: number;
         })[]
       ]
     >;
@@ -350,14 +350,14 @@ export class OptionVaultManager extends BaseContract {
   expiredHistory(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+    ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
       amount: BigNumber;
       strike: BigNumber;
       expiryLevel: BigNumber;
-      round: number;
-      vaultId: number;
-      premiumRate: number;
       optionHolderValue: BigNumber;
+      round: number;
+      premiumRate: number;
+      vaultId: number;
     })[]
   >;
 
@@ -433,14 +433,14 @@ export class OptionVaultManager extends BaseContract {
     expiredHistory(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, BigNumber, number, number, number, BigNumber] & {
+      ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
         amount: BigNumber;
         strike: BigNumber;
         expiryLevel: BigNumber;
-        round: number;
-        vaultId: number;
-        premiumRate: number;
         optionHolderValue: BigNumber;
+        round: number;
+        premiumRate: number;
+        vaultId: number;
       })[]
     >;
 
@@ -497,67 +497,71 @@ export class OptionVaultManager extends BaseContract {
   };
 
   filters: {
-    "OptionExpired(address,uint8,uint256,uint128,uint128,uint16,uint256,uint16)"(
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)"(
+      _vaultId?: BigNumberish | null,
+      _currentRound?: BigNumberish | null,
       _buyerAddress?: string | null,
-      _vaultId?: null,
       _amount?: null,
       _strike?: null,
-      _expiryLevel?: null,
-      _premiumRate?: null,
-      _optionHolderValue?: null,
-      _currentRound?: null
+      _premiumRate?: null
     ): TypedEventFilter<
-      [
-        string,
-        number,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        number,
-        BigNumber,
-        number
-      ],
+      [number, number, string, BigNumber, BigNumber, number],
       {
-        _buyerAddress: string;
         _vaultId: number;
+        _currentRound: number;
+        _buyerAddress: string;
         _amount: BigNumber;
         _strike: BigNumber;
-        _expiryLevel: BigNumber;
         _premiumRate: number;
-        _optionHolderValue: BigNumber;
+      }
+    >;
+
+    OptionBought(
+      _vaultId?: BigNumberish | null,
+      _currentRound?: BigNumberish | null,
+      _buyerAddress?: string | null,
+      _amount?: null,
+      _strike?: null,
+      _premiumRate?: null
+    ): TypedEventFilter<
+      [number, number, string, BigNumber, BigNumber, number],
+      {
+        _vaultId: number;
         _currentRound: number;
+        _buyerAddress: string;
+        _amount: BigNumber;
+        _strike: BigNumber;
+        _premiumRate: number;
+      }
+    >;
+
+    "OptionExpired(uint8,uint16,uint128,uint256)"(
+      _vaultId?: BigNumberish | null,
+      _currentRound?: BigNumberish | null,
+      _expiryLevel?: null,
+      _optionHolderValue?: null
+    ): TypedEventFilter<
+      [number, number, BigNumber, BigNumber],
+      {
+        _vaultId: number;
+        _currentRound: number;
+        _expiryLevel: BigNumber;
+        _optionHolderValue: BigNumber;
       }
     >;
 
     OptionExpired(
-      _buyerAddress?: string | null,
-      _vaultId?: null,
-      _amount?: null,
-      _strike?: null,
+      _vaultId?: BigNumberish | null,
+      _currentRound?: BigNumberish | null,
       _expiryLevel?: null,
-      _premiumRate?: null,
-      _optionHolderValue?: null,
-      _currentRound?: null
+      _optionHolderValue?: null
     ): TypedEventFilter<
-      [
-        string,
-        number,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        number,
-        BigNumber,
-        number
-      ],
+      [number, number, BigNumber, BigNumber],
       {
-        _buyerAddress: string;
         _vaultId: number;
-        _amount: BigNumber;
-        _strike: BigNumber;
-        _expiryLevel: BigNumber;
-        _premiumRate: number;
-        _optionHolderValue: BigNumber;
         _currentRound: number;
+        _expiryLevel: BigNumber;
+        _optionHolderValue: BigNumber;
       }
     >;
   };

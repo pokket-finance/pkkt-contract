@@ -15,15 +15,21 @@ const _abi = [
     inputs: [
       {
         indexed: true,
-        internalType: "address",
-        name: "_buyerAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
         internalType: "uint8",
         name: "_vaultId",
         type: "uint8",
+      },
+      {
+        indexed: true,
+        internalType: "uint16",
+        name: "_currentRound",
+        type: "uint16",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_buyerAddress",
+        type: "address",
       },
       {
         indexed: false,
@@ -39,27 +45,40 @@ const _abi = [
       },
       {
         indexed: false,
+        internalType: "uint16",
+        name: "_premiumRate",
+        type: "uint16",
+      },
+    ],
+    name: "OptionBought",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "uint8",
+        name: "_vaultId",
+        type: "uint8",
+      },
+      {
+        indexed: true,
+        internalType: "uint16",
+        name: "_currentRound",
+        type: "uint16",
+      },
+      {
+        indexed: false,
         internalType: "uint128",
         name: "_expiryLevel",
         type: "uint128",
       },
       {
         indexed: false,
-        internalType: "uint16",
-        name: "_premiumRate",
-        type: "uint16",
-      },
-      {
-        indexed: false,
         internalType: "uint256",
         name: "_optionHolderValue",
         type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint16",
-        name: "_currentRound",
-        type: "uint16",
       },
     ],
     name: "OptionExpired",
@@ -145,14 +164,14 @@ const _abi = [
             type: "uint128",
           },
           {
+            internalType: "uint128",
+            name: "optionHolderValue",
+            type: "uint128",
+          },
+          {
             internalType: "uint16",
             name: "round",
             type: "uint16",
-          },
-          {
-            internalType: "uint8",
-            name: "vaultId",
-            type: "uint8",
           },
           {
             internalType: "uint16",
@@ -160,9 +179,9 @@ const _abi = [
             type: "uint16",
           },
           {
-            internalType: "uint256",
-            name: "optionHolderValue",
-            type: "uint256",
+            internalType: "uint8",
+            name: "vaultId",
+            type: "uint8",
           },
         ],
         internalType: "struct StructureData.ExpiredVaultState[]",

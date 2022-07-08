@@ -549,13 +549,6 @@ describe.only("BSC Single Direction Option", async function () {
           const collectables2 = await vault.connect(trader as Signer).optionHolderValues();
           assert.equal(collectables2.length, 0);
 
-          const history = await vault.connect(trader as Signer).expiredHistory();
-          for(let item of history) { 
-            const vaultDefinition = vaultDefinitions[item.vaultId];
-            const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
-            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
-          }
-
           const busdNewBalance = await busd.balanceOf(trader.address);
           let totalCollectableCalculated= BigNumber.from(0);
           for(let i = 1; i < 4; i=i+2) {
@@ -653,10 +646,45 @@ describe.only("BSC Single Direction Option", async function () {
             vaultId: 0,
             maxCapacity: currentTVL.add(100)
           }]);
-          await vault.connect(alice as Signer).deposit(0, BigNumber.from(100));
-          await expect(vault.connect(alice as Signer).deposit(0, BigNumber.from(1))).to.be.revertedWith("Exceeds capacity");
+   
+          await vault.connect(manager as Signer).sellOptions([{
+            vaultId: 0,
+            strike: ethPrice * 1,
+            premiumRate: 0.015 * 10000 //1%
+          }, {
+            vaultId: 1,
+            strike: ethPrice * 0.85,
+            premiumRate: 0.015 * 10000
+          },{
+            vaultId: 2,
+            strike: btcPrice * 1.02,
+            premiumRate: 0.01 * 10000 //1%
+          }, {
+            vaultId: 3,
+            strike: btcPrice * 0.88,
+            premiumRate: 0.01 * 10000
+          }]); 
 
+          await vault.connect(carol as Signer).buyOptions([0,1,2,3]);
+          await advanceTime(60);
+          await advanceBlock();   
+          await advanceTime(60);
+          await advanceBlock();   
+          await advanceTime(60);
+          await advanceBlock();   
 
+          const history = await vault.connect(trader as Signer).expiredHistory();
+          for(let item of history) { 
+            const vaultDefinition = vaultDefinitions[item.vaultId];
+            const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
+            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
+          }
+          const history2 = await vault.connect(carol as Signer).expiredHistory();
+          for(let item of history2) { 
+            const vaultDefinition = vaultDefinitions[item.vaultId];
+            const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
+            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
+          }
         });
 
 
