@@ -45,9 +45,9 @@ const _abi = [
       },
       {
         indexed: false,
-        internalType: "uint16",
+        internalType: "uint104",
         name: "_premiumRate",
-        type: "uint16",
+        type: "uint104",
       },
     ],
     name: "OptionBought",
@@ -174,9 +174,9 @@ const _abi = [
             type: "uint16",
           },
           {
-            internalType: "uint16",
+            internalType: "uint104",
             name: "premiumRate",
-            type: "uint16",
+            type: "uint104",
           },
           {
             internalType: "uint8",
@@ -270,9 +270,9 @@ const _abi = [
             type: "uint128",
           },
           {
-            internalType: "uint16",
+            internalType: "uint104",
             name: "premiumRate",
-            type: "uint16",
+            type: "uint104",
           },
           {
             internalType: "uint8",

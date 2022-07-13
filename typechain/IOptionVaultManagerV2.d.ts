@@ -27,7 +27,7 @@ interface IOptionVaultManagerV2Interface extends ethers.utils.Interface {
     "collectOptionHolderValues()": FunctionFragment;
     "expireOptions((uint128,uint8)[])": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
-    "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "sellOptions((uint128,uint104,uint8)[])": FunctionFragment;
   };
 
   encodeFunctionData(

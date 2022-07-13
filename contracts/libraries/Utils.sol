@@ -4,7 +4,7 @@ pragma solidity =0.8.4;
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library Utils { 
      
-    uint256 public constant RATIOMULTIPLIER = 10000;
+    uint256 public constant RATIOMULTIPLIER = 100000000;
  
      using SafeMath for uint256;
       function StringConcat(bytes memory _base, bytes memory _value) internal pure returns (string memory) {

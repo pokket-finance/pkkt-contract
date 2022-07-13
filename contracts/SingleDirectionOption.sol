@@ -74,7 +74,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
 
         require(msg.value > 0, "!value"); 
         address asset = vaultDefinitions[_vaultId].asset; 
-        require(asset == address(0), "!ETH");
+        require(asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE), "!ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];
         require(data.cutOffAt > 0, "!started");
         //todo: check for cap
@@ -91,7 +91,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
         validateVaultId(_vaultId) lock{ 
         require(_amount > 0, "!amount"); 
         address asset = vaultDefinitions[_vaultId].asset; 
-        require(asset != address(0), "ETH");
+        require(asset != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE), "ETH");
         StructureData.VaultState storage data = vaultStates[_vaultId];
         require(data.cutOffAt > 0, "!started"); 
 

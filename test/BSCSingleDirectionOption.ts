@@ -14,13 +14,14 @@ const BUSDMultiplier = BigNumber.from(10).pow(BUSD_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
 const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);
 const PricePrecision = 4;
-const RatioMultipler = 10000; //precision xx.xx%
+const RatioMultiplier = 10 ** 8; //precision xx.xx%
+const StrikeMultiplier = 10 ** 4;
 const ETHBUSDOPTIONPAIR = 0;
 const WBTCBUSDOPTIONPAIR = 1;
 const StrikePriceDecimals = 4;
 
-const ethPrice = 1800 * (10 ** PricePrecision);
-const btcPrice = 30000 * (10 ** PricePrecision);
+const ethPrice = 1800 * StrikeMultiplier;
+const btcPrice = 30000 * StrikeMultiplier;
 
 describe.only("BSC Single Direction Option", async function () {
     let deployer: SignerWithAddress;
@@ -268,11 +269,11 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1.05,
-            premiumRate: 0.015 * 10000 //1%
+            premiumRate: 0.015 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice * 0.96,
-            premiumRate: 0.01 * 10000
+            premiumRate: 0.01 * RatioMultiplier
           }]); 
           
           aliceState = await vault.connect(alice as Signer).getUserState(0);
@@ -324,11 +325,11 @@ describe.only("BSC Single Direction Option", async function () {
           const sellings = [{
             vaultId: 0,
             strike: ethPrice * 1.1,
-            premiumRate: 0.01 * 10000 //1%
+            premiumRate: 0.01 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice * 1,
-            premiumRate: 0.015 * 10000
+            premiumRate: 0.015 * RatioMultiplier
           }];
           await vault.connect(manager as Signer).sellOptions(sellings); 
 
@@ -382,11 +383,11 @@ describe.only("BSC Single Direction Option", async function () {
            const selling2 = [{
             vaultId: 0,
             strike: ethPrice * 1.05,
-            premiumRate: 0.01 * 10000 //1%
+            premiumRate: 0.01 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice,
-            premiumRate: 0.015 * 10000
+            premiumRate: 0.015 * RatioMultiplier
           }];;
            await vault.connect(manager as Signer).sellOptions(selling2);
            await vault.connect(trader as Signer).buyOptions([0,1]);
@@ -471,19 +472,19 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1.1,
-            premiumRate: 0.015 * 10000 //1%
+            premiumRate: 0.015 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice * 0.91,
-            premiumRate: 0.015 * 10000
+            premiumRate: 0.015 * RatioMultiplier
           },{
             vaultId: 2,
             strike: btcPrice * 1.1,
-            premiumRate: 0.01 * 10000 //1%
+            premiumRate: 0.01 * RatioMultiplier //1%
           }, {
             vaultId: 3,
             strike: btcPrice * 0.91,
-            premiumRate: 0.01 * 10000
+            premiumRate: 0.01 * RatioMultiplier
           }]); 
           
           await vault.connect(manager as Signer).addToWhitelist([trader.address, carol.address]);
@@ -494,7 +495,7 @@ describe.only("BSC Single Direction Option", async function () {
           
           await expect(vault.connect(bob as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("!whitelisted");
           const vaultStates = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId)));
-          const premiums = vaultStates.map(v=> v.onGoing.amount.mul(v.onGoing.premiumRate).div(10000));
+          const premiums = vaultStates.map(v=> v.onGoing.amount.mul(v.onGoing.premiumRate).div(RatioMultiplier));
           const oldBalances = await Promise.all(vaultDefinitions.map(v=> contracts[v.asset].balanceOf(trader.address)));
           await vault.connect(trader as Signer).buyOptions([0,1,2,3]);
           await expect(vault.connect(carol as Signer).buyOptions([0,1,2,3])).to.be.revertedWith("Already sold");
@@ -568,19 +569,19 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1,
-            premiumRate: 0.015 * 10000 //1%
+            premiumRate: 0.015 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice * 0.85,
-            premiumRate: 0.015 * 10000
+            premiumRate: 0.015 * RatioMultiplier
           },{
             vaultId: 2,
             strike: btcPrice * 1.02,
-            premiumRate: 0.01 * 10000 //1%
+            premiumRate: 0.01 * RatioMultiplier //1%
           }, {
             vaultId: 3,
             strike: btcPrice * 0.88,
-            premiumRate: 0.01 * 10000
+            premiumRate: 0.01 * RatioMultiplier
           }]);
           await vault.connect(manager as Signer).removeFromWhitelist([trader.address]);
           const whitelistedTraders2 = await vault.whitelistTraders();
@@ -650,19 +651,19 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(manager as Signer).sellOptions([{
             vaultId: 0,
             strike: ethPrice * 1,
-            premiumRate: 0.015 * 10000 //1%
+            premiumRate: 0.015 * RatioMultiplier //1%
           }, {
             vaultId: 1,
             strike: ethPrice * 0.85,
-            premiumRate: 0.015 * 10000
+            premiumRate: 0.015 * RatioMultiplier
           },{
             vaultId: 2,
             strike: btcPrice * 1.02,
-            premiumRate: 0.01 * 10000 //1%
+            premiumRate: 0.01 * RatioMultiplier //1%
           }, {
             vaultId: 3,
             strike: btcPrice * 0.88,
-            premiumRate: 0.01 * 10000
+            premiumRate: 0.01 * RatioMultiplier
           }]); 
 
           await vault.connect(carol as Signer).buyOptions([0,1,2,3]);
@@ -677,13 +678,17 @@ describe.only("BSC Single Direction Option", async function () {
           for(let item of history) { 
             const vaultDefinition = vaultDefinitions[item.vaultId];
             const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
-            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
+            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, 
+            strike: ${item.strike.toNumber()/StrikeMultiplier}, expiryLevel: ${item.expiryLevel.toNumber() / StrikeMultiplier},  
+            premimum: ${item.premiumRate.toNumber() / RatioMultiplier}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
           }
           const history2 = await vault.connect(carol as Signer).expiredHistory();
           for(let item of history2) { 
             const vaultDefinition = vaultDefinitions[item.vaultId];
             const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
-            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, strike: ${item.strike.toNumber()/10000}, expiryLevel: ${item.expiryLevel.toNumber() / 10000},  premimum: ${item.premiumRate / 10000}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
+            console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, 
+            strike: ${item.strike.toNumber()/StrikeMultiplier}, expiryLevel: ${item.expiryLevel.toNumber() / StrikeMultiplier},  
+            premimum: ${item.premiumRate.toNumber() / RatioMultiplier}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
           }
         });
 

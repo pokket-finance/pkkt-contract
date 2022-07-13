@@ -20,7 +20,7 @@ library StructureData {
     //parameters for cutoff option
     struct OnGoingOptionParameters {  
         uint128 strike; // strike price 
-        uint16 premiumRate; //take, 0.01% is represented as 1, precision is 4
+        uint104 premiumRate; //take, 0.01% is represented as 1, precision is 4
         uint8 vaultId; 
     }
 
@@ -47,7 +47,7 @@ library StructureData {
         uint128 amount;
         uint128 queuedRedeemAmount;
         uint128 strike;
-        uint16 premiumRate;
+        uint104 premiumRate;
         address buyerAddress; 
     }
  
@@ -95,7 +95,7 @@ library StructureData {
         uint128 strike;
         uint128 expiryLevel; //set when setting expiry level
         uint128 optionHolderValue; //set when setting expiry level 
-        uint16 premiumRate;
+        uint104 premiumRate;
         address buyerAddress;
     }
     struct ExpiredVaultState {
@@ -104,7 +104,7 @@ library StructureData {
         uint128 expiryLevel;
         uint128 optionHolderValue; 
         uint16 round; 
-        uint16 premiumRate;
+        uint104 premiumRate;
         uint8 vaultId;  
     }
     struct CollectableValue {

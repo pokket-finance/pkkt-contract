@@ -31,7 +31,7 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
     "managerRoleAddress()": FunctionFragment;
     "optionHolderValues()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
-    "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "sellOptions((uint128,uint104,uint8)[])": FunctionFragment;
     "setCapacities((uint8,uint128)[])": FunctionFragment;
     "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
@@ -159,7 +159,7 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
   ): Result;
 
   events: {
-    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)": EventFragment;
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint104)": EventFragment;
     "OptionExpired(uint8,uint16,uint128,uint256)": EventFragment;
   };
 
@@ -168,13 +168,13 @@ interface OptionVaultManagerInterface extends ethers.utils.Interface {
 }
 
 export type OptionBoughtEvent = TypedEvent<
-  [number, number, string, BigNumber, BigNumber, number] & {
+  [number, number, string, BigNumber, BigNumber, BigNumber] & {
     _vaultId: number;
     _currentRound: number;
     _buyerAddress: string;
     _amount: BigNumber;
     _strike: BigNumber;
-    _premiumRate: number;
+    _premiumRate: BigNumber;
   }
 >;
 
@@ -260,7 +260,7 @@ export class OptionVaultManager extends BaseContract {
           BigNumber,
           BigNumber,
           number,
-          number,
+          BigNumber,
           number
         ] & {
           amount: BigNumber;
@@ -268,7 +268,7 @@ export class OptionVaultManager extends BaseContract {
           expiryLevel: BigNumber;
           optionHolderValue: BigNumber;
           round: number;
-          premiumRate: number;
+          premiumRate: BigNumber;
           vaultId: number;
         })[]
       ]
@@ -350,13 +350,13 @@ export class OptionVaultManager extends BaseContract {
   expiredHistory(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
+    ([BigNumber, BigNumber, BigNumber, BigNumber, number, BigNumber, number] & {
       amount: BigNumber;
       strike: BigNumber;
       expiryLevel: BigNumber;
       optionHolderValue: BigNumber;
       round: number;
-      premiumRate: number;
+      premiumRate: BigNumber;
       vaultId: number;
     })[]
   >;
@@ -433,13 +433,21 @@ export class OptionVaultManager extends BaseContract {
     expiredHistory(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
+      ([
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ] & {
         amount: BigNumber;
         strike: BigNumber;
         expiryLevel: BigNumber;
         optionHolderValue: BigNumber;
         round: number;
-        premiumRate: number;
+        premiumRate: BigNumber;
         vaultId: number;
       })[]
     >;
@@ -497,7 +505,7 @@ export class OptionVaultManager extends BaseContract {
   };
 
   filters: {
-    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)"(
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint104)"(
       _vaultId?: BigNumberish | null,
       _currentRound?: BigNumberish | null,
       _buyerAddress?: string | null,
@@ -505,14 +513,14 @@ export class OptionVaultManager extends BaseContract {
       _strike?: null,
       _premiumRate?: null
     ): TypedEventFilter<
-      [number, number, string, BigNumber, BigNumber, number],
+      [number, number, string, BigNumber, BigNumber, BigNumber],
       {
         _vaultId: number;
         _currentRound: number;
         _buyerAddress: string;
         _amount: BigNumber;
         _strike: BigNumber;
-        _premiumRate: number;
+        _premiumRate: BigNumber;
       }
     >;
 
@@ -524,14 +532,14 @@ export class OptionVaultManager extends BaseContract {
       _strike?: null,
       _premiumRate?: null
     ): TypedEventFilter<
-      [number, number, string, BigNumber, BigNumber, number],
+      [number, number, string, BigNumber, BigNumber, BigNumber],
       {
         _vaultId: number;
         _currentRound: number;
         _buyerAddress: string;
         _amount: BigNumber;
         _strike: BigNumber;
-        _premiumRate: number;
+        _premiumRate: BigNumber;
       }
     >;
 

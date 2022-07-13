@@ -40,7 +40,7 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     "owner()": FunctionFragment;
     "removeFromWhitelist(address[])": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
-    "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "sellOptions((uint128,uint104,uint8)[])": FunctionFragment;
     "setCapacities((uint8,uint128)[])": FunctionFragment;
     "setManager(address)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
@@ -254,7 +254,7 @@ interface SingleDirectionOptionStaticInterface extends ethers.utils.Interface {
     "CancelWithdraw(address,uint8,uint256,uint16)": EventFragment;
     "Deposit(address,uint8,uint256,uint16)": EventFragment;
     "InitiateWithdraw(address,uint8,uint256,uint16)": EventFragment;
-    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)": EventFragment;
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint104)": EventFragment;
     "OptionExpired(uint8,uint16,uint128,uint256)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "Withdraw(address,uint8,uint256,uint16)": EventFragment;
@@ -297,13 +297,13 @@ export type InitiateWithdrawEvent = TypedEvent<
 >;
 
 export type OptionBoughtEvent = TypedEvent<
-  [number, number, string, BigNumber, BigNumber, number] & {
+  [number, number, string, BigNumber, BigNumber, BigNumber] & {
     _vaultId: number;
     _currentRound: number;
     _buyerAddress: string;
     _amount: BigNumber;
     _strike: BigNumber;
-    _premiumRate: number;
+    _premiumRate: BigNumber;
   }
 >;
 
@@ -430,7 +430,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
           BigNumber,
           BigNumber,
           number,
-          number,
+          BigNumber,
           number
         ] & {
           amount: BigNumber;
@@ -438,7 +438,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
           expiryLevel: BigNumber;
           optionHolderValue: BigNumber;
           round: number;
-          premiumRate: number;
+          premiumRate: BigNumber;
           vaultId: number;
         })[]
       ]
@@ -480,18 +480,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
           number,
           number,
           BigNumber,
-          [BigNumber, BigNumber, BigNumber, number, string] & {
+          [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           },
-          [BigNumber, BigNumber, BigNumber, number, string] & {
+          [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           }
         ] & {
@@ -500,18 +500,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
           cutOffAt: number;
           currentRound: number;
           maxCapacity: BigNumber;
-          onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+          onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           };
-          expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+          expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           };
         }
@@ -650,13 +650,13 @@ export class SingleDirectionOptionStatic extends BaseContract {
   expiredHistory(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
+    ([BigNumber, BigNumber, BigNumber, BigNumber, number, BigNumber, number] & {
       amount: BigNumber;
       strike: BigNumber;
       expiryLevel: BigNumber;
       optionHolderValue: BigNumber;
       round: number;
-      premiumRate: number;
+      premiumRate: BigNumber;
       vaultId: number;
     })[]
   >;
@@ -694,18 +694,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
       number,
       number,
       BigNumber,
-      [BigNumber, BigNumber, BigNumber, number, string] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       },
-      [BigNumber, BigNumber, BigNumber, number, string] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       }
     ] & {
@@ -714,18 +714,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
       cutOffAt: number;
       currentRound: number;
       maxCapacity: BigNumber;
-      onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+      onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       };
-      expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+      expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       };
     }
@@ -859,13 +859,21 @@ export class SingleDirectionOptionStatic extends BaseContract {
     expiredHistory(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, BigNumber, BigNumber, number, number, number] & {
+      ([
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber,
+        number
+      ] & {
         amount: BigNumber;
         strike: BigNumber;
         expiryLevel: BigNumber;
         optionHolderValue: BigNumber;
         round: number;
-        premiumRate: number;
+        premiumRate: BigNumber;
         vaultId: number;
       })[]
     >;
@@ -903,18 +911,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
         number,
         number,
         BigNumber,
-        [BigNumber, BigNumber, BigNumber, number, string] & {
+        [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         },
-        [BigNumber, BigNumber, BigNumber, number, string] & {
+        [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         }
       ] & {
@@ -923,18 +931,18 @@ export class SingleDirectionOptionStatic extends BaseContract {
         cutOffAt: number;
         currentRound: number;
         maxCapacity: BigNumber;
-        onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+        onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         };
-        expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+        expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         };
       }
@@ -1096,7 +1104,7 @@ export class SingleDirectionOptionStatic extends BaseContract {
       }
     >;
 
-    "OptionBought(uint8,uint16,address,uint256,uint128,uint16)"(
+    "OptionBought(uint8,uint16,address,uint256,uint128,uint104)"(
       _vaultId?: BigNumberish | null,
       _currentRound?: BigNumberish | null,
       _buyerAddress?: string | null,
@@ -1104,14 +1112,14 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _strike?: null,
       _premiumRate?: null
     ): TypedEventFilter<
-      [number, number, string, BigNumber, BigNumber, number],
+      [number, number, string, BigNumber, BigNumber, BigNumber],
       {
         _vaultId: number;
         _currentRound: number;
         _buyerAddress: string;
         _amount: BigNumber;
         _strike: BigNumber;
-        _premiumRate: number;
+        _premiumRate: BigNumber;
       }
     >;
 
@@ -1123,14 +1131,14 @@ export class SingleDirectionOptionStatic extends BaseContract {
       _strike?: null,
       _premiumRate?: null
     ): TypedEventFilter<
-      [number, number, string, BigNumber, BigNumber, number],
+      [number, number, string, BigNumber, BigNumber, BigNumber],
       {
         _vaultId: number;
         _currentRound: number;
         _buyerAddress: string;
         _amount: BigNumber;
         _strike: BigNumber;
-        _premiumRate: number;
+        _premiumRate: BigNumber;
       }
     >;
 

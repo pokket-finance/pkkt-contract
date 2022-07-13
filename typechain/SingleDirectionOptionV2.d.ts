@@ -34,7 +34,7 @@ interface SingleDirectionOptionV2Interface extends ethers.utils.Interface {
     "initiateWithraw(uint8,uint256)": FunctionFragment;
     "kickOffOptions((uint8,uint128,uint8)[])": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
-    "sellOptions((uint128,uint16,uint8)[])": FunctionFragment;
+    "sellOptions((uint128,uint104,uint8)[])": FunctionFragment;
     "vaultCount()": FunctionFragment;
     "vaultDefinitions(uint8)": FunctionFragment;
     "withdraw(uint8,uint256)": FunctionFragment;
@@ -332,18 +332,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
           number,
           number,
           BigNumber,
-          [BigNumber, BigNumber, BigNumber, number, string] & {
+          [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           },
-          [BigNumber, BigNumber, BigNumber, number, string] & {
+          [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           }
         ] & {
@@ -352,18 +352,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
           cutOffAt: number;
           currentRound: number;
           maxCapacity: BigNumber;
-          onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+          onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           };
-          expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+          expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
             amount: BigNumber;
             queuedRedeemAmount: BigNumber;
             strike: BigNumber;
-            premiumRate: number;
+            premiumRate: BigNumber;
             buyerAddress: string;
           };
         }
@@ -487,18 +487,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
       number,
       number,
       BigNumber,
-      [BigNumber, BigNumber, BigNumber, number, string] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       },
-      [BigNumber, BigNumber, BigNumber, number, string] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       }
     ] & {
@@ -507,18 +507,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
       cutOffAt: number;
       currentRound: number;
       maxCapacity: BigNumber;
-      onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+      onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       };
-      expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+      expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
         amount: BigNumber;
         queuedRedeemAmount: BigNumber;
         strike: BigNumber;
-        premiumRate: number;
+        premiumRate: BigNumber;
         buyerAddress: string;
       };
     }
@@ -637,18 +637,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
         number,
         number,
         BigNumber,
-        [BigNumber, BigNumber, BigNumber, number, string] & {
+        [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         },
-        [BigNumber, BigNumber, BigNumber, number, string] & {
+        [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         }
       ] & {
@@ -657,18 +657,18 @@ export class SingleDirectionOptionV2 extends BaseContract {
         cutOffAt: number;
         currentRound: number;
         maxCapacity: BigNumber;
-        onGoing: [BigNumber, BigNumber, BigNumber, number, string] & {
+        onGoing: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         };
-        expired: [BigNumber, BigNumber, BigNumber, number, string] & {
+        expired: [BigNumber, BigNumber, BigNumber, BigNumber, string] & {
           amount: BigNumber;
           queuedRedeemAmount: BigNumber;
           strike: BigNumber;
-          premiumRate: number;
+          premiumRate: BigNumber;
           buyerAddress: string;
         };
       }

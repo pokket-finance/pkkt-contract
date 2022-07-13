@@ -107,9 +107,9 @@ const _abi = [
             type: "uint128",
           },
           {
-            internalType: "uint16",
+            internalType: "uint104",
             name: "premiumRate",
-            type: "uint16",
+            type: "uint104",
           },
           {
             internalType: "uint8",

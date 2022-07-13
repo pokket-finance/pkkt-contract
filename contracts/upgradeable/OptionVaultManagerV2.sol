@@ -108,7 +108,7 @@ abstract contract OptionVaultManagerV2 is
                 uint256(_premiumRate).sub(oldPremium)
             );
             address asset = vaultDefinitions[_vaultId].asset;
-            if (asset == address(0)) {
+            if (asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
                 require(msg.value >= needed, "not enough premium sent");
                 if (msg.value > needed) {
                     OptionLifecycle.withdraw(msg.sender, needed, asset);
@@ -125,7 +125,7 @@ abstract contract OptionVaultManagerV2 is
                 uint256(oldPremium).sub(_premiumRate)
             );
             address asset = vaultDefinitions[_vaultId].asset;
-            if (asset == address(0)) {
+            if (asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
                 OptionLifecycle.withdraw(
                     msg.sender,
                     redundant.add(msg.value),
@@ -175,7 +175,7 @@ abstract contract OptionVaultManagerV2 is
                     premiumRate
                 );
                 address asset = vaultDefinitions[uint8(i)].asset;
-                if (asset == address(0)) {
+                if (asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
                     OptionLifecycle.withdraw(
                         msg.sender,
                         redundant.add(msg.value),

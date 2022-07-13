@@ -29,7 +29,7 @@ library OptionLifecycle {
         address _contractAddress
     ) external {
         require(_amount > 0, "!amt");
-        if (_contractAddress == address(0)) {
+        if (_contractAddress == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             payable(_target).transfer(_amount);
         } else {
             IERC20(_contractAddress).safeTransfer(_target, _amount);
@@ -310,7 +310,7 @@ library OptionLifecycle {
             pending = 0;
             //premium not sent, simply bring it to next round
             if (lastUpdateRound > 1 && _vaultState.expired.amount > 0) { 
-                uint16 premiumRate = _vaultState.expired.buyerAddress == address(0) ? 0 : _vaultState.expired.premiumRate;
+                uint104 premiumRate = _vaultState.expired.buyerAddress == address(0) ? 0 : _vaultState.expired.premiumRate;
                 uint256 expiredAmount = uint256(_vaultState.expired.amount).withPremium(premiumRate);
                 uint256 expiredRedeemAmount = uint256(_vaultState.expired.queuedRedeemAmount).withPremium(premiumRate);
                 uint256 onGoingAmount =
@@ -377,7 +377,7 @@ library OptionLifecycle {
                 snapShot.expired.amount > 0
             ) {
 
-                uint16 premiumRate = snapShot.expired.buyerAddress == address(0) ? 0 : snapShot.expired.premiumRate;
+                uint104 premiumRate = snapShot.expired.buyerAddress == address(0) ? 0 : snapShot.expired.premiumRate;
                 uint256 expiredAmount = uint256(snapShot.expired.amount).withPremium(premiumRate);
                 uint256 expiredRedeemAmount = uint256(snapShot.expired.queuedRedeemAmount).withPremium(premiumRate);
 

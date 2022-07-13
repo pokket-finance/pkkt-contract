@@ -220,7 +220,8 @@ abstract contract OptionVaultManager is
             Utils.assertUint128(total);
             uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
-             
+            
+           //todo: trigger event
             StructureData.SoldVaultState memory soldState = StructureData.SoldVaultState({
                 amount: uint128(total),
                 strike: onGoing.strike,
@@ -233,7 +234,7 @@ abstract contract OptionVaultManager is
             
             emit OptionBought(vaultId, data.currentRound - 1, msg.sender, total, onGoing.strike, onGoing.premiumRate);
 
-            if (asset == address(0)) {
+            if (asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
                 ethToSend = ethToSend.add(premium);
             } else {
                 IERC20(asset).safeTransferFrom(
