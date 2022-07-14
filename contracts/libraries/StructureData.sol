@@ -5,9 +5,7 @@ import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-library StructureData {
-    bytes32 public constant OPTION_ROLE = keccak256("OPTION_ROLE");
-    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
+library StructureData { 
     uint8 public constant MATUREROUND = 1; //7 for daily settlement, 1 for daily settlement
     uint8 public constant PRICE_PRECISION = 4;
     struct OptionParameters { 

@@ -21,11 +21,13 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface OptionVaultBaseInterface extends ethers.utils.Interface {
   functions: {
+    "adminRoleAddress()": FunctionFragment;
     "balanceEnough(address)": FunctionFragment;
     "batchWithdrawAssets(address,address[])": FunctionFragment;
     "currentRound()": FunctionFragment;
     "executionAccountingResult(uint8)": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
+    "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
     "optionPairs(uint8)": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
@@ -36,6 +38,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
     "withdrawAsset(address,address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "adminRoleAddress",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "balanceEnough",
     values: [string]
@@ -54,6 +60,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "initiateSettlement",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "managerRoleAddress",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -90,6 +100,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): string;
 
   decodeFunctionResult(
+    functionFragment: "adminRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "balanceEnough",
     data: BytesLike
   ): Result;
@@ -107,6 +121,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "initiateSettlement",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "managerRoleAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -140,14 +158,20 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): Result;
 
   events: {
-    "SettlerChanged(address,address)": EventFragment;
+    "AdminChanged(address,address)": EventFragment;
+    "ManagerChanged(address,address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "SettlerChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ManagerChanged"): EventFragment;
 }
 
-export type SettlerChangedEvent = TypedEvent<
-  [string, string] & { previousSettler: string; newSettler: string }
+export type AdminChangedEvent = TypedEvent<
+  [string, string] & { oldAdmin: string; newAdmin: string }
+>;
+
+export type ManagerChangedEvent = TypedEvent<
+  [string, string] & { oldManager: string; newManager: string }
 >;
 
 export class OptionVaultBase extends BaseContract {
@@ -194,6 +218,8 @@ export class OptionVaultBase extends BaseContract {
   interface: OptionVaultBaseInterface;
 
   functions: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -314,6 +340,8 @@ export class OptionVaultBase extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     optionPairCount(overrides?: CallOverrides): Promise<[number]>;
 
     optionPairs(
@@ -366,6 +394,8 @@ export class OptionVaultBase extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
+
+  adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -484,6 +514,8 @@ export class OptionVaultBase extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
   optionPairCount(overrides?: CallOverrides): Promise<number>;
 
   optionPairs(
@@ -537,6 +569,8 @@ export class OptionVaultBase extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
     batchWithdrawAssets(
@@ -652,6 +686,8 @@ export class OptionVaultBase extends BaseContract {
 
     initiateSettlement(overrides?: CallOverrides): Promise<void>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     optionPairCount(overrides?: CallOverrides): Promise<number>;
 
     optionPairs(
@@ -706,24 +742,42 @@ export class OptionVaultBase extends BaseContract {
   };
 
   filters: {
-    "SettlerChanged(address,address)"(
-      previousSettler?: string | null,
-      newSettler?: string | null
+    "AdminChanged(address,address)"(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
     ): TypedEventFilter<
       [string, string],
-      { previousSettler: string; newSettler: string }
+      { oldAdmin: string; newAdmin: string }
     >;
 
-    SettlerChanged(
-      previousSettler?: string | null,
-      newSettler?: string | null
+    AdminChanged(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
     ): TypedEventFilter<
       [string, string],
-      { previousSettler: string; newSettler: string }
+      { oldAdmin: string; newAdmin: string }
+    >;
+
+    "ManagerChanged(address,address)"(
+      oldManager?: string | null,
+      newManager?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldManager: string; newManager: string }
+    >;
+
+    ManagerChanged(
+      oldManager?: string | null,
+      newManager?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldManager: string; newManager: string }
     >;
   };
 
   estimateGas: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -745,6 +799,8 @@ export class OptionVaultBase extends BaseContract {
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
     optionPairCount(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -783,6 +839,8 @@ export class OptionVaultBase extends BaseContract {
   };
 
   populateTransaction: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -803,6 +861,10 @@ export class OptionVaultBase extends BaseContract {
 
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    managerRoleAddress(
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     optionPairCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;

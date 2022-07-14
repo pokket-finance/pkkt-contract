@@ -21,9 +21,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface StructureDataInterface extends ethers.utils.Interface {
   functions: {
     "MATUREROUND()": FunctionFragment;
-    "OPTION_ROLE()": FunctionFragment;
     "PRICE_PRECISION()": FunctionFragment;
-    "SETTLER_ROLE()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -31,15 +29,7 @@ interface StructureDataInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "OPTION_ROLE",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "PRICE_PRECISION",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "SETTLER_ROLE",
     values?: undefined
   ): string;
 
@@ -48,15 +38,7 @@ interface StructureDataInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "OPTION_ROLE",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "PRICE_PRECISION",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "SETTLER_ROLE",
     data: BytesLike
   ): Result;
 
@@ -109,29 +91,17 @@ export class StructureData extends BaseContract {
   functions: {
     MATUREROUND(overrides?: CallOverrides): Promise<[number]>;
 
-    OPTION_ROLE(overrides?: CallOverrides): Promise<[string]>;
-
     PRICE_PRECISION(overrides?: CallOverrides): Promise<[number]>;
-
-    SETTLER_ROLE(overrides?: CallOverrides): Promise<[string]>;
   };
 
   MATUREROUND(overrides?: CallOverrides): Promise<number>;
 
-  OPTION_ROLE(overrides?: CallOverrides): Promise<string>;
-
   PRICE_PRECISION(overrides?: CallOverrides): Promise<number>;
-
-  SETTLER_ROLE(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
     MATUREROUND(overrides?: CallOverrides): Promise<number>;
 
-    OPTION_ROLE(overrides?: CallOverrides): Promise<string>;
-
     PRICE_PRECISION(overrides?: CallOverrides): Promise<number>;
-
-    SETTLER_ROLE(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {};
@@ -139,20 +109,12 @@ export class StructureData extends BaseContract {
   estimateGas: {
     MATUREROUND(overrides?: CallOverrides): Promise<BigNumber>;
 
-    OPTION_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
-
     PRICE_PRECISION(overrides?: CallOverrides): Promise<BigNumber>;
-
-    SETTLER_ROLE(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
     MATUREROUND(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    OPTION_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     PRICE_PRECISION(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    SETTLER_ROLE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

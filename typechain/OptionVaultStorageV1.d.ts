@@ -20,8 +20,10 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
   functions: {
+    "adminRoleAddress()": FunctionFragment;
     "currentRound()": FunctionFragment;
     "executionAccountingResult(uint8)": FunctionFragment;
+    "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
     "optionPairs(uint8)": FunctionFragment;
     "settlementCashflowResult(address)": FunctionFragment;
@@ -29,12 +31,20 @@ interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
   };
 
   encodeFunctionData(
+    functionFragment: "adminRoleAddress",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "currentRound",
     values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "executionAccountingResult",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "managerRoleAddress",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "optionPairCount",
@@ -54,11 +64,19 @@ interface OptionVaultStorageV1Interface extends ethers.utils.Interface {
   ): string;
 
   decodeFunctionResult(
+    functionFragment: "adminRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "currentRound",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "executionAccountingResult",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "managerRoleAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -125,6 +143,8 @@ export class OptionVaultStorageV1 extends BaseContract {
   interface: OptionVaultStorageV1Interface;
 
   functions: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     currentRound(overrides?: CallOverrides): Promise<[number]>;
 
     executionAccountingResult(
@@ -230,6 +250,8 @@ export class OptionVaultStorageV1 extends BaseContract {
       }
     >;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     optionPairCount(overrides?: CallOverrides): Promise<[number]>;
 
     optionPairs(
@@ -261,6 +283,8 @@ export class OptionVaultStorageV1 extends BaseContract {
 
     underSettlement(overrides?: CallOverrides): Promise<[boolean]>;
   };
+
+  adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   currentRound(overrides?: CallOverrides): Promise<number>;
 
@@ -367,6 +391,8 @@ export class OptionVaultStorageV1 extends BaseContract {
     }
   >;
 
+  managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
   optionPairCount(overrides?: CallOverrides): Promise<number>;
 
   optionPairs(
@@ -399,6 +425,8 @@ export class OptionVaultStorageV1 extends BaseContract {
   underSettlement(overrides?: CallOverrides): Promise<boolean>;
 
   callStatic: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     currentRound(overrides?: CallOverrides): Promise<number>;
 
     executionAccountingResult(
@@ -504,6 +532,8 @@ export class OptionVaultStorageV1 extends BaseContract {
       }
     >;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     optionPairCount(overrides?: CallOverrides): Promise<number>;
 
     optionPairs(
@@ -539,12 +569,16 @@ export class OptionVaultStorageV1 extends BaseContract {
   filters: {};
 
   estimateGas: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
     currentRound(overrides?: CallOverrides): Promise<BigNumber>;
 
     executionAccountingResult(
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
     optionPairCount(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -562,10 +596,16 @@ export class OptionVaultStorageV1 extends BaseContract {
   };
 
   populateTransaction: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     currentRound(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     executionAccountingResult(
       arg0: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    managerRoleAddress(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 

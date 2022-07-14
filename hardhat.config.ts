@@ -15,7 +15,7 @@ import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
 import sendUserCoins from "./scripts/tasks/sendUserCoins";
 import transferOwnerShip from './scripts/tasks/transferOwnerShip'; 
-import prepareAccounts from './scripts/tasks/prepareAccounts';
+//import prepareAccounts from './scripts/tasks/prepareAccounts';
 import initiateSettlement from './scripts/tasks/initiateSettlement';
 import setSettler from './scripts/tasks/setSettler';
 import configureEmail from './scripts/tasks/configureEmail';
@@ -138,8 +138,8 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
-task("prepare-accounts", "Prepare accounts", prepareAccounts)
-.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
+//task("prepare-accounts", "Prepare accounts", prepareAccounts)
+//.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
 task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
 
 task("new-epoch", "Initiate a new epoch", initiateSettlement);

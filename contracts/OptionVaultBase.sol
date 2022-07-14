@@ -23,7 +23,9 @@ abstract contract OptionVaultBase is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    event SettlerChanged(address indexed previousSettler, address indexed newSettler); 
+    event ManagerChanged(address indexed oldManager, address indexed newManager); 
+
+    event AdminChanged(address indexed oldAdmin, address indexed newAdmin); 
 
 
     function clientWithdraw(
@@ -37,10 +39,15 @@ abstract contract OptionVaultBase is
         }
         OptionLifecycle.withdraw(_target, _amount, _contractAddress);
     }
-    function setSettlerInternal(address _settler) internal {
-        address oldSettlerAddress = settlerRoleAddress;
-        settlerRoleAddress = _settler;
-        emit SettlerChanged(oldSettlerAddress, _settler);
+    function setAdminInternal(address _admin) internal {
+        address oldAdminAddress = adminRoleAddress;
+        adminRoleAddress = _admin;
+        emit AdminChanged(oldAdminAddress, _admin);
+    }  
+    function setManagerInternal(address _manager) internal {
+        address oldManagerAddress = managerRoleAddress;
+        managerRoleAddress = _manager;
+        emit ManagerChanged(oldManagerAddress, _manager);
     }  
     function addOptionPairsInternal(
         StructureData.OptionPairDefinition[] memory _optionPairDefinitions
@@ -81,12 +88,12 @@ abstract contract OptionVaultBase is
     }
 
 
-    function toggleOptionPairDeposit(uint8 _pairId) external override settlerOnly {
+    function toggleOptionPairDeposit(uint8 _pairId) external override onlyAdmin {
         StructureData.OptionPairDefinition storage pair = optionPairs[_pairId];
         pair.manualDepositDisabled = !pair.manualDepositDisabled;
     }
     
-    function initiateSettlement() external override settlerOnly { 
+    function initiateSettlement() external override onlyAdmin { 
         require(!underSettlement);
         currentRound = currentRound + 1;
         underSettlement = true;
@@ -202,7 +209,7 @@ abstract contract OptionVaultBase is
     function settle(StructureData.OptionExecution[] memory _execution)
         external
         override 
-        settlerOnly
+        onlyManager
     { 
         require(underSettlement);
         uint256 count = _execution.length;
@@ -363,7 +370,7 @@ abstract contract OptionVaultBase is
 
     function setOptionParameters(
         uint256[] memory _parameters
-    ) external override settlerOnly { 
+    ) external override onlyAdmin { 
         uint256 count = _parameters.length; 
         require(!underSettlement);
         require(currentRound > 1);
@@ -376,7 +383,7 @@ abstract contract OptionVaultBase is
     }
 
     //todo: whitelist
-    function withdrawAsset(address _trader, address _asset) external override lock settlerOnly { 
+    function withdrawAsset(address _trader, address _asset) external override lock onlyManager { 
         StructureData.AssetData storage assetSubData = assetData[_asset];
         require(assetSubData.leftOverAmount > 0); 
         uint128 balance = uint128(assetSubData.leftOverAmount);
@@ -385,7 +392,7 @@ abstract contract OptionVaultBase is
         assetSubData.leftOverAmount = 0;
     }
 
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock settlerOnly{ 
+    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock onlyManager{ 
         uint256 count = _assets.length;
         for(uint256 i = 0; i < count; i++) {
             StructureData.AssetData storage assetSubData = assetData[_assets[i]];
@@ -469,8 +476,12 @@ abstract contract OptionVaultBase is
         _;
         locked = 0;
     }
-    modifier settlerOnly() {
-         require(settlerRoleAddress == msg.sender, "!settler"); 
+    modifier onlyManager() {
+         require(managerRoleAddress == msg.sender, "!manager"); 
+         _;
+    }
+    modifier onlyAdmin() {
+         require(adminRoleAddress == msg.sender, "!admin"); 
          _;
     }
     function autoRollToCounterPartyByOption(

@@ -22,6 +22,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
   functions: {
+    "adminRoleAddress()": FunctionFragment;
     "balanceEnough(address)": FunctionFragment;
     "batchWithdrawAssets(address,address[])": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
@@ -34,6 +35,7 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
     "getOptionStateByRound(uint8,uint16)": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
+    "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
     "optionPairs(uint8)": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
@@ -46,6 +48,10 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
     "withdrawAsset(address,address)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "adminRoleAddress",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "balanceEnough",
     values: [string]
@@ -95,6 +101,10 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "managerRoleAddress",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "optionPairCount",
     values?: undefined
   ): string;
@@ -135,6 +145,10 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
     values: [string, string]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "adminRoleAddress",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "balanceEnough",
     data: BytesLike
@@ -178,6 +192,10 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "managerRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "optionPairCount",
     data: BytesLike
   ): Result;
@@ -210,15 +228,21 @@ interface HodlBoosterOptionV2Interface extends ethers.utils.Interface {
   ): Result;
 
   events: {
+    "AdminChanged(address,address)": EventFragment;
     "Deposit(uint8,address,uint16,uint256)": EventFragment;
-    "SettlerChanged(address,address)": EventFragment;
+    "ManagerChanged(address,address)": EventFragment;
     "Withdraw(uint8,address,address,uint256)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Deposit"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "SettlerChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ManagerChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Withdraw"): EventFragment;
 }
+
+export type AdminChangedEvent = TypedEvent<
+  [string, string] & { oldAdmin: string; newAdmin: string }
+>;
 
 export type DepositEvent = TypedEvent<
   [number, string, number, BigNumber] & {
@@ -229,8 +253,8 @@ export type DepositEvent = TypedEvent<
   }
 >;
 
-export type SettlerChangedEvent = TypedEvent<
-  [string, string] & { previousSettler: string; newSettler: string }
+export type ManagerChangedEvent = TypedEvent<
+  [string, string] & { oldManager: string; newManager: string }
 >;
 
 export type WithdrawEvent = TypedEvent<
@@ -286,6 +310,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
   interface: HodlBoosterOptionV2Interface;
 
   functions: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -479,6 +505,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     optionPairCount(overrides?: CallOverrides): Promise<[number]>;
 
     optionPairs(
@@ -544,6 +572,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
+
+  adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -729,6 +759,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
   optionPairCount(overrides?: CallOverrides): Promise<number>;
 
   optionPairs(
@@ -795,6 +827,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
     batchWithdrawAssets(
@@ -977,6 +1011,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     optionPairCount(overrides?: CallOverrides): Promise<number>;
 
     optionPairs(
@@ -1044,6 +1080,22 @@ export class HodlBoosterOptionV2 extends BaseContract {
   };
 
   filters: {
+    "AdminChanged(address,address)"(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldAdmin: string; newAdmin: string }
+    >;
+
+    AdminChanged(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldAdmin: string; newAdmin: string }
+    >;
+
     "Deposit(uint8,address,uint16,uint256)"(
       optionId?: BigNumberish | null,
       account?: string | null,
@@ -1064,20 +1116,20 @@ export class HodlBoosterOptionV2 extends BaseContract {
       { optionId: number; account: string; round: number; amount: BigNumber }
     >;
 
-    "SettlerChanged(address,address)"(
-      previousSettler?: string | null,
-      newSettler?: string | null
+    "ManagerChanged(address,address)"(
+      oldManager?: string | null,
+      newManager?: string | null
     ): TypedEventFilter<
       [string, string],
-      { previousSettler: string; newSettler: string }
+      { oldManager: string; newManager: string }
     >;
 
-    SettlerChanged(
-      previousSettler?: string | null,
-      newSettler?: string | null
+    ManagerChanged(
+      oldManager?: string | null,
+      newManager?: string | null
     ): TypedEventFilter<
       [string, string],
-      { previousSettler: string; newSettler: string }
+      { oldManager: string; newManager: string }
     >;
 
     "Withdraw(uint8,address,address,uint256)"(
@@ -1102,6 +1154,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
   };
 
   estimateGas: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -1163,6 +1217,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
     optionPairCount(overrides?: CallOverrides): Promise<BigNumber>;
 
     optionPairs(
@@ -1213,6 +1269,8 @@ export class HodlBoosterOptionV2 extends BaseContract {
   };
 
   populateTransaction: {
+    adminRoleAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
@@ -1272,6 +1330,10 @@ export class HodlBoosterOptionV2 extends BaseContract {
       _optionId: BigNumberish,
       _assetToTerminate: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    managerRoleAddress(
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     optionPairCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;

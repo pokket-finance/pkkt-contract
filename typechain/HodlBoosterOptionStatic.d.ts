@@ -23,6 +23,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
   functions: {
     "addOptionPairs((uint8,uint8,uint8,uint8,address,address,bool)[])": FunctionFragment;
+    "adminRoleAddress()": FunctionFragment;
     "balanceEnough(address)": FunctionFragment;
     "batchWithdrawAssets(address,address[])": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
@@ -35,12 +36,14 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     "getOptionStateByRound(uint8,uint16)": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
     "initiateWithraw(uint8,uint256)": FunctionFragment;
+    "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
     "optionPairs(uint8)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
+    "setAdmin(address)": FunctionFragment;
+    "setManager(address)": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
-    "setSettler(address)": FunctionFragment;
     "settle(uint8[])": FunctionFragment;
     "settlementCashflowResult(address)": FunctionFragment;
     "toggleOptionPairDeposit(uint8)": FunctionFragment;
@@ -63,6 +66,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
         manualDepositDisabled: boolean;
       }[]
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "adminRoleAddress",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "balanceEnough",
@@ -113,6 +120,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "managerRoleAddress",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "optionPairCount",
     values?: undefined
   ): string;
@@ -125,11 +136,12 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "setAdmin", values: [string]): string;
+  encodeFunctionData(functionFragment: "setManager", values: [string]): string;
   encodeFunctionData(
     functionFragment: "setOptionParameters",
     values: [BigNumberish[]]
   ): string;
-  encodeFunctionData(functionFragment: "setSettler", values: [string]): string;
   encodeFunctionData(
     functionFragment: "settle",
     values: [BigNumberish[]]
@@ -161,6 +173,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
 
   decodeFunctionResult(
     functionFragment: "addOptionPairs",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "adminRoleAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -206,6 +222,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "managerRoleAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "optionPairCount",
     data: BytesLike
   ): Result;
@@ -218,11 +238,12 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "setAdmin", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setManager", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setOptionParameters",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "setSettler", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "settle", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "settlementCashflowResult",
@@ -247,17 +268,23 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
   ): Result;
 
   events: {
+    "AdminChanged(address,address)": EventFragment;
     "Deposit(uint8,address,uint16,uint256)": EventFragment;
+    "ManagerChanged(address,address)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
-    "SettlerChanged(address,address)": EventFragment;
     "Withdraw(uint8,address,address,uint256)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Deposit"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ManagerChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "SettlerChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Withdraw"): EventFragment;
 }
+
+export type AdminChangedEvent = TypedEvent<
+  [string, string] & { oldAdmin: string; newAdmin: string }
+>;
 
 export type DepositEvent = TypedEvent<
   [number, string, number, BigNumber] & {
@@ -268,12 +295,12 @@ export type DepositEvent = TypedEvent<
   }
 >;
 
-export type OwnershipTransferredEvent = TypedEvent<
-  [string, string] & { previousOwner: string; newOwner: string }
+export type ManagerChangedEvent = TypedEvent<
+  [string, string] & { oldManager: string; newManager: string }
 >;
 
-export type SettlerChangedEvent = TypedEvent<
-  [string, string] & { previousSettler: string; newSettler: string }
+export type OwnershipTransferredEvent = TypedEvent<
+  [string, string] & { previousOwner: string; newOwner: string }
 >;
 
 export type WithdrawEvent = TypedEvent<
@@ -341,6 +368,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    adminRoleAddress(overrides?: CallOverrides): Promise<[string]>;
 
     balanceEnough(
       _asset: string,
@@ -535,6 +564,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<[string]>;
+
     optionPairCount(overrides?: CallOverrides): Promise<[number]>;
 
     optionPairs(
@@ -558,13 +589,18 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    setOptionParameters(
-      _parameters: BigNumberish[],
+    setAdmin(
+      _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    setSettler(
-      _settler: string,
+    setManager(
+      _manager: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setOptionParameters(
+      _parameters: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -623,6 +659,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
     }[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
+
+  adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -808,6 +846,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
   optionPairCount(overrides?: CallOverrides): Promise<number>;
 
   optionPairs(
@@ -831,13 +871,18 @@ export class HodlBoosterOptionStatic extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  setOptionParameters(
-    _parameters: BigNumberish[],
+  setAdmin(
+    _admin: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  setSettler(
-    _settler: string,
+  setManager(
+    _manager: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setOptionParameters(
+    _parameters: BigNumberish[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -896,6 +941,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       }[],
       overrides?: CallOverrides
     ): Promise<void>;
+
+    adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
@@ -1079,6 +1126,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<string>;
+
     optionPairCount(overrides?: CallOverrides): Promise<number>;
 
     optionPairs(
@@ -1100,12 +1149,14 @@ export class HodlBoosterOptionStatic extends BaseContract {
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
 
+    setAdmin(_admin: string, overrides?: CallOverrides): Promise<void>;
+
+    setManager(_manager: string, overrides?: CallOverrides): Promise<void>;
+
     setOptionParameters(
       _parameters: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
-
-    setSettler(_settler: string, overrides?: CallOverrides): Promise<void>;
 
     settle(
       _execution: BigNumberish[],
@@ -1151,6 +1202,22 @@ export class HodlBoosterOptionStatic extends BaseContract {
   };
 
   filters: {
+    "AdminChanged(address,address)"(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldAdmin: string; newAdmin: string }
+    >;
+
+    AdminChanged(
+      oldAdmin?: string | null,
+      newAdmin?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldAdmin: string; newAdmin: string }
+    >;
+
     "Deposit(uint8,address,uint16,uint256)"(
       optionId?: BigNumberish | null,
       account?: string | null,
@@ -1171,6 +1238,22 @@ export class HodlBoosterOptionStatic extends BaseContract {
       { optionId: number; account: string; round: number; amount: BigNumber }
     >;
 
+    "ManagerChanged(address,address)"(
+      oldManager?: string | null,
+      newManager?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldManager: string; newManager: string }
+    >;
+
+    ManagerChanged(
+      oldManager?: string | null,
+      newManager?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { oldManager: string; newManager: string }
+    >;
+
     "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
       newOwner?: string | null
@@ -1185,22 +1268,6 @@ export class HodlBoosterOptionStatic extends BaseContract {
     ): TypedEventFilter<
       [string, string],
       { previousOwner: string; newOwner: string }
-    >;
-
-    "SettlerChanged(address,address)"(
-      previousSettler?: string | null,
-      newSettler?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousSettler: string; newSettler: string }
-    >;
-
-    SettlerChanged(
-      previousSettler?: string | null,
-      newSettler?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousSettler: string; newSettler: string }
     >;
 
     "Withdraw(uint8,address,address,uint256)"(
@@ -1237,6 +1304,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
+
+    adminRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
 
     balanceEnough(
       _asset: string,
@@ -1299,6 +1368,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    managerRoleAddress(overrides?: CallOverrides): Promise<BigNumber>;
+
     optionPairCount(overrides?: CallOverrides): Promise<BigNumber>;
 
     optionPairs(
@@ -1312,13 +1383,18 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    setOptionParameters(
-      _parameters: BigNumberish[],
+    setAdmin(
+      _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    setSettler(
-      _settler: string,
+    setManager(
+      _manager: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setOptionParameters(
+      _parameters: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1371,6 +1447,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       }[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
+
+    adminRoleAddress(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     balanceEnough(
       _asset: string,
@@ -1433,6 +1511,10 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    managerRoleAddress(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     optionPairCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     optionPairs(
@@ -1446,13 +1528,18 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    setOptionParameters(
-      _parameters: BigNumberish[],
+    setAdmin(
+      _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    setSettler(
-      _settler: string,
+    setManager(
+      _manager: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setOptionParameters(
+      _parameters: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

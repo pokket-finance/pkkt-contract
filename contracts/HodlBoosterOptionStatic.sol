@@ -8,22 +8,29 @@ import {StructureData} from "./libraries/StructureData.sol";
 contract HodlBoosterOptionStatic is Ownable, HodlBoosterOption { 
     constructor(
         address _owner,
-        address _settler,
+        address _admin,
+        address _manager,
         StructureData.OptionPairDefinition[] memory _optionPairDefinitions
     )  {
         
         require(_owner != address(0));
-        require(_settler != address(0));
+        require(_admin != address(0));
+        require(_manager != address(0));
         locked = 0;
         transferOwnership(_owner);
-        settlerRoleAddress = _settler;
+        adminRoleAddress = _admin;
+        managerRoleAddress = _manager;
         addOptionPairsInternal(_optionPairDefinitions);  
     }
 
-    function setSettler(address _settler) external onlyOwner{
-        setSettlerInternal(_settler);
+    function setManager(address _manager) external onlyOwner{
+        setManagerInternal(_manager);
     }  
-    function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) external onlyOwner{
+
+    function setAdmin(address _admin) external onlyOwner{
+        setAdminInternal(_admin);
+    }  
+    function addOptionPairs(StructureData.OptionPairDefinition[] memory _optionPairDefinitions) external onlyAdmin{
         addOptionPairsInternal(_optionPairDefinitions);
     }
 

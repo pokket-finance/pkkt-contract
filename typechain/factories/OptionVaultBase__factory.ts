@@ -16,18 +16,50 @@ const _abi = [
       {
         indexed: true,
         internalType: "address",
-        name: "previousSettler",
+        name: "oldAdmin",
         type: "address",
       },
       {
         indexed: true,
         internalType: "address",
-        name: "newSettler",
+        name: "newAdmin",
         type: "address",
       },
     ],
-    name: "SettlerChanged",
+    name: "AdminChanged",
     type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "oldManager",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newManager",
+        type: "address",
+      },
+    ],
+    name: "ManagerChanged",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "adminRoleAddress",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
   },
   {
     inputs: [
@@ -217,6 +249,19 @@ const _abi = [
     name: "initiateSettlement",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "managerRoleAddress",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
