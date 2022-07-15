@@ -11,24 +11,32 @@ const main = async ({ forcesettlerkey }, {
     ethers
   }) => { 
 
+    const provider = new ethers.providers.JsonRpcProvider(
+      network.config.url,
+      network.config.chainId
+    ); 
     if (process.env.FROM_SECURE_STORAGE) {
 
       var storage = getStorage();
       var fileStorage = getFileStorage();
  
-      var ownerAddress = await fileStorage.readValue("ownerAddress");
-      var settlerPrivateKey = await storage.readValue("settlerPrivateKey");
+      var ownerAddress = await storage.readValue("ownerAddress");
+      var vaultManagerAddress = await storage.readValue("vaultManagerAddress");
+      var vaultAdminPrivateKey = await storage.readValue("vaultAdminPrivateKey");
       var adminAddress = process.env.USE_PROXY ? await storage.readValue("adminAddress") : null;
       var deployerPrivateKey = await storage.readValue("deployerPrivateKey"); 
-      var deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, network.provider)).getAddress() : null;
-      var settlerAddress = settlerPrivateKey ? (await new ethers.Wallet(settlerPrivateKey, network.provider)).getAddress() : null;
+      var deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, provider).getAddress()) : null;
+      var vaultAdminAddress = vaultAdminPrivateKey ? (await new ethers.Wallet(vaultAdminPrivateKey, provider).getAddress()) : null;
       if (!deployerAddress) {
         console.error('deployerPrivateKey missing')
         return;
       } 
-      if (!settlerAddress) {
-        console.error('settlerPrivateKey missing')
+      if (!vaultAdminAddress) {
+        console.error('vaultAdminPrivateKey missing')
         return;
+      }
+      if (!vaultManagerAddress) {
+        console.error('vaultManagerAddress missing')
       }
        
       if (ownerAddress) { 
@@ -37,23 +45,29 @@ const main = async ({ forcesettlerkey }, {
       if (adminAddress) { 
         await fileStorage.writeValue("adminAddress", adminAddress);
       }
-      await fileStorage.writeValue("settlerPrivateKey", settlerPrivateKey!);
+      await fileStorage.writeValue("vaultAdminPrivateKey", vaultAdminPrivateKey!);
       await fileStorage.writeValue("deployerPrivateKey", deployerPrivateKey!); 
-      await fileStorage.writeValue("deployerAddress", deployerAddress!);
-      await fileStorage.writeValue("settlerAddress", settlerAddress!); 
+      await fileStorage.writeValue("deployerAddress", deployerAddress!); 
+      await fileStorage.writeValue('vaultAdminAddress', vaultAdminAddress!);
+      await fileStorage.writeValue("vaultManagerAddress", vaultManagerAddress!);
       return;
     }
   
     var schema = {
-      properties: {
-        deployerAddress: {
-          name:'Deployer Address',
-          pattern: /^0x[0-9A-Fa-f]{40}$/,
-          message: 'Must be a hex starts with 0x',
-          required: true
-        },
+      properties: { 
         deployerPrivateKey: {
           name: 'Deployer Account\'s Private Key',
+          format: ' /^[0-9A-Fa-f]{64}$/', 
+          required: true,
+          hidden: true,
+          message: 'Must be a 64 length hex without 0x as prefix', 
+          replace: '*',
+          conform: function (value) {
+            return true;
+          }
+        }, 
+        vaultAdminPrivateKey: {
+          name: 'Vault Admin Account\'s Private Key',
           format: ' /^[0-9A-Fa-f]{64}$/', 
           required: true,
           hidden: true,
@@ -69,23 +83,12 @@ const main = async ({ forcesettlerkey }, {
           message: 'Must be a hex starts with 0x',
           required: true
         } ,
-        settlerAddress: {
-          name:'Settler Address',
+        vaultManagerAddress: {
+          name:'Valut Manager Address',
           pattern: /^0x[0-9A-Fa-f]{40}$/,
           message: 'Must be a hex starts with 0x',
           required: true
-        } ,
-        settlerPrivateKey: {
-          name: 'Settler Account\'s Private Key',
-          format: ' /^[0-9A-Fa-f]{64}$/', 
-          required: false,
-          hidden: true,
-          message: 'Must be a 64 length hex without 0x as prefix', 
-          replace: '*',
-          conform: function (value) {
-            return true;
-          }
-        }
+        } 
       }
     };
     if (process.env.USE_PROXY) {
@@ -95,71 +98,51 @@ const main = async ({ forcesettlerkey }, {
         message: 'Must be a hex starts with 0x, and should be a multisig wallet address that support openzeppelin proxy, take GnosisSafe wallet address.',
         required: false
       }
-    }
-    var schema2 = {
-      properties: { 
-        settlerPrivateKey: {
-          name: 'Settler Account\'s Private Key',
-          format: ' /^\d{64}$/', 
-          required: true,
-          message: 'Must be a 64 length hex without 0x as prefix', 
-          replace: '*',
-          conform: function (value) {
-            return true;
-          }
-        }, 
-      }
-    }; 
+    } 
     var storage = getStorage();
     var fileStorage = getFileStorage();
-    var deployerAddress = await fileStorage.readValue("deployerAddress");
     var ownerAddress = await fileStorage.readValue("ownerAddress");
-    var settlerAddress = await fileStorage.readValue("settlerAddress");
+    var vaultManagerAddress = await fileStorage.readValue("vaultManagerAddress");
     var adminAddress = process.env.USE_PROXY ? await fileStorage.readValue("adminAddress") : null;
     var deployerPrivateKey = await fileStorage.readValue("deployerPrivateKey"); 
-    if (deployerAddress && ownerAddress && settlerAddress && deployerPrivateKey){
-      let message = `Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${settlerAddress}`;
+    var deployerAddress = deployerPrivateKey ? (await new ethers.Wallet(deployerPrivateKey, provider).getAddress()) : null;
+    var vaultAdminPrivateKey = await fileStorage.readValue("vaultAdminPrivateKey"); 
+    var vaultAdminAddress = vaultAdminPrivateKey ? (await new ethers.Wallet(vaultAdminPrivateKey, provider).getAddress()) : null;
+
+    if (deployerAddress && ownerAddress && vaultManagerAddress && vaultAdminAddress && vaultAdminPrivateKey && deployerPrivateKey){
+      let message = `Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Vault Manager Address: ${vaultManagerAddress}; Vault Admin Address: ${vaultAdminAddress}`;
       if (adminAddress && adminAddress != deployerAddress) {
         message += `; Proxy Admin Address: ${adminAddress}`;
       } 
       console.log(message); 
-      if (!forcesettlerkey){
-        return;
-      }
-      else {
-        var settlerPrivateKey = await storage.readValue("SETTLER_PRIVATE_KEY");
-        if (settlerPrivateKey){
-           return;
-        }
-        var result = await promptHelper(schema2);  
-        console.log(`Settler private key written to secured storage`); 
-        await storage.writeValue("SETTLER_PRIVATE_KEY", result.settlerPrivateKey);
-        return;
-      }
+      return;
     }
+    
+    const result = await promptHelper(schema);   
+    
+    deployerAddress = result.deployerPrivateKey ? (await new ethers.Wallet(result.deployerPrivateKey, provider).getAddress()) : null;
+    vaultAdminAddress = result.vaultAdminPrivateKey ? (await new ethers.Wallet(result.vaultAdminPrivateKey, provider).getAddress()) : null;
 
-    result = await promptHelper(schema);   
-    if (!result.adminAddress && result.adminAddress != result.deployerAddress) {
-      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}`); 
+    if (!result.adminAddress && result.adminAddress != deployerAddress) {
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}`); 
     }
     else{
-      console.log(`Deployer Address: ${result.deployerAddress}; Owner Address: ${ownerAddress}; Settler Address: ${result.settlerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
  
     }
-    await fileStorage.writeValue("deployerAddress", result.deployerAddress);
+    await fileStorage.writeValue("deployerAddress", deployerAddress);
+    await fileStorage.writeValue("vaultAdminAddress", vaultAdminAddress);
     await fileStorage.writeValue("ownerAddress", result.ownerAddress);
-    await fileStorage.writeValue("settlerAddress", result.settlerAddress);
+    await fileStorage.writeValue("vaultManagerAddress", result.vaultManagerAddress);
     await fileStorage.writeValue("deployerPrivateKey", result.deployerPrivateKey); 
+    await fileStorage.writeValue("vaultAdminPrivateKey", result.vaultAdminPrivateKey); 
     if(result.adminAddress){ 
       await fileStorage.writeValue("adminAddress", result.adminAddress);
     }
     else if (process.env.USE_PROXY) { 
       await fileStorage.writeValue("adminAddress", result.deployerAddress);
     }
-    if (result.settlerPrivateKey) { 
-      console.log(`Settler private key written to secured storage`); 
-      await storage.writeValue("SETTLER_PRIVATE_KEY", result.settlerPrivateKey);
-    }
+  
   
   }; 
    
