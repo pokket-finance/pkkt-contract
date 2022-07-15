@@ -13,11 +13,9 @@ import * as dotenv from "dotenv";
 import exportDeployments from "./scripts/tasks/exportDeployments";
 import proposeUpgrade from "./scripts/tasks/proposeUpgrade";
 import upgradeTo from "./scripts/tasks/upgradeTo";
-import sendUserCoins from "./scripts/tasks/sendUserCoins";
-import transferOwnerShip from './scripts/tasks/transferOwnerShip'; 
+import sendUserCoins from "./scripts/tasks/sendUserCoins"; 
 import prepareAccounts from './scripts/tasks/prepareAccounts';
-import initiateSettlement from './scripts/tasks/initiateSettlement';
-import setSettler from './scripts/tasks/setSettler';
+import initiateSettlement from './scripts/tasks/initiateSettlement'; 
 import configureEmail from './scripts/tasks/configureEmail';
 
 dotenv.config();
@@ -86,15 +84,18 @@ var accounts = data.deployerPrivateKey ?
     owner: { 
       default: data.ownerAddress || 1,
     },
-    settler: { 
-      default: data.settlerAddress || 2,
+    vaultManager: { 
+      default: data.vaultManagerAddress || 2,
+    },
+    vaultAdmin: { 
+      default: data.vaultAdminAddress || 3,
     },
     admin : {
-      default: 3,
+      default: 4,
       //bscmain
-      56: data.adminAddress || 3,
+      56: data.adminAddress || 4,
       //bsctest
-      97: data.adminAddress || 3
+      97: data.adminAddress || 4
       
     },
     alice: {
@@ -139,8 +140,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
 task("prepare-accounts", "Prepare accounts", prepareAccounts)
-.addFlag("forcesettlerkey", "If set, settler private key must be input if missing");
-task("transfer-ownership", "Transfer ownership of PKKTHodlBoosterOption from initial deployer to another account", transferOwnerShip);
+.addFlag("forcesettlerkey", "If set, settler private key must be input if missing"); 
 
 task("new-epoch", "Initiate a new epoch", initiateSettlement);
  
@@ -157,6 +157,5 @@ task("upgrade-to", "Upgrades the proxy with the new implementation contract", up
 
 task("send-coins", "Send test coins to specific address", sendUserCoins)
 .addParam("target", "target address");
-
-task("set-settler", "Reset the settler", setSettler);
+ 
 task("configure-email", "Configure the email server", configureEmail);

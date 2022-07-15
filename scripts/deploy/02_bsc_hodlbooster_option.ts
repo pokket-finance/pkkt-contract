@@ -19,7 +19,7 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, settler, admin } = await getNamedAccounts();    
+  var { deployer, owner, vaultAdmin, vaultManager, admin } = await getNamedAccounts();    
     
   if (!network.config.chainId || 
     (network.config.chainId != CHAINID.BSC_MAINNET && network.config.chainId != CHAINID.BSC_TESTNET)) {
@@ -87,7 +87,7 @@ const main = async ({
   });
   
   await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);   
-  const HODLBOOSTER_ARGS = [owner, settler, [
+  const HODLBOOSTER_ARGS = [owner, vaultAdmin, vaultManager, [
     { 
       depositAssetAmountDecimals: ETH_DECIMALS,
       counterPartyAssetAmountDecimals: BUSD_DECIMALS,
@@ -174,16 +174,17 @@ const main = async ({
     await storage.writeValue("ownerAddress", "");
     await storage.writeValue("deployerPrivateKey", "");
     await storage.writeValue("adminAddress", "");
-    await storage.writeValue("settlerPrivateKey", "");
+    await storage.writeValue("vaultManagerAddress", "");
+    await storage.writeValue("vaultAdminPrivateKey", "");
   }
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` + 
+    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Vault Manager Address: ${vaultManager}</h3><h3>Vault Admin Address: ${vaultAdmin}</h3>` + 
     (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : "") + 
-    `<ol><li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li>`+
+    `<ol><li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the vault admin account(vault admin private key needs to be input if not set during initial deployment) to start the initial epoch</li>`+
     `<li>Please set the value of VAULT_ADDRESS to ${proxy.address} in .env at backend</li></ol>`,
     isHtml: true
 }

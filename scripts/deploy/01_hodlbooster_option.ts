@@ -15,7 +15,7 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, settler } = await getNamedAccounts();   
+  var { deployer, owner, vaultAdmin, vaultManager } = await getNamedAccounts();   
   if (network.config.chainId && network.config.chainId != CHAINID.ETH_MAINNET && network.config.chainId != CHAINID.ETH_ROPSTEN) {
     console.log('Not eth-mainnet/ropsten/hardhat, skip deploying HodlBooster');
     return;
@@ -66,7 +66,7 @@ const main = async ({
   
   await postDeployment(optionLifecycle, run, "OptionLifecycle", network.name);    
 
-  const HODLBOOSTER_ARGS = [owner, settler, [
+  const HODLBOOSTER_ARGS = [owner, vaultAdmin, vaultManager, [
     { 
       depositAssetAmountDecimals: ETH_DECIMALS,
       counterPartyAssetAmountDecimals: USDC_DECIMALS,
@@ -102,8 +102,8 @@ const main = async ({
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`HodlBoosterOption deployed on ${network.name}`,
-    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Owner Address: ${owner}</h3><h3>Settler Address: ${settler}</h3>` +  
-    `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the settler account(settler private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
+    content: `<h2>Deployed HodlBoosterOption on ${network.name} to ${optionVault.address}</h2><h3>Owner Address: ${owner}</h3><h3>Vault Manager Address: ${vaultManager}</h3><h3>Vault Admin Address: ${vaultAdmin}</h3>` +  
+    `<li>Please run "npm run new-epoch:${process.env.ENV?.toLocaleLowerCase()}" under the vault admin account(vault admin private key needs to be input if not set during initial deployment) to start the initial epoch</li></ol>`,
     isHtml: true
 }
 
