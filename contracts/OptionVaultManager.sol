@@ -199,7 +199,6 @@ abstract contract OptionVaultManager is
             StructureData.VaultState storage data = vaultStates[vaultId];
             OptionLifecycle.rollToNextRoundIfNeeded(data);
             StructureData.OptionState storage onGoing = data.onGoing;
-            require(onGoing.amount > 0, "Nothing to sell");
             require(onGoing.buyerAddress == address(0), "Already sold");
             //if there is any auto rolling, we must wait until expiry level specified
             if (
@@ -216,6 +215,7 @@ abstract contract OptionVaultManager is
                 uint256(onGoing.amount).add(data.expired.amount).sub(
                     data.expired.queuedRedeemAmount
                 );
+            require(total > 0, "Nothing to sell");
             Utils.assertUint128(total);
             uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
