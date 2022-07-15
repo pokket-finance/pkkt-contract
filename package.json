@@ -27,7 +27,7 @@
     "eslint-plugin-prettier": "^3.4.0",
     "ethereum-waffle": "^3.0.0",
     "ethers": "^5.4.0",
-    "hardhat": "^2.4.3-rc.0",
+    "hardhat": "^2.10.1",
     "hardhat-contract-sizer": "^2.3.0",
     "hardhat-deploy": "^0.8.11",
     "hardhat-gas-reporter": "^1.0.6",
@@ -55,7 +55,7 @@
     "underscore": "^1.9.0"
   },
   "scripts": {
-    "start": "ts-node .", 
+    "start": "ts-node .",
     "compile": "npx hardhat compile",
     "prepare:dev": "cp -n data.empty.json data.json",
     "prepare:qa": "cp .env.qa .env && cp -n data.empty.json data.json",

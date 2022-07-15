@@ -19,7 +19,7 @@ const main = async ({  }, {
       var storage = getStorage();
       var fileStorage = getFileStorage();
  
-      var ownerAddress = await fileStorage.readValue("ownerAddress");
+      var ownerAddress = await storage.readValue("ownerAddress");
       var managerAddress = await storage.readValue("managerAddress");
       var adminAddress = process.env.USE_PROXY ? await storage.readValue("adminAddress") : null;
       var deployerPrivateKey = await storage.readValue("deployerPrivateKey"); 
