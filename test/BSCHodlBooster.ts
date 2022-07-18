@@ -24,7 +24,8 @@ const btcPrice = 50000 * (10 ** PricePrecision);
 describe.only("BSC Hodl Booster", async function () {
     let deployer: SignerWithAddress;
     let owner: SignerWithAddress;
-    let settler: SignerWithAddress;
+    let vaultAdmin: SignerWithAddress;
+    let vaultManager: SignerWithAddress;
     let admin: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
@@ -40,7 +41,7 @@ describe.only("BSC Hodl Booster", async function () {
     let optionLifecycleAddress: string;
 
     before(async function () {
-      [deployer, owner, settler, admin, alice, bob, carol, trader] = await ethers.getSigners();
+      [deployer, owner, vaultAdmin, vaultManager, admin, alice, bob, carol, trader] = await ethers.getSigners();
     });
 
     context("operations", function () {
@@ -93,7 +94,8 @@ describe.only("BSC Hodl Booster", async function () {
 
           const initArgs = [
             owner.address,
-            settler.address, [
+            vaultAdmin.address,
+            vaultManager.address, [
             {
               depositAssetAmountDecimals: ETH_DECIMALS,
               counterPartyAssetAmountDecimals: BUSD_DECIMALS,
@@ -191,7 +193,7 @@ describe.only("BSC Hodl Booster", async function () {
         });
 
         it("turn on and off deposits", async () => {
-          await vault.connect(settler as Signer).initiateSettlement();
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();
 
           // user can deposit
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
@@ -212,20 +214,20 @@ describe.only("BSC Hodl Booster", async function () {
 
 
           // check that turning deposits off works
-          await vault.connect(settler as Signer).toggleOptionPairDeposit(ETHBUSDOPTIONPAIR);
+          await vault.connect(vaultAdmin as Signer).toggleOptionPairDeposit(ETHBUSDOPTIONPAIR);
           await expect(vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier))).to.be.revertedWith("DepositDisabled");
           await expect(vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER))).to.be.revertedWith("DepositDisabled");
 
-          await vault.connect(settler as Signer).toggleOptionPairDeposit(WBTCBUSDOPTIONPAIR);
+          await vault.connect(vaultAdmin as Signer).toggleOptionPairDeposit(WBTCBUSDOPTIONPAIR);
           await expect(vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId, BigNumber.from(2).mul(WBTCMultiplier))).to.be.revertedWith("DepositDisabled");
           await expect(vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER))).to.be.revertedWith("DepositDisabled");
 
           // check that turning deposits back on works
-          await vault.connect(settler as Signer).toggleOptionPairDeposit(ETHBUSDOPTIONPAIR);
+          await vault.connect(vaultAdmin as Signer).toggleOptionPairDeposit(ETHBUSDOPTIONPAIR);
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER));
 
-          await vault.connect(settler as Signer).toggleOptionPairDeposit(1);
+          await vault.connect(vaultAdmin as Signer).toggleOptionPairDeposit(1);
           await vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId, BigNumber.from(2).mul(WBTCMultiplier));
           await vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId, BigNumber.from(1000).mul(BUSD_MULTIPLIER));
 
@@ -246,7 +248,7 @@ describe.only("BSC Hodl Booster", async function () {
           //await expect(vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTIONPAIR].callOptionId, BigNumber.from(1).mul(WBTCMultiplier))).to.be.revertedWith("!Started");  
 
           /* open round 1*/
-          await vault.connect(settler as Signer).initiateSettlement(); 
+          await vault.connect(vaultAdmin as Signer).initiateSettlement(); 
 
           //5+4 eth
           //2+0.5 btc
@@ -318,7 +320,7 @@ describe.only("BSC Hodl Booster", async function () {
 
 
           /* open round 2*/
-          await vault.connect(settler as Signer).initiateSettlement();
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();
           //new round , alice deposit 5eth
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
           //bob deposit 1 btc
@@ -329,7 +331,7 @@ describe.only("BSC Hodl Booster", async function () {
           await vault.connect(alice as Signer).initiateWithraw(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId, diff); 
 
 
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
             packOptionParameter(ethPrice, 0.025 * RatioMultipler), 
             packOptionParameter(ethPrice, 0.025 * RatioMultipler), 
             packOptionParameter(btcPrice, 0.025 * RatioMultipler), 
@@ -337,34 +339,34 @@ describe.only("BSC Hodl Booster", async function () {
           ]);
 
           //have 0.5wbtc going on
-          var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+          var wbtcResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(wbtc.address);
           assert.equal(wbtcResult.newReleasedAmount.toString(), "0");
           assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
           assert.equal(wbtcResult.leftOverAmount.toString(), "0");
-          var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(eth.address);
+          var ethResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(eth.address);
           assert.equal(ethResult.leftOverAmount.toString(), "0");
           assert.equal(ethResult.newDepositAmount.toString(), "0");
           assert.equal(ethResult.newReleasedAmount.toString(), "0");
-          var busdResult = await vault.connect(settler as Signer).settlementCashflowResult(busd.address);
+          var busdResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(busd.address);
           assert.equal(busdResult.leftOverAmount.toString(), "0");
 
           
           /* open round 3*/
-          await vault.connect(settler as Signer).initiateSettlement();
-          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();
+          await vault.connect(vaultManager as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
             packOptionParameter(ethPrice, 0.02 * RatioMultipler),
             packOptionParameter(ethPrice, 0.02 * RatioMultipler),
             packOptionParameter(btcPrice, 0.02 * RatioMultipler),
             packOptionParameter(btcPrice, 0.02 * RatioMultipler)
           ]);
             //0.5 not moved last time + 1 newly deposit - 0.5 released - 2.5%*0.5 released premium
-            wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address);
+            wbtcResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(wbtc.address);
             assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
             assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(1).mul(WBTCMultiplier).toString());
             assert.equal(wbtcResult.newReleasedAmount.toString(), BigNumber.from(5125).mul(WBTCMultiplier).div(10000).toString());
             btcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-            await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address);
+            await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address);
             btcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
             assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(9875).mul(WBTCMultiplier).div(10000).toString());
 
@@ -388,11 +390,11 @@ describe.only("BSC Hodl Booster", async function () {
 
 
             /* open round 4*/
-            await vault.connect(settler as Signer).initiateSettlement();
-            await vault.connect(settler as Signer).settle([
+            await vault.connect(vaultAdmin as Signer).initiateSettlement();
+            await vault.connect(vaultManager as Signer).settle([
               OptionExecution.ExecuteCall, OptionExecution.NoExecution
             ]);
-            await vault.connect(settler as Signer).setOptionParameters([
+            await vault.connect(vaultAdmin as Signer).setOptionParameters([
               packOptionParameter(ethPrice, 0.02 * RatioMultipler),
               packOptionParameter(ethPrice, 0.02 * RatioMultipler),
               packOptionParameter(btcPrice, 0.02 * RatioMultipler),
@@ -428,7 +430,7 @@ describe.only("BSC Hodl Booster", async function () {
         it("trader perspective", async function () {
 
           /* open round 1*/
-          await vault.connect(settler as Signer).initiateSettlement();  
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();  
           console.log(`Open Round ${await vault.currentRound()}` ); 
 
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
@@ -445,7 +447,7 @@ describe.only("BSC Hodl Booster", async function () {
 
           
           /* open round 2*/
-          await vault.connect(settler as Signer).initiateSettlement();
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();
           console.log(`Open Round ${await vault.currentRound()}` ); 
 
           await vault.connect(bob as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId , BigNumber.from(1).mul(ETHMultiplier));
@@ -459,7 +461,7 @@ describe.only("BSC Hodl Booster", async function () {
          const ethPrice = 4000 * (10**PricePrecision);
          const btcPrice = 50000 * (10**PricePrecision);
           //set the strikeprice and premium of user deposits collected in round 1
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
             
             packOptionParameter(ethPrice*1.05, 0.025 * RatioMultipler), 
             packOptionParameter(ethPrice*0.95, 0.025 * RatioMultipler), 
@@ -467,7 +469,7 @@ describe.only("BSC Hodl Booster", async function () {
             packOptionParameter(btcPrice* 0.95, 0.025 * RatioMultipler)
           ]);
           /* open round 3*/
-          await vault.connect(settler as Signer).initiateSettlement();   
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
           //var ethHodlBoosterCallToTerminate = (await ethHodlBoosterCall.connect(alice as Signer).getAccountBalance()).toTerminateDepositAssetAmount;
           var balance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHBUSDOPTIONPAIR].callOptionId);
@@ -489,26 +491,26 @@ describe.only("BSC Hodl Booster", async function () {
           await renderTVL(true);
           await renderExecutionPlans();
 
-          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution])
+          await vault.connect(vaultManager as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution])
 
           
          var result = await renderCashFlow(OptionExecution.NoExecution,OptionExecution.NoExecution);
 
           var ethBalance = await eth.connect(trader.address).balanceOf(trader.address); 
-          await vault.connect(settler as Signer).withdrawAsset(trader.address, eth.address); 
+          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, eth.address); 
           var ethBalance2 =  await eth.connect(trader.address).balanceOf(trader.address); 
           assert.equal(ethBalance2.sub(ethBalance).toString(), result[0].assetBalance.toString());
           var wbtcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(settler as Signer).withdrawAsset(trader.address, wbtc.address); 
+          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address); 
           var wbtcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
           assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString());
           var busdBalance = await busd.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(settler as Signer).withdrawAsset(trader.address, busd.address); 
+          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, busd.address); 
           var busdBalance2 = await busd.connect(trader as Signer).balanceOf(trader.address);
           assert.equal(busdBalance2.sub(busdBalance).toString(), result[2].assetBalance.toString());
 
 
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
             packOptionParameter(ethPrice*1.04, 0.02 * RatioMultipler), 
             packOptionParameter(ethPrice*0.96, 0.02 * RatioMultipler), 
             packOptionParameter(btcPrice*1.04, 0.02 * RatioMultipler), 
@@ -519,15 +521,15 @@ describe.only("BSC Hodl Booster", async function () {
 
             
           /* open round 4*/
-          await vault.connect(settler as Signer).initiateSettlement();   
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
           await renderTVL(true);
           await renderExecutionPlans();
 
-          await vault.connect(settler as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.NoExecution]);
+          await vault.connect(vaultManager as Signer).settle([OptionExecution.ExecuteCall, OptionExecution.NoExecution]);
           var result2 = await renderCashFlow(OptionExecution.ExecuteCall, OptionExecution.NoExecution);
           
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
 
             packOptionParameter(ethPrice*1.03, 0.01 * RatioMultipler), 
             packOptionParameter(ethPrice*0.97, 0.01 * RatioMultipler), 
@@ -588,11 +590,11 @@ describe.only("BSC Hodl Booster", async function () {
 
 
           /* open round 5*/
-          await vault.connect(settler as Signer).initiateSettlement();   
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
-          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+          await vault.connect(vaultManager as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
           await renderCashFlow(OptionExecution.NoExecution, OptionExecution.NoExecution);
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
 
             packOptionParameter(ethPrice * 1.03, 0.01 * RatioMultipler), 
             packOptionParameter(ethPrice * 0.97, 0.01 * RatioMultipler), 
@@ -612,11 +614,11 @@ describe.only("BSC Hodl Booster", async function () {
 
           
           /* open round 6*/
-          await vault.connect(settler as Signer).initiateSettlement();   
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();   
           console.log(`Open Round ${await vault.currentRound()}` );
-          await vault.connect(settler as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
+          await vault.connect(vaultManager as Signer).settle([OptionExecution.NoExecution, OptionExecution.NoExecution]);
           await renderCashFlow(OptionExecution.NoExecution, OptionExecution.NoExecution);
-          await vault.connect(settler as Signer).setOptionParameters([
+          await vault.connect(vaultAdmin as Signer).setOptionParameters([
 
             packOptionParameter(ethPrice*1.03, 0.01 * RatioMultipler), 
             packOptionParameter(ethPrice*0.97, 0.01 * RatioMultipler), 
@@ -630,14 +632,14 @@ describe.only("BSC Hodl Booster", async function () {
           assets = [];
           beforeBalances = [];
           movables = [];
-          var wbtcResult = await vault.connect(settler as Signer).settlementCashflowResult(wbtc.address); 
+          var wbtcResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(wbtc.address); 
           var diff = wbtcResult.leftOverAmount.add(wbtcResult.newDepositAmount).sub(wbtcResult.newReleasedAmount);
           if (diff.gt(0)){
             assets.push(wbtc.address);
             beforeBalances.push(await wbtc.balanceOf(trader.address));
             movables.push(diff);
           }
-          var ethResult = await vault.connect(settler as Signer).settlementCashflowResult(eth.address); 
+          var ethResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(eth.address); 
           var diff2 = ethResult.leftOverAmount.add(ethResult.newDepositAmount).sub(ethResult.newReleasedAmount);
           if (diff2.gt(0)){
             assets.push(eth.address);
@@ -645,7 +647,7 @@ describe.only("BSC Hodl Booster", async function () {
             movables.push(diff2);
            
           }
-          var busdResult = await vault.connect(settler as Signer).settlementCashflowResult(busd.address); 
+          var busdResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(busd.address); 
           var diff3 = busdResult.leftOverAmount.add(busdResult.newDepositAmount).sub(busdResult.newReleasedAmount);
           if (diff3.gt(0)){
             assets.push(busd.address);
@@ -653,7 +655,7 @@ describe.only("BSC Hodl Booster", async function () {
             movables.push(diff3);
           }
           if (assets.length > 0){ 
-            await vault.connect(settler as Signer).batchWithdrawAssets(trader.address, assets);
+            await vault.connect(vaultManager as Signer).batchWithdrawAssets(trader.address, assets);
             for(var i = 0; i < assets.length; i++){
               var asset = assets[i];
               console.log("withdraw assets for ", names[asset]);
@@ -673,7 +675,7 @@ describe.only("BSC Hodl Booster", async function () {
            
         });
         it("old upgrader perspecitve", async function () {
-          await vault.connect(settler as Signer).initiateSettlement();
+          await vault.connect(vaultAdmin as Signer).initiateSettlement();
 
           // user can deposit
           await vault.connect(alice as Signer).deposit(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, BigNumber.from(5).mul(ETHMultiplier));
@@ -714,7 +716,7 @@ describe.only("BSC Hodl Booster", async function () {
            busdWbtcOptionBalance = await v2.connect(alice as Signer).getAccountBalance(optionPairs[WBTCBUSDOPTIONPAIR].putOptionId);
            assert.equal(busdWbtcOptionBalance.pendingDepositAssetAmount.toString(), BigNumber.from(1000).mul(BUSDMultiplier).toString());
           
-            await v2.connect(owner as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
+            await v2.connect(vaultAdmin as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
               [BigNumber.from(100).mul(WBTCMultiplier), BigNumber.from(100000).mul(BUSDMultiplier),
                BigNumber.from(1000).mul(ETHMultiplier)]);  
 
@@ -750,7 +752,7 @@ describe.only("BSC Hodl Booster", async function () {
            }) as HodlBoosterOptionUpgradeableV2; 
 
           console.log("New v2 implement proxy Address " + v2.address);
-          await v2.connect(owner as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
+          await v2.connect(vaultAdmin as Signer).addWhitelistAddress(alice.address, [wbtc.address, busd.address, eth.address], 
             [BigNumber.from(100).mul(WBTCMultiplier), BigNumber.from(100000).mul(BUSDMultiplier),
              BigNumber.from(1000).mul(ETHMultiplier)]);  
 
@@ -758,21 +760,25 @@ describe.only("BSC Hodl Booster", async function () {
         })
         it("hacker perspective", async function () { 
           const admin = vault as  HodlBoosterOptionUpgradeable; 
-          await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
-          await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!settler");   
-          await expect(vault.connect(alice as Signer).settle([])).to.be.revertedWith("!settler");  
-          await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, busd.address)).to.be.revertedWith("!settler");  
-          await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [busd.address])).to.be.revertedWith("!settler");  
-          await expect(admin.connect(bob as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await expect(admin.connect(settler as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await expect(admin.connect(settler as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!admin");  
+          await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!admin");   
+          await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, busd.address)).to.be.revertedWith("!manager");  
+          await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [busd.address])).to.be.revertedWith("!manager");  
+          await expect(admin.connect(bob as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(admin.connect(vaultAdmin as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(admin.connect(vaultAdmin as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await expect(admin.connect(deployer as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          //console.log(await admin.owner());
+          //console.log(await owner.getAddress());
           await admin.connect(owner as Signer).transferOwnership(alice.address);
-          await expect(admin.connect(owner as Signer).setSettler(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
-          await admin.connect(alice as Signer).setSettler(bob.address);
-          await vault.connect(bob as Signer).initiateSettlement(); 
+          await expect(admin.connect(owner as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
+          await admin.connect(alice as Signer).setManager(bob.address); 
+          await admin.connect(alice as Signer).setAdmin(carol.address);
+          await expect(vault.connect(bob as Signer).initiateSettlement()).to.be.revertedWith("!admin");   
+          await vault.connect(carol as Signer).initiateSettlement();
           await admin.connect(alice as Signer).transferOwnership(deployer.address);
-          await admin.connect(deployer as Signer).setSettler(settler.address);
-          await expect(vault.connect(bob as Signer).initiateSettlement()).to.be.revertedWith("!settler");  
+          await admin.connect(deployer as Signer).setManager(vaultManager.address);
+          await expect(vault.connect(vaultManager as Signer).initiateSettlement()).to.be.revertedWith("!admin");  
 
         });
       }); 
@@ -875,7 +881,7 @@ describe.only("BSC Hodl Booster", async function () {
       async function renderCashFlowForAsset(assetName: string, assetAddress: string, decimals:BigNumberish, p: Table):Promise<{
         assetAddress: string;
         assetBalance: BigNumber}>{
-        var assetCashFlow = await vault.connect(settler as Signer).settlementCashflowResult(assetAddress);  
+        var assetCashFlow = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(assetAddress);  
         var assetBalance = (assetCashFlow.leftOverAmount.add(assetCashFlow.newDepositAmount).
         sub(assetCashFlow.newReleasedAmount));
         p.addRow({ Token: assetName, 'Epoch deposit': ethers.utils.formatUnits(assetCashFlow.newDepositAmount, decimals),
@@ -887,7 +893,7 @@ describe.only("BSC Hodl Booster", async function () {
 
       async function renderExecutionPlan(index: number, p: Table){
 
-        var accounting = await vault.connect(settler as Signer).executionAccountingResult(index);  
+        var accounting = await vault.connect(vaultAdmin as Signer).executionAccountingResult(index);  
         var currentRound = await vault.currentRound();
         const pairId = Math.floor(index/3);
         var pair = optionPairs[pairId]; 
