@@ -81,24 +81,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_trader",
-        type: "address",
-      },
-      {
-        internalType: "address[]",
-        name: "_assets",
-        type: "address[]",
-      },
-    ],
-    name: "batchWithdrawAssets",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "currentRound",
     outputs: [
@@ -327,6 +309,13 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "sendBackAssets",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
     inputs: [
       {
         internalType: "uint256[]",
@@ -413,26 +402,11 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_trader",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "_asset",
-        type: "address",
-      },
-    ],
-    name: "withdrawAsset",
+    inputs: [],
+    name: "withdrawAssets",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
-  },
-  {
-    stateMutability: "payable",
-    type: "receive",
   },
 ];
 

@@ -16,9 +16,9 @@ interface ISettlementAggregator {
 
     function setOptionParameters(uint256[] memory _paramters) external;
 
-    function withdrawAsset(address _trader, address _asset) external;
-
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external;
+    function withdrawAssets() external;
+    
+    function sendBackAssets() payable external;
 
     function balanceEnough(address _asset) external view returns(bool); 
 }

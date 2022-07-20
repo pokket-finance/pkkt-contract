@@ -12,6 +12,7 @@ import {
   BaseContract,
   ContractTransaction,
   Overrides,
+  PayableOverrides,
   CallOverrides,
 } from "ethers";
 import { BytesLike } from "@ethersproject/bytes";
@@ -22,12 +23,12 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface ISettlementAggregatorInterface extends ethers.utils.Interface {
   functions: {
     "balanceEnough(address)": FunctionFragment;
-    "batchWithdrawAssets(address,address[])": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
+    "sendBackAssets()": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
     "settle(uint8[])": FunctionFragment;
     "toggleOptionPairDeposit(uint8)": FunctionFragment;
-    "withdrawAsset(address,address)": FunctionFragment;
+    "withdrawAssets()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -35,11 +36,11 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "batchWithdrawAssets",
-    values: [string, string[]]
+    functionFragment: "initiateSettlement",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "initiateSettlement",
+    functionFragment: "sendBackAssets",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -55,8 +56,8 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "withdrawAsset",
-    values: [string, string]
+    functionFragment: "withdrawAssets",
+    values?: undefined
   ): string;
 
   decodeFunctionResult(
@@ -64,11 +65,11 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "batchWithdrawAssets",
+    functionFragment: "initiateSettlement",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "initiateSettlement",
+    functionFragment: "sendBackAssets",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -81,7 +82,7 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "withdrawAsset",
+    functionFragment: "withdrawAssets",
     data: BytesLike
   ): Result;
 
@@ -137,14 +138,12 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
+    initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    initiateSettlement(
-      overrides?: Overrides & { from?: string | Promise<string> }
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setOptionParameters(
@@ -162,23 +161,19 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
-  batchWithdrawAssets(
-    _trader: string,
-    _assets: string[],
+  initiateSettlement(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  initiateSettlement(
-    overrides?: Overrides & { from?: string | Promise<string> }
+  sendBackAssets(
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setOptionParameters(
@@ -196,22 +191,16 @@ export class ISettlementAggregator extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  withdrawAsset(
-    _trader: string,
-    _asset: string,
+  withdrawAssets(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   callStatic: {
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     initiateSettlement(overrides?: CallOverrides): Promise<void>;
+
+    sendBackAssets(overrides?: CallOverrides): Promise<void>;
 
     setOptionParameters(
       _paramters: BigNumberish[],
@@ -228,11 +217,7 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    withdrawAssets(overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {};
@@ -243,14 +228,12 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
+    initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    initiateSettlement(
-      overrides?: Overrides & { from?: string | Promise<string> }
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setOptionParameters(
@@ -268,9 +251,7 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
@@ -281,14 +262,12 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
+    initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    initiateSettlement(
-      overrides?: Overrides & { from?: string | Promise<string> }
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setOptionParameters(
@@ -306,9 +285,7 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

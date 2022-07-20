@@ -12,6 +12,7 @@ import {
   BaseContract,
   ContractTransaction,
   Overrides,
+  PayableOverrides,
   CallOverrides,
 } from "ethers";
 import { BytesLike } from "@ethersproject/bytes";
@@ -23,19 +24,19 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   functions: {
     "adminRoleAddress()": FunctionFragment;
     "balanceEnough(address)": FunctionFragment;
-    "batchWithdrawAssets(address,address[])": FunctionFragment;
     "currentRound()": FunctionFragment;
     "executionAccountingResult(uint8)": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
     "optionPairs(uint8)": FunctionFragment;
+    "sendBackAssets()": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
     "settle(uint8[])": FunctionFragment;
     "settlementCashflowResult(address)": FunctionFragment;
     "toggleOptionPairDeposit(uint8)": FunctionFragment;
     "underSettlement()": FunctionFragment;
-    "withdrawAsset(address,address)": FunctionFragment;
+    "withdrawAssets()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -45,10 +46,6 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "balanceEnough",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "batchWithdrawAssets",
-    values: [string, string[]]
   ): string;
   encodeFunctionData(
     functionFragment: "currentRound",
@@ -73,6 +70,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "optionPairs",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "sendBackAssets",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "setOptionParameters",
@@ -95,8 +96,8 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "withdrawAsset",
-    values: [string, string]
+    functionFragment: "withdrawAssets",
+    values?: undefined
   ): string;
 
   decodeFunctionResult(
@@ -105,10 +106,6 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "balanceEnough",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "batchWithdrawAssets",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -136,6 +133,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "sendBackAssets",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setOptionParameters",
     data: BytesLike
   ): Result;
@@ -153,7 +154,7 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "withdrawAsset",
+    functionFragment: "withdrawAssets",
     data: BytesLike
   ): Result;
 
@@ -224,12 +225,6 @@ export class OptionVaultBase extends BaseContract {
       _asset: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     currentRound(overrides?: CallOverrides): Promise<[number]>;
 
@@ -359,6 +354,10 @@ export class OptionVaultBase extends BaseContract {
       }
     >;
 
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setOptionParameters(
       _parameters: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -388,9 +387,7 @@ export class OptionVaultBase extends BaseContract {
 
     underSettlement(overrides?: CallOverrides): Promise<[boolean]>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
@@ -398,12 +395,6 @@ export class OptionVaultBase extends BaseContract {
   adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
-
-  batchWithdrawAssets(
-    _trader: string,
-    _assets: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   currentRound(overrides?: CallOverrides): Promise<number>;
 
@@ -533,6 +524,10 @@ export class OptionVaultBase extends BaseContract {
     }
   >;
 
+  sendBackAssets(
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setOptionParameters(
     _parameters: BigNumberish[],
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -562,9 +557,7 @@ export class OptionVaultBase extends BaseContract {
 
   underSettlement(overrides?: CallOverrides): Promise<boolean>;
 
-  withdrawAsset(
-    _trader: string,
-    _asset: string,
+  withdrawAssets(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -572,12 +565,6 @@ export class OptionVaultBase extends BaseContract {
     adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     currentRound(overrides?: CallOverrides): Promise<number>;
 
@@ -705,6 +692,8 @@ export class OptionVaultBase extends BaseContract {
       }
     >;
 
+    sendBackAssets(overrides?: CallOverrides): Promise<void>;
+
     setOptionParameters(
       _parameters: BigNumberish[],
       overrides?: CallOverrides
@@ -734,11 +723,7 @@ export class OptionVaultBase extends BaseContract {
 
     underSettlement(overrides?: CallOverrides): Promise<boolean>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    withdrawAssets(overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {
@@ -783,12 +768,6 @@ export class OptionVaultBase extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     currentRound(overrides?: CallOverrides): Promise<BigNumber>;
 
     executionAccountingResult(
@@ -807,6 +786,10 @@ export class OptionVaultBase extends BaseContract {
     optionPairs(
       arg0: BigNumberish,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setOptionParameters(
@@ -831,9 +814,7 @@ export class OptionVaultBase extends BaseContract {
 
     underSettlement(overrides?: CallOverrides): Promise<BigNumber>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
@@ -844,12 +825,6 @@ export class OptionVaultBase extends BaseContract {
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     currentRound(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -874,6 +849,10 @@ export class OptionVaultBase extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setOptionParameters(
       _parameters: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -896,9 +875,7 @@ export class OptionVaultBase extends BaseContract {
 
     underSettlement(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

@@ -25,7 +25,6 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     "addOptionPairs((uint8,uint8,uint8,uint8,address,address,bool)[])": FunctionFragment;
     "adminRoleAddress()": FunctionFragment;
     "balanceEnough(address)": FunctionFragment;
-    "batchWithdrawAssets(address,address[])": FunctionFragment;
     "cancelWithdraw(uint8,uint256)": FunctionFragment;
     "currentRound()": FunctionFragment;
     "deposit(uint8,uint256)": FunctionFragment;
@@ -42,6 +41,7 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     "optionPairs(uint8)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
+    "sendBackAssets()": FunctionFragment;
     "setAdmin(address)": FunctionFragment;
     "setManager(address)": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
@@ -51,7 +51,7 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     "transferOwnership(address)": FunctionFragment;
     "underSettlement()": FunctionFragment;
     "withdraw(uint8,uint256,address)": FunctionFragment;
-    "withdrawAsset(address,address)": FunctionFragment;
+    "withdrawAssets()": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -75,10 +75,6 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "balanceEnough",
     values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "batchWithdrawAssets",
-    values: [string, string[]]
   ): string;
   encodeFunctionData(
     functionFragment: "cancelWithdraw",
@@ -154,6 +150,10 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     functionFragment: "renounceOwnership",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "sendBackAssets",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "setAdmin", values: [string]): string;
   encodeFunctionData(functionFragment: "setManager", values: [string]): string;
   encodeFunctionData(
@@ -185,8 +185,8 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish, string]
   ): string;
   encodeFunctionData(
-    functionFragment: "withdrawAsset",
-    values: [string, string]
+    functionFragment: "withdrawAssets",
+    values?: undefined
   ): string;
 
   decodeFunctionResult(
@@ -199,10 +199,6 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "balanceEnough",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "batchWithdrawAssets",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -257,6 +253,10 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
     functionFragment: "renounceOwnership",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "sendBackAssets",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "setAdmin", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setManager", data: BytesLike): Result;
   decodeFunctionResult(
@@ -282,7 +282,7 @@ interface HodlBoosterOptionUpgradeableInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "withdrawAsset",
+    functionFragment: "withdrawAssets",
     data: BytesLike
   ): Result;
 
@@ -394,12 +394,6 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       _asset: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
 
     cancelWithdraw(
       _optionId: BigNumberish,
@@ -624,6 +618,10 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setAdmin(
       _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -675,9 +673,7 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
@@ -698,12 +694,6 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
   adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
-
-  batchWithdrawAssets(
-    _trader: string,
-    _assets: string[],
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
 
   cancelWithdraw(
     _optionId: BigNumberish,
@@ -922,6 +912,10 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  sendBackAssets(
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setAdmin(
     _admin: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -973,9 +967,7 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  withdrawAsset(
-    _trader: string,
-    _asset: string,
+  withdrawAssets(
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -996,12 +988,6 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
     adminRoleAddress(overrides?: CallOverrides): Promise<string>;
 
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: CallOverrides
-    ): Promise<void>;
 
     cancelWithdraw(
       _optionId: BigNumberish,
@@ -1216,6 +1202,8 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
 
+    sendBackAssets(overrides?: CallOverrides): Promise<void>;
+
     setAdmin(_admin: string, overrides?: CallOverrides): Promise<void>;
 
     setManager(_manager: string, overrides?: CallOverrides): Promise<void>;
@@ -1261,11 +1249,7 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    withdrawAssets(overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {
@@ -1379,12 +1363,6 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     cancelWithdraw(
       _optionId: BigNumberish,
       _assetToTerminate: BigNumberish,
@@ -1466,6 +1444,10 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setAdmin(
       _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1510,9 +1492,7 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
@@ -1536,12 +1516,6 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
     balanceEnough(
       _asset: string,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    batchWithdrawAssets(
-      _trader: string,
-      _assets: string[],
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     cancelWithdraw(
@@ -1627,6 +1601,10 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    sendBackAssets(
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setAdmin(
       _admin: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1671,9 +1649,7 @@ export class HodlBoosterOptionUpgradeable extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    withdrawAsset(
-      _trader: string,
-      _asset: string,
+    withdrawAssets(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

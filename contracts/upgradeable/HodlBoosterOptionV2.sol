@@ -124,7 +124,7 @@ contract HodlBoosterOptionV2 is OptionVaultBaseV2, IPKKTStructureOption {
         address depositAsset = pair.callOptionId == _optionId
             ? pair.depositAsset
             : pair.counterPartyAsset;
-        require(depositAsset == address(0));
+        require(depositAsset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 
         //todo: convert to weth
         OptionLifecycle.depositFor(
@@ -152,7 +152,7 @@ contract HodlBoosterOptionV2 is OptionVaultBaseV2, IPKKTStructureOption {
         address depositAsset = pair.callOptionId == _optionId
             ? pair.depositAsset
             : pair.counterPartyAsset;
-        require(depositAsset != address(0));
+        require(depositAsset != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
 
         OptionLifecycle.depositFor(
             optionData[_optionId],

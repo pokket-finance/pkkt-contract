@@ -39,7 +39,7 @@ library OptionLifecycle {
         view
         returns (uint256)
     {
-        if (_asset != address(0)) {
+        if (_asset != address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             return IERC20(_asset).balanceOf(_source);
         } else {
             return _source.balance;
@@ -52,7 +52,7 @@ library OptionLifecycle {
         address _contractAddress
     ) external {
         require(_amount > 0, "!amt");
-        if (_contractAddress == address(0)) {
+        if (_contractAddress == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
             payable(_target).transfer(_amount);
         } else {
             IERC20(_contractAddress).safeTransfer(_target, _amount);

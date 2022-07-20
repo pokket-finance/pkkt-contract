@@ -28,8 +28,7 @@ describe.only("Hodl Booster", async function () {
     let vaultManager: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
-    let carol: SignerWithAddress;
-    let trader: SignerWithAddress;
+    let carol: SignerWithAddress; 
     let usdt: ERC20Mock;
     let wbtc: ERC20Mock;
     let vault: HodlBoosterOption;
@@ -38,7 +37,7 @@ describe.only("Hodl Booster", async function () {
     let names: {};
 
     before(async function () {
-      [deployer, owner, vaultAdmin, vaultManager, alice, bob, carol, trader] = await ethers.getSigners();
+      [deployer, owner, vaultAdmin, vaultManager, alice, bob, carol] = await ethers.getSigners();
     });
 
     context("operations", function () {
@@ -142,19 +141,23 @@ describe.only("Hodl Booster", async function () {
 
           await usdt.transfer(alice.address, BigNumber.from(10000000).mul(USDTMultiplier));
           await usdt.transfer(bob.address, BigNumber.from(10000000).mul(USDTMultiplier));
-          await usdt.transfer(carol.address, BigNumber.from(10000000).mul(USDTMultiplier));
-          await usdt.transfer(trader.address, BigNumber.from(10000000).mul(USDTMultiplier));
+          await usdt.transfer(carol.address, BigNumber.from(10000000).mul(USDTMultiplier));  
+          await usdt.transfer(vaultManager.address, BigNumber.from(10000000).mul(USDTMultiplier)); 
 
           await wbtc.transfer(alice.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(bob.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(carol.address, BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.transfer(vaultManager.address, BigNumber.from(100).mul(WBTCMultiplier));
+
           await wbtc.connect(alice as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(bob as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(carol as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.connect(vaultManager as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
 
           await usdt.connect(alice as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));
           await usdt.connect(bob as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));
           await usdt.connect(carol as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));
+          await usdt.connect(vaultManager as Signer).approve(vault.address, BigNumber.from(10000000).mul(USDTMultiplier));
 
         });
 
@@ -337,9 +340,9 @@ describe.only("Hodl Booster", async function () {
             assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
             assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(1).mul(WBTCMultiplier).toString());
             assert.equal(wbtcResult.newReleasedAmount.toString(), BigNumber.from(5125).mul(WBTCMultiplier).div(10000).toString());
-            btcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-            await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address);
-            btcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+            btcBalance = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+            await vault.connect(vaultManager as Signer).withdrawAssets();
+            btcBalance2 = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
             assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(9875).mul(WBTCMultiplier).div(10000).toString());
 
             await vault.connect(alice as Signer).deposit(optionPairs[WBTCUSDTOPTIONPAIR].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
@@ -386,7 +389,7 @@ describe.only("Hodl Booster", async function () {
               var diff = usdtInstruction.leftOverAmount.add(usdtInstruction.newDepositAmount).sub(usdtInstruction.newReleasedAmount);
                
               if (diff.lt(0)){
-                  await usdt.connect(trader as Signer).transfer(vault.address, -diff);
+                  await vault.connect(vaultManager as Signer).sendBackAssets(); 
               }
               var usdtBalance = await usdt.connect(alice as Signer).balanceOf(alice.address);
               await vault.connect(alice as Signer).withdraw(optionPairs[ETHUSDTOPTIONPAIR].callOptionId, available.releasedCounterPartyAssetAmount, usdt.address );
@@ -468,17 +471,17 @@ describe.only("Hodl Booster", async function () {
           
          var result = await renderCashFlow(OptionExecution.NoExecution,OptionExecution.NoExecution);
 
-          var ethBalance = await ethers.provider.getBalance(trader.address); 
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, NULL_ADDRESS); 
-          var ethBalance2 = await ethers.provider.getBalance(trader.address); 
-          assert.equal(ethBalance2.sub(ethBalance).toString(), result[0].assetBalance.toString());
-          var wbtcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address); 
-          var wbtcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-          assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString());
-          var usdtBalance = await usdt.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, usdt.address); 
-          var usdtBalance2 = await usdt.connect(trader as Signer).balanceOf(trader.address);
+          var ethBalance = await ethers.provider.getBalance(vaultManager.address); 
+          var wbtcBalance = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+          var usdtBalance = await usdt.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+          const tx = await vault.connect(vaultManager as Signer).withdrawAssets();
+          const receipt = await tx.wait();
+          const gasUsed = receipt.gasUsed;
+          var ethBalance2 = await ethers.provider.getBalance(vaultManager.address); 
+          assert.equal(ethBalance2.sub(ethBalance).add(gasUsed).toString(), result[0].assetBalance.toString()); 
+          var wbtcBalance2 = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+          assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString()); 
+          var usdtBalance2 = await usdt.connect(vaultManager as Signer).balanceOf(vaultManager.address);
           assert.equal(usdtBalance2.sub(usdtBalance).toString(), result[2].assetBalance.toString());
 
 
@@ -514,22 +517,30 @@ describe.only("Hodl Booster", async function () {
            assert.equal(btcEnough, result2[1].assetBalance.gte(0));
            var usdtEnough = await vault.balanceEnough(usdt.address);
            assert.equal(usdtEnough, result2[2].assetBalance.gte(0));
+           const oldETHBalance  = await vaultManager.getBalance();
+           const oldBTCBalance = await wbtc.balanceOf(vaultManager.address);
+           const oldUSDTBalance = await usdt.balanceOf(vaultManager.address);
+           const tx2 = await vault.connect(vaultManager as Signer).sendBackAssets({
+             value: ethEnough ? BigNumber.from(0): BigNumber.from(0).sub(result2[0].assetBalance)
+           });
+           const receipt2 = await tx2.wait();
+           const gasUsed2 = receipt2.gasUsed; 
+           const newETHBalance  = await vaultManager.getBalance();
+           const newBTCBalance = await wbtc.balanceOf(vaultManager.address);
+           const newUSDTBalance = await usdt.balanceOf(vaultManager.address);
 
            if (!ethEnough) { 
-              await trader.sendTransaction({
-                to: vault.address,
-                value: -result2[0].assetBalance, 
-              });
+             assert.isTrue(newETHBalance.add(result2[0].assetBalance).sub(gasUsed2).eq(oldETHBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
            }
            if (!btcEnough){
               
-              await wbtc.connect(trader as Signer).transfer(vault.address, -result2[1].assetBalance);
+             assert.isTrue(newBTCBalance.add(result2[1].assetBalance).eq(oldBTCBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
            }
 
            if (!usdtEnough){
-            await usdt.connect(trader as Signer).transfer(vault.address, -result2[2].assetBalance);
+            assert.isTrue(newUSDTBalance.add(result2[2].assetBalance).eq(oldUSDTBalance)) 
             console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, USDT_DECIMALS)} usdt`);
           }
           ethEnough = await vault.balanceEnough(NULL_ADDRESS);
@@ -608,38 +619,41 @@ describe.only("Hodl Booster", async function () {
           var diff = wbtcResult.leftOverAmount.add(wbtcResult.newDepositAmount).sub(wbtcResult.newReleasedAmount);
           if (diff.gt(0)){
             assets.push(wbtc.address);
-            beforeBalances.push(await wbtc.balanceOf(trader.address));
+            beforeBalances.push(await wbtc.balanceOf(vaultManager.address));
             movables.push(diff);
           }
           var ethResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(NULL_ADDRESS); 
           var diff2 = ethResult.leftOverAmount.add(ethResult.newDepositAmount).sub(ethResult.newReleasedAmount);
           if (diff2.gt(0)){
             assets.push(NULL_ADDRESS);
-            beforeBalances.push(await trader.getBalance());
-            movables.push(diff2);
-           
+            beforeBalances.push(await vaultManager.getBalance());
+            movables.push(diff2); 
           }
           var usdtResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(usdt.address); 
           var diff3 = usdtResult.leftOverAmount.add(usdtResult.newDepositAmount).sub(usdtResult.newReleasedAmount);
           if (diff3.gt(0)){
             assets.push(usdt.address);
-            beforeBalances.push(await usdt.balanceOf(trader.address));
+            beforeBalances.push(await usdt.balanceOf(vaultManager.address));
             movables.push(diff3);
           }
           if (assets.length > 0){ 
-            await vault.connect(vaultManager as Signer).batchWithdrawAssets(trader.address, assets);
+            const tx = await vault.connect(vaultManager as Signer).withdrawAssets();
+            const receipt = await tx.wait();
             for(var i = 0; i < assets.length; i++){
               var asset = assets[i];
               console.log("withdraw assets for ", names[asset]);
               var newBalance = asset == NULL_ADDRESS ? 
-              await trader.getBalance() : 
+              await vaultManager.getBalance() : 
               ( 
                 asset == usdt.address ? 
-                await usdt.balanceOf(trader.address):
-                await wbtc.balanceOf(trader.address)
+                await usdt.balanceOf(vaultManager.address):
+                await wbtc.balanceOf(vaultManager.address)
               );
 
               var diff = newBalance.sub(beforeBalances[i]);
+              if (asset == NULL_ADDRESS) {
+                diff = diff.add(receipt.gasUsed);
+              }
               assert.equal(diff.toString(), movables[i].toString());
                  
             }
@@ -652,8 +666,8 @@ describe.only("Hodl Booster", async function () {
           await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!admin");  
           await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!admin");   
           await expect(vault.connect(alice as Signer).settle([])).to.be.revertedWith("!manager");  
-          await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, usdt.address)).to.be.revertedWith("!manager");  
-          await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [usdt.address])).to.be.revertedWith("!manager");  
+          await expect(vault.connect(alice as Signer).withdrawAssets()).to.be.revertedWith("!manager");   
+          await expect(vault.connect(alice as Signer).sendBackAssets()).to.be.revertedWith("!manager");   
           await expect(admin.connect(bob as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(admin.connect(vaultAdmin as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(admin.connect(vaultAdmin as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  

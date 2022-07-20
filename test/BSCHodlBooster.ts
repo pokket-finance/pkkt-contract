@@ -29,8 +29,7 @@ describe.only("BSC Hodl Booster", async function () {
     let admin: SignerWithAddress;
     let alice: SignerWithAddress;
     let bob: SignerWithAddress;
-    let carol: SignerWithAddress;
-    let trader: SignerWithAddress;
+    let carol: SignerWithAddress; 
     let eth: ERC20Mock;
     let busd: ERC20Mock;
     let wbtc: ERC20Mock;
@@ -41,7 +40,7 @@ describe.only("BSC Hodl Booster", async function () {
     let optionLifecycleAddress: string;
 
     before(async function () {
-      [deployer, owner, vaultAdmin, vaultManager, admin, alice, bob, carol, trader] = await ethers.getSigners();
+      [deployer, owner, vaultAdmin, vaultManager, admin, alice, bob, carol] = await ethers.getSigners();
     });
 
     context("operations", function () {
@@ -164,28 +163,32 @@ describe.only("BSC Hodl Booster", async function () {
           await eth.transfer(alice.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.transfer(bob.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.transfer(carol.address, BigNumber.from(1000).mul(ETHMultiplier));
-          await eth.transfer(trader.address, BigNumber.from(1000).mul(ETHMultiplier));
+          await eth.transfer(vaultManager.address, BigNumber.from(1000).mul(ETHMultiplier));
 
           await busd.transfer(alice.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.transfer(bob.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.transfer(carol.address, BigNumber.from(10000000).mul(BUSDMultiplier));
-          await busd.transfer(trader.address, BigNumber.from(10000000).mul(BUSDMultiplier));
+          await busd.transfer(vaultManager.address, BigNumber.from(10000000).mul(BUSDMultiplier));
 
           await wbtc.transfer(alice.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(bob.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.transfer(carol.address, BigNumber.from(100).mul(WBTCMultiplier));
+
           await wbtc.connect(alice as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(bob as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
           await wbtc.connect(carol as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
+          await wbtc.connect(vaultManager as Signer).approve(vault.address, BigNumber.from(100).mul(WBTCMultiplier));
 
           await busd.connect(alice as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.connect(bob as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
           await busd.connect(carol as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
+          await busd.connect(vaultManager as Signer).approve(vault.address, BigNumber.from(10000000).mul(BUSDMultiplier));
 
           
           await eth.connect(alice as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.connect(bob as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier));
           await eth.connect(carol as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier)); 
+          await eth.connect(vaultManager as Signer).approve(vault.address, BigNumber.from(1000).mul(ETHMultiplier)); 
 
         });
 
@@ -365,9 +368,9 @@ describe.only("BSC Hodl Booster", async function () {
             assert.equal(wbtcResult.leftOverAmount.toString(), BigNumber.from(5).mul(WBTCMultiplier).div(10).toString());
             assert.equal(wbtcResult.newDepositAmount.toString(), BigNumber.from(1).mul(WBTCMultiplier).toString());
             assert.equal(wbtcResult.newReleasedAmount.toString(), BigNumber.from(5125).mul(WBTCMultiplier).div(10000).toString());
-            btcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-            await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address);
-            btcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
+            btcBalance = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address); 
+            await vault.connect(vaultManager as Signer).withdrawAssets();
+            btcBalance2 = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
             assert.equal(btcBalance2.sub(btcBalance).toString(), BigNumber.from(9875).mul(WBTCMultiplier).div(10000).toString());
 
             await vault.connect(alice as Signer).deposit(optionPairs[WBTCBUSDOPTIONPAIR].callOptionId, BigNumber.from(1).mul(WBTCMultiplier));
@@ -415,7 +418,7 @@ describe.only("BSC Hodl Booster", async function () {
               var diff = busdInstruction.leftOverAmount.add(busdInstruction.newDepositAmount).sub(busdInstruction.newReleasedAmount);
                 
               if (diff.lt(0)){  
-                  await busd.connect(trader as Signer).transfer(vault.address, BigNumber.from(0).sub(diff));  
+                await vault.connect(vaultManager as Signer).sendBackAssets(); 
               } 
               var busdBalance = await busd.connect(alice as Signer).balanceOf(alice.address); 
               await vault.connect(alice as Signer).withdraw(optionPairs[ETHBUSDOPTIONPAIR].callOptionId, available.releasedCounterPartyAssetAmount, busd.address );
@@ -496,18 +499,16 @@ describe.only("BSC Hodl Booster", async function () {
           
          var result = await renderCashFlow(OptionExecution.NoExecution,OptionExecution.NoExecution);
 
-          var ethBalance = await eth.connect(trader.address).balanceOf(trader.address); 
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, eth.address); 
-          var ethBalance2 =  await eth.connect(trader.address).balanceOf(trader.address); 
-          assert.equal(ethBalance2.sub(ethBalance).toString(), result[0].assetBalance.toString());
-          var wbtcBalance = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, wbtc.address); 
-          var wbtcBalance2 = await wbtc.connect(trader as Signer).balanceOf(trader.address);
-          assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString());
-          var busdBalance = await busd.connect(trader as Signer).balanceOf(trader.address);
-          await vault.connect(vaultManager as Signer).withdrawAsset(trader.address, busd.address); 
-          var busdBalance2 = await busd.connect(trader as Signer).balanceOf(trader.address);
-          assert.equal(busdBalance2.sub(busdBalance).toString(), result[2].assetBalance.toString());
+         var ethBalance = await  eth.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         var wbtcBalance = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         var busdBalance = await busd.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         await vault.connect(vaultManager as Signer).withdrawAssets();
+         var ethBalance2 = await eth.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         assert.equal(ethBalance2.sub(ethBalance).toString(), result[0].assetBalance.toString()); 
+         var wbtcBalance2 = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString()); 
+         var busdBalance2 = await busd.connect(vaultManager as Signer).balanceOf(vaultManager.address);
+         assert.equal(busdBalance2.sub(busdBalance).toString(), result[2].assetBalance.toString());
 
 
           await vault.connect(vaultAdmin as Signer).setOptionParameters([
@@ -543,22 +544,26 @@ describe.only("BSC Hodl Booster", async function () {
            var busdEnough = await vault.balanceEnough(busd.address);
            assert.equal(busdEnough, result2[2].assetBalance.gte(0));
 
+           const oldETHBalance  = await  eth.balanceOf(vaultManager.address);
+           const oldBTCBalance = await wbtc.balanceOf(vaultManager.address);
+           const oldBUSDBalance = await busd.balanceOf(vaultManager.address);
+           await vault.connect(vaultManager as Signer).sendBackAssets();  
+           const newETHBalance  = await  eth.balanceOf(vaultManager.address);
+           const newBTCBalance = await wbtc.balanceOf(vaultManager.address);
+           const newBUSDBalance = await busd.balanceOf(vaultManager.address);
+
            if (!ethEnough) { 
-              await trader.sendTransaction({
-                to: vault.address,
-                value: BigNumber.from(0).sub(result2[0].assetBalance), 
-              });
-              console.log(`Sent ${ethers.utils.formatUnits(BigNumber.from(0).sub(result2[0].assetBalance), ETH_DECIMALS)} eth`);
+             assert.isTrue(newETHBalance.add(result2[0].assetBalance).eq(oldETHBalance)) 
+              console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
            }
-           if (!btcEnough){
-              
-              await wbtc.connect(trader as Signer).transfer(vault.address, BigNumber.from(0).sub(result2[1].assetBalance));
-              console.log(`Sent ${ethers.utils.formatUnits(BigNumber.from(0).sub(result2[1].assetBalance), WBTC_DECIMALS)} wbtc`);
+           if (!btcEnough){ 
+             assert.isTrue(newBTCBalance.add(result2[1].assetBalance).eq(oldBTCBalance)) 
+              console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
            }
 
            if (!busdEnough){
-            await busd.connect(trader as Signer).transfer(vault.address,BigNumber.from(0).sub(result2[2].assetBalance));
-            console.log(`Sent ${ethers.utils.formatUnits(BigNumber.from(0).sub(result2[2].assetBalance), BUSD_DECIMALS)} busd`);
+            assert.isTrue(newBUSDBalance.add(result2[2].assetBalance).eq(oldBUSDBalance)) 
+            console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, BUSD_DECIMALS)} busd`);
           }
           ethEnough = await vault.balanceEnough(eth.address);
           btcEnough = await vault.balanceEnough(wbtc.address);
@@ -636,14 +641,14 @@ describe.only("BSC Hodl Booster", async function () {
           var diff = wbtcResult.leftOverAmount.add(wbtcResult.newDepositAmount).sub(wbtcResult.newReleasedAmount);
           if (diff.gt(0)){
             assets.push(wbtc.address);
-            beforeBalances.push(await wbtc.balanceOf(trader.address));
+            beforeBalances.push(await wbtc.balanceOf(vaultManager.address));
             movables.push(diff);
           }
           var ethResult = await vault.connect(vaultAdmin as Signer).settlementCashflowResult(eth.address); 
           var diff2 = ethResult.leftOverAmount.add(ethResult.newDepositAmount).sub(ethResult.newReleasedAmount);
           if (diff2.gt(0)){
             assets.push(eth.address);
-            beforeBalances.push(await eth.balanceOf(trader.address));
+            beforeBalances.push(await eth.balanceOf(vaultManager.address));
             movables.push(diff2);
            
           }
@@ -651,20 +656,20 @@ describe.only("BSC Hodl Booster", async function () {
           var diff3 = busdResult.leftOverAmount.add(busdResult.newDepositAmount).sub(busdResult.newReleasedAmount);
           if (diff3.gt(0)){
             assets.push(busd.address);
-            beforeBalances.push(await busd.balanceOf(trader.address));
+            beforeBalances.push(await busd.balanceOf(vaultManager.address));
             movables.push(diff3);
           }
           if (assets.length > 0){ 
-            await vault.connect(vaultManager as Signer).batchWithdrawAssets(trader.address, assets);
+            await vault.connect(vaultManager as Signer).withdrawAssets();
             for(var i = 0; i < assets.length; i++){
               var asset = assets[i];
               console.log("withdraw assets for ", names[asset]);
               var newBalance =  asset == busd.address ? 
-              await busd.balanceOf(trader.address):
+              await busd.balanceOf(vaultManager.address):
               (
                 asset == wbtc.address ? 
-                 await wbtc.balanceOf(trader.address) : 
-                 await eth.balanceOf(trader.address)
+                 await wbtc.balanceOf(vaultManager.address) : 
+                 await eth.balanceOf(vaultManager.address)
               );
 
               var diff = newBalance.sub(beforeBalances[i]);
@@ -762,8 +767,8 @@ describe.only("BSC Hodl Booster", async function () {
           const admin = vault as  HodlBoosterOptionUpgradeable; 
           await expect(vault.connect(alice as Signer).initiateSettlement()).to.be.revertedWith("!admin");  
           await expect(vault.connect(alice as Signer).setOptionParameters([])).to.be.revertedWith("!admin");   
-          await expect(vault.connect(alice as Signer).withdrawAsset(alice.address, busd.address)).to.be.revertedWith("!manager");  
-          await expect(vault.connect(alice as Signer).batchWithdrawAssets(alice.address, [busd.address])).to.be.revertedWith("!manager");  
+          await expect(vault.connect(alice as Signer).withdrawAssets()).to.be.revertedWith("!manager");  
+          await expect(vault.connect(alice as Signer).sendBackAssets()).to.be.revertedWith("!manager");  
           await expect(admin.connect(bob as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(admin.connect(vaultAdmin as Signer).setAdmin(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  
           await expect(admin.connect(vaultAdmin as Signer).transferOwnership(alice.address)).to.be.revertedWith("Ownable: caller is not the owner");  

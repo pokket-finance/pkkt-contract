@@ -402,30 +402,40 @@ abstract contract OptionVaultBaseV2 is
         }  
     }
 
-    //change to use isValidAddress
-    function withdrawAsset(address _trader, address _asset) external override lock onlyManager { 
-        StructureData.AssetData storage assetSubData = assetData[_asset];
-        require(assetSubData.leftOverAmount > 0); 
-        uint128 balance = uint128(assetSubData.leftOverAmount);
-        isValidAddress(_trader, _asset, balance);
-        OptionLifecycle.withdraw(_trader, uint256(balance), _asset);
-        assetSubData.traderWithdrawn = balance;
-        assetSubData.leftOverAmount = 0;
-    }
-
-    //change to use isValidAddress
-    function batchWithdrawAssets(address _trader, address[] memory _assets) external override lock onlyManager{ 
-        uint256 count = _assets.length;
-        for(uint256 i = 0; i < count; i++) {
-            StructureData.AssetData storage assetSubData = assetData[_assets[i]];
-            require(assetSubData.leftOverAmount > 0); 
+    function withdrawAssets() external override lock onlyManager{  
+        for(uint8 i = 0; i < assetCount; i++) {
+            StructureData.AssetData storage assetSubData = assetData[asset[i]];
+            if (assetSubData.leftOverAmount <= 0) continue;
             uint128 balance = uint128(assetSubData.leftOverAmount);
-            isValidAddress(_trader, _assets[i],  balance);
-            OptionLifecycle.withdraw(_trader, uint256(balance), _assets[i]);
+            OptionLifecycle.withdraw(msg.sender, uint256(balance), asset[i]);
             assetSubData.traderWithdrawn = balance;
             assetSubData.leftOverAmount = 0;
         }  
     }
+ 
+    function sendBackAssets() external payable override lock onlyManager{  
+        for(uint8 i = 0; i < assetCount; i++) {
+            StructureData.AssetData storage assetSubData = assetData[asset[i]];
+            if (assetSubData.leftOverAmount >= 0) continue;
+            uint128 balance = uint128(-assetSubData.leftOverAmount);
+
+            if (asset[i] == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+                require(balance >= msg.value, "Not enough eth");
+                //transfer back extra
+                if (balance > msg.value) {
+                    payable(msg.sender).transfer(uint256(balance) - msg.value);
+                }
+            } else {
+                IERC20(asset[i]).safeTransferFrom(
+                    msg.sender,
+                    address(this), 
+                    balance
+                );
+            } 
+            assetSubData.leftOverAmount = 0;
+        } 
+    }
+    
 
     function balanceEnough(address _asset) public view override returns (bool) {
         StructureData.AssetData storage assetSubData = assetData[_asset];
