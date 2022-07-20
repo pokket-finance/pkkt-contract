@@ -553,17 +553,17 @@ describe.only("BSC Hodl Booster", async function () {
            const newBUSDBalance = await busd.balanceOf(vaultManager.address);
 
            if (!ethEnough) { 
-             assert.isTrue(newETHBalance.add(result2[0].assetBalance).eq(oldETHBalance)) 
+             assert.isTrue(newETHBalance.sub(result2[0].assetBalance).eq(oldETHBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
            }
-           if (!btcEnough){ 
-             assert.isTrue(newBTCBalance.add(result2[1].assetBalance).eq(oldBTCBalance)) 
+           if (!btcEnough){  
+             assert.isTrue(newBTCBalance.sub(result2[1].assetBalance).eq(oldBTCBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
            }
 
            if (!busdEnough){
-            assert.isTrue(newBUSDBalance.add(result2[2].assetBalance).eq(oldBUSDBalance)) 
-            console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, BUSD_DECIMALS)} busd`);
+            assert.isTrue(newBUSDBalance.sub(result2[2].assetBalance).eq(oldBUSDBalance)) 
+            console.log(`Sent ${ethers.utils.formatUnits(BigNumber.from(0).sub(result2[2].assetBalance), BUSD_DECIMALS)} busd`);
           }
           ethEnough = await vault.balanceEnough(eth.address);
           btcEnough = await vault.balanceEnough(wbtc.address);

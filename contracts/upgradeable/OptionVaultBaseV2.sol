@@ -341,33 +341,18 @@ abstract contract OptionVaultBaseV2 is
             StructureData.AssetData storage assetSubData = assetData[
                 assetAddress
             ];
-            //no snaphot previously, so, no balance change
-            //todo: room for gas improvement
-            int128 leftOver = assetSubData.leftOverAmount +
-                (
-                    currentRound == 2
-                        ? int128(0)
-                        : (int128(getBalanceChange(assetAddress)) -
-                            int128(assetSubData.depositAmount) +
-                            int128(assetSubData.releasedAmount))
-                );
-
-            assetSubData.traderWithdrawn = 0;
-            assetSubData.balanceAfterSettle = OptionLifecycle.getAvailableBalance(assetAddress, address(this)).toUint128();
-            assetSubData.withdrawableAfterSettle = collectWithdrawable(
-                assetAddress
-            ).toUint128();
+            //no snaphot previously, so, no balance change 
             StructureData.SettlementCashflowResult
                 memory instruction = StructureData.SettlementCashflowResult({
                     newReleasedAmount: assetSubData.releasedAmount,
                     newDepositAmount: assetSubData.depositAmount,
-                    leftOverAmount: leftOver,
+                    leftOverAmount: assetSubData.leftOverAmount,
                     contractAddress: assetAddress
                 });
             settlementCashflowResult[assetAddress] = instruction;
             //todo: check overflow
             assetSubData.leftOverAmount =
-                int128(leftOver +
+                int128(assetSubData.leftOverAmount +
                 int128(assetSubData.depositAmount) -
                 int128(assetSubData.releasedAmount));
             assetSubData.depositAmount = 0;
@@ -406,102 +391,41 @@ abstract contract OptionVaultBaseV2 is
         for(uint8 i = 0; i < assetCount; i++) {
             StructureData.AssetData storage assetSubData = assetData[asset[i]];
             if (assetSubData.leftOverAmount <= 0) continue;
-            uint128 balance = uint128(assetSubData.leftOverAmount);
-            OptionLifecycle.withdraw(msg.sender, uint256(balance), asset[i]);
-            assetSubData.traderWithdrawn = balance;
+            uint128 leftOver = uint128(assetSubData.leftOverAmount);
+            OptionLifecycle.withdraw(msg.sender, uint256(leftOver), asset[i]); 
             assetSubData.leftOverAmount = 0;
         }  
     }
- 
+    
+    //todo: improve performance later
     function sendBackAssets() external payable override lock onlyManager{  
         for(uint8 i = 0; i < assetCount; i++) {
-            StructureData.AssetData storage assetSubData = assetData[asset[i]];
+            StructureData.AssetData storage assetSubData = assetData[asset[i]];  
             if (assetSubData.leftOverAmount >= 0) continue;
-            uint128 balance = uint128(-assetSubData.leftOverAmount);
+            uint128 needed = uint128(-assetSubData.leftOverAmount);
 
             if (asset[i] == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
-                require(balance >= msg.value, "Not enough eth");
+                require(needed >= msg.value, "Not enough eth");
                 //transfer back extra
-                if (balance > msg.value) {
-                    payable(msg.sender).transfer(uint256(balance) - msg.value);
+                if (needed > msg.value) {
+                    payable(msg.sender).transfer(needed - msg.value);
                 }
             } else {
                 IERC20(asset[i]).safeTransferFrom(
                     msg.sender,
                     address(this), 
-                    balance
+                    needed
                 );
-            } 
+            }  
             assetSubData.leftOverAmount = 0;
         } 
     }
     
 
     function balanceEnough(address _asset) public view override returns (bool) {
-        StructureData.AssetData storage assetSubData = assetData[_asset];
-        int128 balance = assetSubData.leftOverAmount;
-        if (balance >= 0) {
-            return true;
-        }
-        if (OptionLifecycle.getAvailableBalance(_asset, address(this)) == 0) {
-            return false;
-        }
-
-        return balance >= -getBalanceChange(_asset);
+        StructureData.AssetData storage assetSubData = assetData[_asset]; 
+        return assetSubData.leftOverAmount >= 0;
     }
-
-    function getBalanceChange(address _asset) private view returns (int256) {
-        StructureData.AssetData storage assetSubData = assetData[_asset];
-        // int128 leastBalance = int128(assetSubData.balanceAfterSettle + collectWithdrawable(_asset) - assetSubData.withdrawableAfterSettle);
-        //return  int128(uint128(getAvailableBalance(_asset))) - leastBalance + int128(assetSubData.traderWithdrawn);
-        return
-            int256(
-                OptionLifecycle.getAvailableBalance(_asset, address(this))
-                .add(assetSubData.traderWithdrawn).add(assetSubData.withdrawableAfterSettle)
-            ) -
-            int256(
-                uint256(assetSubData.balanceAfterSettle).add(collectWithdrawable(_asset))
-            );
-    }
-
-    function collectWithdrawable(address _asset)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 total = 0;
-        for (uint8 i = 0; i < optionPairCount; i++) {
-            StructureData.OptionPairDefinition storage pair = optionPairs[i];
-            if (
-                pair.depositAsset == _asset || pair.counterPartyAsset == _asset
-            ) {
-                StructureData.OptionData storage callOption = optionData[
-                    pair.callOptionId
-                ];
-                total = total.add(
-                    pair.depositAsset == _asset
-                        ? uint256(callOption.optionStates[currentRound].totalAmount).add(
-                            callOption.totalReleasedDepositAssetAmount
-                        )
-                        : callOption.totalReleasedCounterPartyAssetAmount
-                );
-
-                StructureData.OptionData storage putOption = optionData[
-                    pair.putOptionId
-                ];
-                total = total.add(
-                    pair.counterPartyAsset == _asset
-                        ? uint256(putOption.optionStates[currentRound].totalAmount).add(
-                            putOption.totalReleasedDepositAssetAmount
-                        )
-                        : putOption.totalReleasedCounterPartyAssetAmount
-                );
-            }
-        }
-        return total;
-    }
-
-    receive() external payable {}
 
     modifier lock {
         require(locked == 0, "locked");

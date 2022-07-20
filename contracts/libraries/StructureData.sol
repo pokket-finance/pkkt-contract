@@ -41,15 +41,7 @@ library StructureData {
     struct AssetData {
         uint128 releasedAmount; //debit
         uint128 depositAmount; //credit
-        int128 leftOverAmount; //history balance
-        /*
-         *  actual balance perspective
-         *  withdrawable = redeemable + released
-         *  balance = withdrawable + leftOver
-         */
-        uint128 balanceAfterSettle;
-        uint128 withdrawableAfterSettle;
-        uint128 traderWithdrawn;
+        int128 leftOverAmount; //history balance 
     }
 
     struct OptionData {

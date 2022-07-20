@@ -267,14 +267,12 @@ describe.only("Hodl Booster", async function () {
           assert.equal(optionState.strikePrice.toString(), "0");
           var ethBalance = await ethers.provider.getBalance(alice.address); 
           //redeem all eth
-          var tx = await (await vault.connect(alice as Signer).withdraw(optionPairs[ETHUSDTOPTIONPAIR].callOptionId, BigNumber.from(8).mul(ETHMultiplier), NULL_ADDRESS)).wait();
-          var gasPrice = (await ethers.provider.getTransaction(tx.transactionHash)).gasPrice;
-          var tx2 = await (await vault.connect(alice as Signer).withdraw(optionPairs[ETHUSDTOPTIONPAIR].callOptionId, BigNumber.from(1).mul(ETHMultiplier), NULL_ADDRESS)).wait();
-          var gasPrice2 = (await ethers.provider.getTransaction(tx2.transactionHash)).gasPrice;
+          var tx = await (await vault.connect(alice as Signer).withdraw(optionPairs[ETHUSDTOPTIONPAIR].callOptionId, BigNumber.from(8).mul(ETHMultiplier), NULL_ADDRESS)).wait(); 
+          var tx2 = await (await vault.connect(alice as Signer).withdraw(optionPairs[ETHUSDTOPTIONPAIR].callOptionId, BigNumber.from(1).mul(ETHMultiplier), NULL_ADDRESS)).wait(); 
 
           //await expect(ethHodlBoosterCall.connect(alice as Signer).redeem(BigNumber.from(1).mul(ETHMultiplier))).to.be.reverted;  
           var ethBalance2 = await ethers.provider.getBalance(alice.address);  
-          var diff = (ethBalance2.add(tx.gasUsed.mul(gasPrice??0)).add(tx2.gasUsed.mul(gasPrice2??0)).sub(ethBalance));  
+          var diff = ethBalance2.add(tx.gasUsed.mul(tx.effectiveGasPrice)).add(tx2.gasUsed.mul(tx.effectiveGasPrice).sub(ethBalance));  
           assert.isTrue(diff.sub(BigNumber.from(9).mul(ETHMultiplier)).abs().lte(GWEI));
           ethOptionBalance = await vault.connect(alice as Signer).getAccountBalance(optionPairs[ETHUSDTOPTIONPAIR].callOptionId); 
           assert.equal(ethOptionBalance.pendingDepositAssetAmount.toString(), "0");
@@ -476,8 +474,8 @@ describe.only("Hodl Booster", async function () {
           var usdtBalance = await usdt.connect(vaultManager as Signer).balanceOf(vaultManager.address);
           const tx = await vault.connect(vaultManager as Signer).withdrawAssets();
           const receipt = await tx.wait();
-          const gasUsed = receipt.gasUsed;
-          var ethBalance2 = await ethers.provider.getBalance(vaultManager.address); 
+          const gasUsed = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+          var ethBalance2 = await ethers.provider.getBalance(vaultManager.address);  
           assert.equal(ethBalance2.sub(ethBalance).add(gasUsed).toString(), result[0].assetBalance.toString()); 
           var wbtcBalance2 = await wbtc.connect(vaultManager as Signer).balanceOf(vaultManager.address);
           assert.equal(wbtcBalance2.sub(wbtcBalance).toString(), result[1].assetBalance.toString()); 
@@ -524,23 +522,23 @@ describe.only("Hodl Booster", async function () {
              value: ethEnough ? BigNumber.from(0): BigNumber.from(0).sub(result2[0].assetBalance)
            });
            const receipt2 = await tx2.wait();
-           const gasUsed2 = receipt2.gasUsed; 
+           const gasUsed2 = receipt2.gasUsed.mul(receipt2.effectiveGasPrice); 
            const newETHBalance  = await vaultManager.getBalance();
            const newBTCBalance = await wbtc.balanceOf(vaultManager.address);
            const newUSDTBalance = await usdt.balanceOf(vaultManager.address);
 
            if (!ethEnough) { 
-             assert.isTrue(newETHBalance.add(result2[0].assetBalance).sub(gasUsed2).eq(oldETHBalance)) 
+             assert.isTrue(newETHBalance.sub(result2[0].assetBalance).add(gasUsed2).eq(oldETHBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[0].assetBalance, ETH_DECIMALS)} eth`);
            }
            if (!btcEnough){
               
-             assert.isTrue(newBTCBalance.add(result2[1].assetBalance).eq(oldBTCBalance)) 
+             assert.isTrue(newBTCBalance.sub(result2[1].assetBalance).eq(oldBTCBalance)) 
               console.log(`Sent ${ethers.utils.formatUnits(-result2[1].assetBalance, WBTC_DECIMALS)} wbtc`);
            }
 
            if (!usdtEnough){
-            assert.isTrue(newUSDTBalance.add(result2[2].assetBalance).eq(oldUSDTBalance)) 
+            assert.isTrue(newUSDTBalance.sub(result2[2].assetBalance).eq(oldUSDTBalance)) 
             console.log(`Sent ${ethers.utils.formatUnits(-result2[2].assetBalance, USDT_DECIMALS)} usdt`);
           }
           ethEnough = await vault.balanceEnough(NULL_ADDRESS);
@@ -652,7 +650,7 @@ describe.only("Hodl Booster", async function () {
 
               var diff = newBalance.sub(beforeBalances[i]);
               if (asset == NULL_ADDRESS) {
-                diff = diff.add(receipt.gasUsed);
+                diff = diff.add(receipt.gasUsed.mul(receipt.effectiveGasPrice));
               }
               assert.equal(diff.toString(), movables[i].toString());
                  
