@@ -26,6 +26,7 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
     "balanceEnough(address)": FunctionFragment;
     "currentRound()": FunctionFragment;
     "executionAccountingResult(uint8)": FunctionFragment;
+    "getMoneyMovements()": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
     "managerRoleAddress()": FunctionFragment;
     "optionPairCount()": FunctionFragment;
@@ -54,6 +55,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "executionAccountingResult",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMoneyMovements",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "initiateSettlement",
@@ -114,6 +119,10 @@ interface OptionVaultBaseInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "executionAccountingResult",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getMoneyMovements",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -331,6 +340,18 @@ export class OptionVaultBase extends BaseContract {
       }
     >;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        ([BigNumber, BigNumber, string] & {
+          blockTime: BigNumber;
+          movementAmount: BigNumber;
+          asset: string;
+        })[]
+      ]
+    >;
+
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -499,6 +520,16 @@ export class OptionVaultBase extends BaseContract {
       };
       execute: number;
     }
+  >;
+
+  getMoneyMovements(
+    overrides?: CallOverrides
+  ): Promise<
+    ([BigNumber, BigNumber, string] & {
+      blockTime: BigNumber;
+      movementAmount: BigNumber;
+      asset: string;
+    })[]
   >;
 
   initiateSettlement(
@@ -671,6 +702,16 @@ export class OptionVaultBase extends BaseContract {
       }
     >;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      ([BigNumber, BigNumber, string] & {
+        blockTime: BigNumber;
+        movementAmount: BigNumber;
+        asset: string;
+      })[]
+    >;
+
     initiateSettlement(overrides?: CallOverrides): Promise<void>;
 
     managerRoleAddress(overrides?: CallOverrides): Promise<string>;
@@ -775,6 +816,8 @@ export class OptionVaultBase extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getMoneyMovements(overrides?: CallOverrides): Promise<BigNumber>;
+
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
@@ -833,6 +876,8 @@ export class OptionVaultBase extends BaseContract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    getMoneyMovements(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }

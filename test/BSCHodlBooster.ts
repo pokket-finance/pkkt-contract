@@ -676,6 +676,13 @@ describe.only("BSC Hodl Booster", async function () {
               assert.equal(diff.toString(), movables[i].toString());
                  
             }
+            const movement = await vault.connect(vaultManager as Signer).getMoneyMovements();
+            movement.forEach(element => {
+              const asset = names[element.asset];
+              const decimalsCount = element.asset == busd.address ? BUSD_DECIMALS : 
+              (element.asset == wbtc.address ? WBTC_DECIMALS : ETH_DECIMALS);
+              console.log(`Move ${ethers.utils.formatUnits(element.movementAmount, decimalsCount)} ${asset} at ${new Date(element.blockTime.toNumber()).toLocaleTimeString()}`) 
+            });
           }
            
         });

@@ -23,6 +23,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface ISettlementAggregatorInterface extends ethers.utils.Interface {
   functions: {
     "balanceEnough(address)": FunctionFragment;
+    "getMoneyMovements()": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
     "sendBackAssets()": FunctionFragment;
     "setOptionParameters(uint256[])": FunctionFragment;
@@ -34,6 +35,10 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "balanceEnough",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMoneyMovements",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "initiateSettlement",
@@ -62,6 +67,10 @@ interface ISettlementAggregatorInterface extends ethers.utils.Interface {
 
   decodeFunctionResult(
     functionFragment: "balanceEnough",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getMoneyMovements",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -138,6 +147,18 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        ([BigNumber, BigNumber, string] & {
+          blockTime: BigNumber;
+          movementAmount: BigNumber;
+          asset: string;
+        })[]
+      ]
+    >;
+
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
@@ -167,6 +188,16 @@ export class ISettlementAggregator extends BaseContract {
   };
 
   balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
+
+  getMoneyMovements(
+    overrides?: CallOverrides
+  ): Promise<
+    ([BigNumber, BigNumber, string] & {
+      blockTime: BigNumber;
+      movementAmount: BigNumber;
+      asset: string;
+    })[]
+  >;
 
   initiateSettlement(
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -198,6 +229,16 @@ export class ISettlementAggregator extends BaseContract {
   callStatic: {
     balanceEnough(_asset: string, overrides?: CallOverrides): Promise<boolean>;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      ([BigNumber, BigNumber, string] & {
+        blockTime: BigNumber;
+        movementAmount: BigNumber;
+        asset: string;
+      })[]
+    >;
+
     initiateSettlement(overrides?: CallOverrides): Promise<void>;
 
     sendBackAssets(overrides?: CallOverrides): Promise<void>;
@@ -227,6 +268,8 @@ export class ISettlementAggregator extends BaseContract {
       _asset: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
+
+    getMoneyMovements(overrides?: CallOverrides): Promise<BigNumber>;
 
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -261,6 +304,8 @@ export class ISettlementAggregator extends BaseContract {
       _asset: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    getMoneyMovements(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     initiateSettlement(
       overrides?: Overrides & { from?: string | Promise<string> }

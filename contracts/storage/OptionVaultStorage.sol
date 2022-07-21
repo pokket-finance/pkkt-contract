@@ -22,6 +22,8 @@ abstract contract OptionVaultStorageV1 {
 
     mapping(uint8 => StructureData.OptionData) internal optionData;
     mapping(uint8 => address) internal asset;
+
+   mapping(address=> mapping(uint16=>StructureData.MoneyMovementData)) internal moneyMovements;
     
 }
 

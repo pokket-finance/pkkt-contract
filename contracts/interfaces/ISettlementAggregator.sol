@@ -21,4 +21,6 @@ interface ISettlementAggregator {
     function sendBackAssets() payable external;
 
     function balanceEnough(address _asset) external view returns(bool); 
+
+    function getMoneyMovements() external view returns(StructureData.MoneyMovementResult[] memory);
 }

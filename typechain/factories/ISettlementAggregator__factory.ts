@@ -31,6 +31,36 @@ const _abi = [
   },
   {
     inputs: [],
+    name: "getMoneyMovements",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint256",
+            name: "blockTime",
+            type: "uint256",
+          },
+          {
+            internalType: "int128",
+            name: "movementAmount",
+            type: "int128",
+          },
+          {
+            internalType: "address",
+            name: "asset",
+            type: "address",
+          },
+        ],
+        internalType: "struct StructureData.MoneyMovementResult[]",
+        name: "",
+        type: "tuple[]",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "initiateSettlement",
     outputs: [],
     stateMutability: "nonpayable",

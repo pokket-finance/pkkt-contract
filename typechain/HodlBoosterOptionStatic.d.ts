@@ -31,6 +31,7 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
     "depositETH(uint8)": FunctionFragment;
     "executionAccountingResult(uint8)": FunctionFragment;
     "getAccountBalance(uint8)": FunctionFragment;
+    "getMoneyMovements()": FunctionFragment;
     "getOptionSnapShot(uint8)": FunctionFragment;
     "getOptionStateByRound(uint8,uint16)": FunctionFragment;
     "initiateSettlement()": FunctionFragment;
@@ -98,6 +99,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "getAccountBalance",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMoneyMovements",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getOptionSnapShot",
@@ -199,6 +204,10 @@ interface HodlBoosterOptionStaticInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getAccountBalance",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getMoneyMovements",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -514,6 +523,18 @@ export class HodlBoosterOptionStatic extends BaseContract {
       ]
     >;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        ([BigNumber, BigNumber, string] & {
+          blockTime: BigNumber;
+          movementAmount: BigNumber;
+          asset: string;
+        })[]
+      ]
+    >;
+
     getOptionSnapShot(
       _optionId: BigNumberish,
       overrides?: CallOverrides
@@ -796,6 +817,16 @@ export class HodlBoosterOptionStatic extends BaseContract {
     }
   >;
 
+  getMoneyMovements(
+    overrides?: CallOverrides
+  ): Promise<
+    ([BigNumber, BigNumber, string] & {
+      blockTime: BigNumber;
+      movementAmount: BigNumber;
+      asset: string;
+    })[]
+  >;
+
   getOptionSnapShot(
     _optionId: BigNumberish,
     overrides?: CallOverrides
@@ -1074,6 +1105,16 @@ export class HodlBoosterOptionStatic extends BaseContract {
       }
     >;
 
+    getMoneyMovements(
+      overrides?: CallOverrides
+    ): Promise<
+      ([BigNumber, BigNumber, string] & {
+        blockTime: BigNumber;
+        movementAmount: BigNumber;
+        asset: string;
+      })[]
+    >;
+
     getOptionSnapShot(
       _optionId: BigNumberish,
       overrides?: CallOverrides
@@ -1325,6 +1366,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    getMoneyMovements(overrides?: CallOverrides): Promise<BigNumber>;
+
     getOptionSnapShot(
       _optionId: BigNumberish,
       overrides?: CallOverrides
@@ -1463,6 +1506,8 @@ export class HodlBoosterOptionStatic extends BaseContract {
       _optionId: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
+
+    getMoneyMovements(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getOptionSnapShot(
       _optionId: BigNumberish,

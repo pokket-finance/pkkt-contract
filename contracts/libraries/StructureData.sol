@@ -131,4 +131,15 @@ library StructureData {
         int128 leftOverAmount; //positive, if trader didn't withdraw last time; negative, if trader failed to send back last time;
         address contractAddress; //0 for eth
     }
+
+    struct MoneyMovementData { 
+        uint256 blockTime;
+        int128 movementAmount; //positive for withdraw, negative for sendback 
+        address manager;
+    }    
+    struct MoneyMovementResult { 
+        uint256 blockTime;
+        int128 movementAmount; //positive for withdraw, negative for sendback 
+        address asset;
+    }
 }

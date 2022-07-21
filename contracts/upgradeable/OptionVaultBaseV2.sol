@@ -389,10 +389,16 @@ abstract contract OptionVaultBaseV2 is
 
     function withdrawAssets() external override lock onlyManager{  
         for(uint8 i = 0; i < assetCount; i++) {
-            StructureData.AssetData storage assetSubData = assetData[asset[i]];
+            address assetAddress = asset[i];
+            StructureData.AssetData storage assetSubData = assetData[assetAddress];
             if (assetSubData.leftOverAmount <= 0) continue;
             uint128 leftOver = uint128(assetSubData.leftOverAmount);
-            OptionLifecycle.withdraw(msg.sender, uint256(leftOver), asset[i]); 
+            OptionLifecycle.withdraw(msg.sender, uint256(leftOver), assetAddress); 
+            moneyMovements[assetAddress][currentRound] = StructureData.MoneyMovementData({
+                blockTime:block.timestamp,
+                movementAmount:assetSubData.leftOverAmount,
+                manager:msg.sender
+            });
             assetSubData.leftOverAmount = 0;
         }  
     }
@@ -400,28 +406,62 @@ abstract contract OptionVaultBaseV2 is
     //todo: improve performance later
     function sendBackAssets() external payable override lock onlyManager{  
         for(uint8 i = 0; i < assetCount; i++) {
-            StructureData.AssetData storage assetSubData = assetData[asset[i]];  
+            address assetAddress = asset[i];
+            StructureData.AssetData storage assetSubData = assetData[assetAddress];  
             if (assetSubData.leftOverAmount >= 0) continue;
             uint128 needed = uint128(-assetSubData.leftOverAmount);
 
-            if (asset[i] == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
+            if (assetAddress == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
                 require(needed >= msg.value, "Not enough eth");
                 //transfer back extra
                 if (needed > msg.value) {
                     payable(msg.sender).transfer(needed - msg.value);
                 }
             } else {
-                IERC20(asset[i]).safeTransferFrom(
+                IERC20(assetAddress).safeTransferFrom(
                     msg.sender,
                     address(this), 
                     needed
                 );
             }  
+            moneyMovements[assetAddress][currentRound] = StructureData.MoneyMovementData({
+                blockTime:block.timestamp,
+                movementAmount:assetSubData.leftOverAmount,
+                manager:msg.sender
+            });
             assetSubData.leftOverAmount = 0;
         } 
     }
     
-
+    function getMoneyMovements() external override view returns(StructureData.MoneyMovementResult[] memory) {
+        uint256 count = 0;
+        for(uint8 i = 0; i < assetCount; i++) {
+            address assetAddress = asset[i];
+            for(uint16 round = 1; round <= currentRound; round++) {
+                StructureData.MoneyMovementData memory data = moneyMovements[assetAddress][round];
+                if (data.manager == msg.sender) {
+                   count++;
+                }
+            } 
+        } 
+        StructureData.MoneyMovementResult[] memory result = new StructureData.MoneyMovementResult[](count);
+        if (count == 0) return result;
+        count = 0;
+        for(uint8 i = 0; i < assetCount; i++) {
+            address assetAddress = asset[i];
+            for(uint16 round = 1; round <= currentRound; round++) {
+                StructureData.MoneyMovementData memory data = moneyMovements[assetAddress][round];
+                if (data.manager == msg.sender) {
+                    result[count] = StructureData.MoneyMovementResult({
+                        blockTime: data.blockTime,
+                        movementAmount: data.movementAmount,
+                        asset: assetAddress
+                    });
+                }
+            } 
+        } 
+        return result;
+    }
     function balanceEnough(address _asset) public view override returns (bool) {
         StructureData.AssetData storage assetSubData = assetData[_asset]; 
         return assetSubData.leftOverAmount >= 0;
