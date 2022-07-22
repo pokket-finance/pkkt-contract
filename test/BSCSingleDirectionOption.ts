@@ -528,7 +528,7 @@ describe.only("BSC Single Direction Option", async function () {
             vaultId: 3
           }];
 
-          await expect(vault.connect(trader as Signer).buyOptions([0])).to.be.revertedWith("Nothing to sell");
+          await expect(vault.connect(trader as Signer).buyOptions([0])).to.be.revertedWith("Expiry level not specified yet");
           await expect(vault.connect(trader as Signer).buyOptions([2])).to.be.revertedWith("Expiry level not specified yet");
           const vaultStates2 = await Promise.all(vaultDefinitions.map(v=>vault.getVaultState(v.vaultId))); 
           //we need to expire previous first, market is dropping down greatly, all the put option invester would lose

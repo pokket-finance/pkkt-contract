@@ -202,7 +202,8 @@ abstract contract OptionVaultManager is
             require(onGoing.buyerAddress == address(0), "Already sold");
             //if there is any auto rolling, we must wait until expiry level specified
             if (
-                data.expired.buyerAddress != address(0) 
+                data.expired.buyerAddress != address(0) &&
+                data.expired.amount > 0
             ) {
                 require(
                     data.depositPriceAfterExpiryPerRound[
