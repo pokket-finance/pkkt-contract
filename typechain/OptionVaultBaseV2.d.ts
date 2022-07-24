@@ -350,10 +350,11 @@ export class OptionVaultBaseV2 extends BaseContract {
       overrides?: CallOverrides
     ): Promise<
       [
-        ([BigNumber, BigNumber, string] & {
+        ([BigNumber, BigNumber, string, string] & {
           blockTime: BigNumber;
           movementAmount: BigNumber;
           asset: string;
+          manager: string;
         })[]
       ]
     >;
@@ -537,10 +538,11 @@ export class OptionVaultBaseV2 extends BaseContract {
   getMoneyMovements(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, string] & {
+    ([BigNumber, BigNumber, string, string] & {
       blockTime: BigNumber;
       movementAmount: BigNumber;
       asset: string;
+      manager: string;
     })[]
   >;
 
@@ -723,10 +725,11 @@ export class OptionVaultBaseV2 extends BaseContract {
     getMoneyMovements(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, string] & {
+      ([BigNumber, BigNumber, string, string] & {
         blockTime: BigNumber;
         movementAmount: BigNumber;
         asset: string;
+        manager: string;
       })[]
     >;
 

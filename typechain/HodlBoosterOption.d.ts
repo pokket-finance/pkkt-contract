@@ -462,10 +462,11 @@ export class HodlBoosterOption extends BaseContract {
       overrides?: CallOverrides
     ): Promise<
       [
-        ([BigNumber, BigNumber, string] & {
+        ([BigNumber, BigNumber, string, string] & {
           blockTime: BigNumber;
           movementAmount: BigNumber;
           asset: string;
+          manager: string;
         })[]
       ]
     >;
@@ -543,7 +544,7 @@ export class HodlBoosterOption extends BaseContract {
     ): Promise<ContractTransaction>;
 
     settle(
-      _execution: BigNumberish[],
+      _executions: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -721,10 +722,11 @@ export class HodlBoosterOption extends BaseContract {
   getMoneyMovements(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, string] & {
+    ([BigNumber, BigNumber, string, string] & {
       blockTime: BigNumber;
       movementAmount: BigNumber;
       asset: string;
+      manager: string;
     })[]
   >;
 
@@ -797,7 +799,7 @@ export class HodlBoosterOption extends BaseContract {
   ): Promise<ContractTransaction>;
 
   settle(
-    _execution: BigNumberish[],
+    _executions: BigNumberish[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -975,10 +977,11 @@ export class HodlBoosterOption extends BaseContract {
     getMoneyMovements(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, string] & {
+      ([BigNumber, BigNumber, string, string] & {
         blockTime: BigNumber;
         movementAmount: BigNumber;
         asset: string;
+        manager: string;
       })[]
     >;
 
@@ -1047,7 +1050,7 @@ export class HodlBoosterOption extends BaseContract {
     ): Promise<void>;
 
     settle(
-      _execution: BigNumberish[],
+      _executions: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -1233,7 +1236,7 @@ export class HodlBoosterOption extends BaseContract {
     ): Promise<BigNumber>;
 
     settle(
-      _execution: BigNumberish[],
+      _executions: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1342,7 +1345,7 @@ export class HodlBoosterOption extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     settle(
-      _execution: BigNumberish[],
+      _executions: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

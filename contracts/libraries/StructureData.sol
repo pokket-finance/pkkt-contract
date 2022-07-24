@@ -141,5 +141,6 @@ library StructureData {
         uint256 blockTime;
         int128 movementAmount; //positive for withdraw, negative for sendback 
         address asset;
+        address manager;
     }
 }

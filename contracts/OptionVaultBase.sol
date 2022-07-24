@@ -206,17 +206,17 @@ abstract contract OptionVaultBase is
         }
     }
 
-    function settle(StructureData.OptionExecution[] memory _execution)
+    function settle(StructureData.OptionExecution[] memory _executions)
         external
         override 
         onlyManager
     { 
         require(underSettlement);
-        uint256 count = _execution.length;
+        uint256 count = _executions.length;
         require(count == optionPairCount);
         uint16 previousRound = currentRound - 1;
         for (uint8 i = 0; i < count; i++) {
-            StructureData.OptionExecution execution = _execution[i];
+            StructureData.OptionExecution execution = _executions[i];
             StructureData.OptionPairDefinition storage pair = optionPairs[i];
 
             StructureData.OptionData storage callOption = optionData[
@@ -420,8 +420,8 @@ abstract contract OptionVaultBase is
             address assetAddress = asset[i];
             for(uint16 round = 1; round <= currentRound; round++) {
                 StructureData.MoneyMovementData memory data = moneyMovements[assetAddress][round];
-                if (data.manager == msg.sender) {
-                   count++;
+                if (data.manager != address(0)) {
+                    count++;
                 }
             } 
         } 
@@ -436,7 +436,8 @@ abstract contract OptionVaultBase is
                     result[count] = StructureData.MoneyMovementResult({
                         blockTime: data.blockTime,
                         movementAmount: data.movementAmount,
-                        asset: assetAddress
+                        asset: assetAddress,
+                        manager: data.manager
                     });
                     count++;
                 }

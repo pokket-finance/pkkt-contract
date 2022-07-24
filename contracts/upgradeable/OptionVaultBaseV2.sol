@@ -439,8 +439,8 @@ abstract contract OptionVaultBaseV2 is
             address assetAddress = asset[i];
             for(uint16 round = 1; round <= currentRound; round++) {
                 StructureData.MoneyMovementData memory data = moneyMovements[assetAddress][round];
-                if (data.manager == msg.sender) {
-                   count++;
+                if (data.manager != address(0)) {
+                    count++;
                 }
             } 
         } 
@@ -455,7 +455,8 @@ abstract contract OptionVaultBaseV2 is
                     result[count] = StructureData.MoneyMovementResult({
                         blockTime: data.blockTime,
                         movementAmount: data.movementAmount,
-                        asset: assetAddress
+                        asset: assetAddress, 
+                        manager: data.manager
                     });
                 }
             } 

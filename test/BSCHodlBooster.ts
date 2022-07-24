@@ -675,7 +675,7 @@ describe.only("BSC Hodl Booster", async function () {
               var diff = newBalance.sub(beforeBalances[i]);
               assert.equal(diff.toString(), movables[i].toString());
                  
-            }
+            } 
             const movement = await vault.connect(vaultManager as Signer).getMoneyMovements();
             movement.forEach(element => {
               const asset = names[element.asset];

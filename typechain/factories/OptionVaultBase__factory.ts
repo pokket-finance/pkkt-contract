@@ -247,6 +247,11 @@ const _abi = [
             name: "asset",
             type: "address",
           },
+          {
+            internalType: "address",
+            name: "manager",
+            type: "address",
+          },
         ],
         internalType: "struct StructureData.MoneyMovementResult[]",
         name: "",
@@ -362,7 +367,7 @@ const _abi = [
     inputs: [
       {
         internalType: "enum StructureData.OptionExecution[]",
-        name: "_execution",
+        name: "_executions",
         type: "uint8[]",
       },
     ],

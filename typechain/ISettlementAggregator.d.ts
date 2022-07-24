@@ -151,10 +151,11 @@ export class ISettlementAggregator extends BaseContract {
       overrides?: CallOverrides
     ): Promise<
       [
-        ([BigNumber, BigNumber, string] & {
+        ([BigNumber, BigNumber, string, string] & {
           blockTime: BigNumber;
           movementAmount: BigNumber;
           asset: string;
+          manager: string;
         })[]
       ]
     >;
@@ -192,10 +193,11 @@ export class ISettlementAggregator extends BaseContract {
   getMoneyMovements(
     overrides?: CallOverrides
   ): Promise<
-    ([BigNumber, BigNumber, string] & {
+    ([BigNumber, BigNumber, string, string] & {
       blockTime: BigNumber;
       movementAmount: BigNumber;
       asset: string;
+      manager: string;
     })[]
   >;
 
@@ -232,10 +234,11 @@ export class ISettlementAggregator extends BaseContract {
     getMoneyMovements(
       overrides?: CallOverrides
     ): Promise<
-      ([BigNumber, BigNumber, string] & {
+      ([BigNumber, BigNumber, string, string] & {
         blockTime: BigNumber;
         movementAmount: BigNumber;
         asset: string;
+        manager: string;
       })[]
     >;
 

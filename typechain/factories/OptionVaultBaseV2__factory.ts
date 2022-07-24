@@ -247,6 +247,11 @@ const _abi = [
             name: "asset",
             type: "address",
           },
+          {
+            internalType: "address",
+            name: "manager",
+            type: "address",
+          },
         ],
         internalType: "struct StructureData.MoneyMovementResult[]",
         name: "",
