@@ -217,6 +217,7 @@ abstract contract OptionVaultManager is
                     data.expired.queuedRedeemAmount
                 );
             require(total > 0, "Nothing to sell");
+
             Utils.assertUint128(total);
             uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
@@ -242,6 +243,16 @@ abstract contract OptionVaultManager is
                     address(this),
                     premium
                 );
+            }
+            onGoing.amount = uint128(total);
+            if (data.expired.amount > 0) {
+                if (data.expired.queuedRedeemAmount > 0) { 
+                    uint256 totalRedeemed = uint256(data.expired.queuedRedeemAmount).add(data.totalRedeemed);
+                    Utils.assertUint128(totalRedeemed);
+                    data.totalRedeemed = uint128(totalRedeemed);
+                } 
+                data.expired.amount = 0;
+                data.expired.queuedRedeemAmount = 0; 
             }
             onGoing.buyerAddress = msg.sender;
         }

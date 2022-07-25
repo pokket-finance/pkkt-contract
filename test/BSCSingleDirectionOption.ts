@@ -230,8 +230,86 @@ describe.only("BSC Single Direction Option", async function () {
           await advanceTimeAndBlock(60);  
           await advanceTimeAndBlock(60);  
           await advanceTimeAndBlock(60);
-          await printState(vault, 0, alice)
+          await printState(vault, 0, alice);
+          
 
+          await vault.connect(manager as Signer).kickOffOptions([{
+            vaultId: 2,
+            maxCapacity: BigNumber.from(10).mul(WBTCMultiplier),
+            environment:2
+          }]);
+          
+          console.log('Alice deposit 1 WBTC')
+          await vault.connect(alice as Signer).deposit(2, BigNumber.from(1).mul(WBTCMultiplier));
+          await advanceTimeAndBlock(60);  
+          await printState(vault, 2, alice);
+          await advanceTimeAndBlock(60);  
+          await printState(vault, 2, alice);
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 1.5% premium rate`)
+          await vault.connect(manager as Signer).sellOptions([
+            {
+              vaultId: 2,
+              strike: btcPrice * 1.05,
+              premiumRate: 0.015 * RatioMultiplier //1%
+            }
+          ]);
+          advanceTimeAndBlock(10);
+          
+          await printState(vault, 2, alice);
+          await vault.connect(manager as Signer).addToWhitelist([trader.address]);
+
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(trader as Signer).buyOptions([2]); 
+          await printState(vault, 2, alice); 
+          await advanceTimeAndBlock(60); 
+          await printState(vault, 2, alice);
+          
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 1.5% premium rate`)
+          await vault.connect(manager as Signer).sellOptions([
+            {
+              vaultId: 2,
+              strike: btcPrice * 1.05,
+              premiumRate: 0.015 * RatioMultiplier //1%
+            }
+          ]);
+ 
+          await printState(vault, 2, alice);  
+          await vault.connect(manager as Signer).expireOptions([
+            {
+              vaultId: 2,
+              expiryLevel: btcPrice * 1.1, 
+            }
+          ]);
+          console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound}`)
+          
+          await printState(vault, 2, alice);  
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(trader as Signer).buyOptions([2]);  
+          await printState(vault, 2, alice);  
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);  
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);    
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(manager as Signer).sellOptions([
+            {
+              vaultId: 2,
+              strike: btcPrice * 1.05,
+              premiumRate: 0.015 * RatioMultiplier //1%
+            }
+          ]);
+
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(trader as Signer).buyOptions([2]);  
+          await printState(vault, 2, alice);    
 
         });
 
@@ -757,18 +835,18 @@ describe.only("BSC Single Direction Option", async function () {
         
       async function printState(vault: SingleDirectionOptionUpgradeable, vaultId:number, ...signers: Signer[]) { 
         const vaultDefinition = await vault.vaultDefinitions(vaultId);
-        const decimals = vaultDefinition.assetAmountDecimals;
+        const decimals = vaultDefinition.assetAmountDecimals; 
         const vaultState = await vault.getVaultState(vaultId);
         console.log(`Round ${vaultState.currentRound}`);
         console.log(`\tpending: ${ethers.utils.formatUnits(vaultState.totalPending, decimals)}, redeemed: ${ethers.utils.formatUnits(vaultState.totalRedeemed, decimals)}, 
-        onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(vaultState.onGoing.amount)}/${ethers.utils.formatUnits(vaultState.onGoing.queuedRedeemAmount)},  
-        expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(vaultState.expired.amount)}/${ethers.utils.formatUnits(vaultState.expired.queuedRedeemAmount)}`)
+        onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(vaultState.onGoing.amount,decimals)}/${ethers.utils.formatUnits(vaultState.onGoing.queuedRedeemAmount,decimals)},  
+        expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(vaultState.expired.amount,decimals)}/${ethers.utils.formatUnits(vaultState.expired.queuedRedeemAmount,decimals)}`)
         for(let signer of signers) {
 
           const userState = await vault.connect(signer).getUserState(vaultId);
           console.log(`\t${await signer.getAddress()}: pending: ${ethers.utils.formatUnits(userState.pending, decimals)}, redeemed: ${ethers.utils.formatUnits(userState.redeemed, decimals)}, 
-          onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(userState.onGoingAmount)}/${ethers.utils.formatUnits(userState.onGoingQueuedRedeemAmount)},  
-          expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(userState.expiredAmount)}/${ethers.utils.formatUnits(userState.expiredQueuedRedeemAmount)}`)
+          onGoing/onGoingQueueedRedeem: ${ethers.utils.formatUnits(userState.onGoingAmount,decimals)}/${ethers.utils.formatUnits(userState.onGoingQueuedRedeemAmount,decimals)},  
+          expired/expiredQueueedRedeem: ${ethers.utils.formatUnits(userState.expiredAmount,decimals)}/${ethers.utils.formatUnits(userState.expiredQueuedRedeemAmount,decimals)}`)
         } 
       }
       function reduceBalances(calculations:BigNumber[], balances:BigNumber[], vaultIds:number[]){
