@@ -10,6 +10,7 @@ import "./interfaces/IDOVOption.sol";
 import "./OptionVaultManager.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     using SafeERC20 for IERC20;
@@ -110,7 +111,7 @@ contract SingleDirectionOption is OptionVaultManager, IDOVOption {
     function getUserState(uint8 _vaultId) external override view validateVaultId(_vaultId) returns (StructureData.UserState memory) {
 
         StructureData.VaultState storage data = vaultStates[_vaultId];
-        (,uint16 currentRound) = OptionLifecycle.getRealRound(data);
+        (,uint16 currentRound) = OptionLifecycle.getRealRound(data); 
         StructureData.UserState storage state = data.userStates[msg.sender];
         return OptionLifecycle.recalcState(data, state, currentRound);
 

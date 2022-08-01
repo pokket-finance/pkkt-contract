@@ -236,13 +236,13 @@ library OptionLifecycle {
     ) external {
         rollToNextRoundIfNeeded(_vaultState);
 
-        StructureData.UserState storage state = _vaultState.userStates[_user];
+        StructureData.UserState storage state = _vaultState.userStates[_user]; 
         _vaultState.userStates[_user] = recalcState(
             _vaultState,
             state,
             _vaultState.currentRound
         );
-        state = _vaultState.userStates[_user];
+        state = _vaultState.userStates[_user]; 
 
         uint256 newTVL =
             _amount
@@ -480,15 +480,14 @@ library OptionLifecycle {
         uint256 lastUpdateRound = _userState.lastUpdateRound;
         uint256 pendingAmount = _userState.pending;
         uint256 redeemed = _userState.redeemed;
-        bool expiredAmountCaculated = false;
+        bool expiredAmountCaculated = lastUpdateRound == _currentRound && _userState.expiredAmountCaculated;
         //catch up the userState with the latest
         //Basically it's by increasing/decreasing the onGoing amount based on each round's status.
         //expired amount is a temporary state for expiry level settlement
         //One time step a: accumulate pending to on-going once, and then clear it out
         //One time step b: accumulate expiredQueuedRedeemAmount to redeemed, reduce it from expired, and then clear it out
         //One time step c: copy onGoingQueuedRedeemAmount to expiredQueuedRedeemAmount, and then clear it out
-        //Set on-going -> adjust expired -> accummulate expired to new on-going -> move old on-going to expired
-
+        //Set on-going -> adjust expired -> accummulate expired to new on-going -> move old on-going to expired 
         if (lastUpdateRound > 2 && !_userState.expiredAmountCaculated) {
             (uint256 price, ) =
                 getDepositPriceAfterExpiryPerRound(
@@ -496,7 +495,7 @@ library OptionLifecycle {
                     uint16(lastUpdateRound - 2),
                     _currentRound
                 );
-            if (price > 0) {
+            if (price > 0) { 
                 if (expiredAmount > 0) {
                     expiredAmount = expiredAmount.mul(price).div(
                         10**ROUND_PRICE_DECIMALS
@@ -509,6 +508,7 @@ library OptionLifecycle {
                     );
                     expiredAmount = 0;
                     redeemed = redeemed.add(expiredQueuedRedeemAmount);
+                    expiredQueuedRedeemAmount = 0;
                 } else { 
                     onGoingAmount = onGoingAmount.mul(price).div(
                         10**ROUND_PRICE_DECIMALS
@@ -582,7 +582,7 @@ library OptionLifecycle {
                     ) {
                         onGoingAmount = onGoingAmount.add(_userState.pending);
                     }
-                }
+                } 
                 if (lastUpdateRound == _currentRound) {
                     expiredAmountCaculated = true;
                 }
