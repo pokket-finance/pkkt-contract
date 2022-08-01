@@ -76,6 +76,7 @@ library StructureData {
         uint128 onGoingAmount;
         uint128 onGoingQueuedRedeemAmount;
         uint16 lastUpdateRound;
+        bool expiredAmountCaculated;
     }
  
     struct VaultSnapShot {

@@ -37,7 +37,7 @@ var accounts = data.deployerPrivateKey ?
   networks: {
     hardhat: {
       forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        url: 'https://eth.walletsvc.com',
         gasLimit: 8e6,
         blockNumber: 13600000, 
         accounts: accounts,

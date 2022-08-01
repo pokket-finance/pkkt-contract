@@ -322,7 +322,7 @@ abstract contract OptionVaultManager is
                 remaining.mul(10**OptionLifecycle.ROUND_PRICE_DECIMALS).div(
                     expired.amount
                 );
-            Utils.assertUint128(depositPriceAfterExpiry);
+            Utils.assertUint128(depositPriceAfterExpiry); 
             data.depositPriceAfterExpiryPerRound[
                 data.currentRound - 2
             ] = uint128(depositPriceAfterExpiry);
@@ -390,6 +390,7 @@ abstract contract OptionVaultManager is
         return values;
     }
 
+    //todo: this is not needed once we have the subGraph query is available
     function expiredHistory()
         external
         view

@@ -266,29 +266,29 @@ describe.only("BSC Single Direction Option", async function () {
           await printState(vault, 2, alice);
           await vault.connect(manager as Signer).addToWhitelist([trader.address]);
 
-          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound} with 1.5% premium rate`)
           await vault.connect(trader as Signer).buyOptions([2]); 
           await printState(vault, 2, alice); 
           await advanceTimeAndBlock(60); 
           await printState(vault, 2, alice);
           
-          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 1.5% premium rate`)
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 1% premium rate`)
           await vault.connect(manager as Signer).sellOptions([
             {
               vaultId: 2,
               strike: btcPrice * 1.05,
-              premiumRate: 0.015 * RatioMultiplier //1%
+              premiumRate: 0.01 * RatioMultiplier //1%
             }
           ]);
  
           await printState(vault, 2, alice);  
+          console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound} with 1% premium rate`)
           await vault.connect(manager as Signer).expireOptions([
             {
               vaultId: 2,
               expiryLevel: btcPrice * 1.1, 
             }
           ]);
-          console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound}`)
           
           await printState(vault, 2, alice);  
           console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
@@ -297,6 +297,7 @@ describe.only("BSC Single Direction Option", async function () {
           await advanceTimeAndBlock(60);
           await printState(vault, 2, alice);  
           await advanceTimeAndBlock(60);
+          console.log('Previous sold option expired without expiry level specified');
           await printState(vault, 2, alice);    
           console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound}`)
           await vault.connect(manager as Signer).sellOptions([
@@ -311,9 +312,76 @@ describe.only("BSC Single Direction Option", async function () {
           await vault.connect(trader as Signer).buyOptions([2]);  
           await printState(vault, 2, alice);    
 
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);  
+          await advanceTimeAndBlock(60);
+          console.log('Previous sold option expired without expiry level specified');
+          await printState(vault, 2, alice);    
+          
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 1% premium rate`)
+          await vault.connect(manager as Signer).sellOptions([
+            {
+              vaultId: 2,
+              strike: btcPrice * 1.05,
+              premiumRate: 0.01 * RatioMultiplier //1%
+            }
+          ]);
+          
+          console.log('Alice deposit 4 WBTC')
+          await vault.connect(alice as Signer).deposit(2, BigNumber.from(4).mul(WBTCMultiplier));
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(trader as Signer).buyOptions([2]);  
+          await printState(vault, 2, alice);     
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);  
+          console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound} with 1% premium rate`)
+          await vault.connect(manager as Signer).expireOptions([
+            {
+              vaultId: 2,
+              expiryLevel: btcPrice * 1.2, 
+            }
+          ]);
+          await printState(vault, 2, alice);  
+          
+          console.log('Alice initiate 3 WBTC withraw')
+          await vault.connect(alice as Signer).initiateWithraw(2, BigNumber.from(3).mul(WBTCMultiplier));
+          await printState(vault, 2, alice);     
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice); 
+          
+          console.log(`Sell option at round ${(await vault.getVaultState(2)).currentRound} with 0.5% premium rate`)
+          await vault.connect(manager as Signer).sellOptions([
+            {
+              vaultId: 2,
+              strike: btcPrice * 1.05,
+              premiumRate: 0.005 * RatioMultiplier //0.5%
+            }
+          ]);
+          console.log(`Buy option at round ${(await vault.getVaultState(2)).currentRound}`)
+          await vault.connect(trader as Signer).buyOptions([2]);  
+          await printState(vault, 2, alice);   
+          
+          console.log('Alice initiate 1 WBTC withraw') 
+          await vault.connect(alice as Signer).initiateWithraw(2, BigNumber.from(1).mul(WBTCMultiplier));
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);   
+          console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound} with 0.05% premium rate`)
+          await vault.connect(manager as Signer).expireOptions([
+            {
+              vaultId: 2,
+              expiryLevel: btcPrice * 1.02, 
+            }
+          ]);
+          await printState(vault, 2, alice);  
+          const userState = await vault.connect(alice as Signer).getUserState(2);
+          await vault.connect(alice as Signer).withdraw(2, userState.redeemed);
+          await printState(vault, 2, alice);  
+          await advanceTimeAndBlock(60);
+          await printState(vault, 2, alice);   
+
         });
 
-        it("end user perspective", async function () { 
+        it.skip("end user perspective", async function () { 
         
             //round 1
             await vault.connect(manager as Signer).kickOffOptions([{
@@ -517,7 +585,7 @@ describe.only("BSC Single Direction Option", async function () {
 
 
         });
-        it("manager and trader perspective", async function () {
+        it.skip("manager and trader perspective", async function () {
           await expect(vault.connect(alice as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier))).to.be.revertedWith("!started");
         
             //round 1
@@ -794,7 +862,7 @@ describe.only("BSC Single Direction Option", async function () {
           console.log("SingleDirectionOption upgraded successfully");
         }) */
 
-        it("hacker perspective", async function () { 
+        it.skip("hacker perspective", async function () { 
           const notOwner = "Ownable: caller is not the owner";
           const notManager = "!manager";
           const notWhitelisted = "!whitelisted";
