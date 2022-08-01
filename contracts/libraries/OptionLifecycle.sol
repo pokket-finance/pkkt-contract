@@ -562,10 +562,11 @@ library OptionLifecycle {
                         onGoingAmount = onGoingAmount.add(expiredAmount).sub(
                             expiredQueuedRedeemAmount
                         );
-                        expiredAmount = 0;
-                    }
-                    redeemed = redeemed.add(expiredQueuedRedeemAmount);
-                    expiredQueuedRedeemAmount = 0;
+                        expiredAmount = 0;                    
+                        redeemed = redeemed.add(expiredQueuedRedeemAmount);
+                        expiredQueuedRedeemAmount = 0;
+                    } 
+
                 } else {
                     if (
                         _userState.pending > 0 &&

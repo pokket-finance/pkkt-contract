@@ -386,9 +386,9 @@ describe.only("BSC Single Direction Option", async function () {
       await vault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(ETHMultiplier));
       console.log('Alice deposit 1 ETH')
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await vault.connect(bob as Signer).deposit(0, BigNumber.from(2).mul(ETHMultiplier));
       console.log('Bob deposit 2 ETH')
       await printState(vault, 0, alice);
@@ -402,7 +402,7 @@ describe.only("BSC Single Direction Option", async function () {
       await vault.connect(trader as Signer).buyOptions([0]);
       console.log(`Buy option at round ${(await vault.getVaultState(0)).currentRound} with 1% premium rate`)
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
       await vault.connect(manager as Signer).expireOptions([{
         expiryLevel: ethPrice * 1.1,
@@ -410,16 +410,40 @@ describe.only("BSC Single Direction Option", async function () {
       }]);
       console.log(`Set expiry level at round ${(await vault.getVaultState(0)).currentRound} with 1% premium rate`)
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
-      await advanceTimeAndBlock(61);
+      await advanceTimeAndBlock(60);
       await printState(vault, 0, alice);
+
+      await vault.connect(alice as Signer).deposit(0, BigNumber.from(3).mul(ETHMultiplier));
+      console.log('Alice deposit 3 ETH')
+      await printState(vault, 0, alice);
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice); 
+      await vault.connect(manager as Signer).sellOptions([{
+        vaultId: 0,
+        strike: ethPrice * 1.05,
+        premiumRate: 0.03 * RatioMultiplier //1%
+      }]);
+      console.log(`Sell option at round ${(await vault.getVaultState(0)).currentRound} with 3% premium rate`)
+      await printState(vault, 0, alice); 
+      await vault.connect(alice as Signer).initiateWithraw(0,  BigNumber.from(2).mul(ETHMultiplier));
+      console.log('Alice initiate withdraw 2 ETH')
+      await printState(vault, 0, alice); 
+      await vault.connect(trader as Signer).buyOptions([0]);
+      console.log(`Buy option at round ${(await vault.getVaultState(0)).currentRound} with 3% premium rate`)
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice); 
+
     });
 
     it("end user perspective", async function () {
