@@ -47,18 +47,15 @@ library OptionLifecycle {
     ) external {
         rollToNextRoundIfNeeded(_vault);
         require(_vault.currentRound > 1, "Nothing to redeem");
- 
-        StructureData.UserState storage state = _vault.userStates[_user];
-        console.log('before initiateWithrawStorage onGoing %d, expired %d, round %d', state.onGoingAmount, state.expiredAmount, state.lastUpdateRound);
+
+        StructureData.UserState storage state = _vault.userStates[_user]; 
         _vault.userStates[_user] = recalcState(
             _vault,
             state,
             _vault.currentRound
         );
-        
-        state = _vault.userStates[_user];
 
-        console.log('after initiateWithrawStorage onGoing %d, expired %d, round %d', state.onGoingAmount, state.expiredAmount, state.lastUpdateRound);
+        state = _vault.userStates[_user];
 
         uint256 maxInstantRedeemable =
             uint256(state.expiredAmount).sub(state.expiredQueuedRedeemAmount);
@@ -78,6 +75,7 @@ library OptionLifecycle {
                     _vault.currentRound - 2
                 ]
                 : 0;
+         
         if (price == 0) {
             //first redeem from the sold options
             if (_amountToRedeem <= maxInstantRedeemable) {
@@ -341,13 +339,13 @@ library OptionLifecycle {
                 _vaultState.totalRedeemed = uint128(totalRedeemed);
                 _vaultState.depositPriceAfterExpiryPerRound[
                     uint16(lastUpdateRound - 2)
-                ] = uint128(
+                ] = premiumRate  >  0 ? uint128(
                     (10**OptionLifecycle.ROUND_PRICE_DECIMALS).withPremium(
                         premiumRate
                     )
-                );
+                ) : 0;
             }
-            _vaultState.expired = onGoing;
+            _vaultState.expired = onGoing; 
             lastUpdateRound = lastUpdateRound + 1;
         }
 
@@ -401,7 +399,6 @@ library OptionLifecycle {
                     uint256(snapShot.expired.queuedRedeemAmount).withPremium(
                         premiumRate
                     );
-                console.log('lastUpdateRound %d, snapShot.expired.amount %d, premiumRate %d',lastUpdateRound,snapShot.expired.amount,premiumRate );
                 uint256 onGoingAmount =
                     uint256(snapShot.onGoing.amount).add(expiredAmount).sub(
                         expiredRedeemAmount
@@ -424,12 +421,57 @@ library OptionLifecycle {
         return snapShot;
     }
 
+    //both premiumRate and depositPriceAfterExpiryPerRound are using 8 decimals as ratio
+    function getDepositPriceAfterExpiryPerRound(
+        StructureData.VaultState storage _vaultState,
+        uint16 _round,
+        uint16 _latestRound
+    ) internal view returns (uint256, bool) {
+        uint256 price = _vaultState.depositPriceAfterExpiryPerRound[_round]; 
+        //expiry level specified
+        if (price > 0) return (price, true);
+        //expiry level overdued, use premiumRate
+        if (
+            _latestRound > _round + 2 &&
+            _vaultState.currentRound == _round + 1 &&
+            _vaultState.onGoing.premiumRate > 0 &&
+            _vaultState.onGoing.buyerAddress != address(0)
+        ) {
+            return (
+                Utils.RATIOMULTIPLIER + _vaultState.onGoing.premiumRate,
+                false
+            );
+        }
+        if (
+            _latestRound > _round + 2 &&
+            _vaultState.currentRound == _round + 2 &&
+            _vaultState.expired.premiumRate > 0 &&
+            _vaultState.expired.buyerAddress != address(0)
+        ) {
+            return (
+                Utils.RATIOMULTIPLIER + _vaultState.expired.premiumRate,
+                false
+            );
+        }
+
+        //aggregate preivous non-sold round with current sold-round
+        if (
+            _latestRound > _round + 1 &&
+            _vaultState.currentRound == _round + 2 &&
+            _vaultState.onGoing.buyerAddress != address(0) &&
+            _vaultState.expired.buyerAddress == address(0)
+        ) {
+            return (Utils.RATIOMULTIPLIER, true);
+        }
+        return (0, false);
+    }
+
     function recalcState(
         StructureData.VaultState storage _vaultState,
         StructureData.UserState storage _userState,
         uint16 _currentRound
     ) public view returns (StructureData.UserState memory) {
-        uint256 onGoingAmount = _userState.onGoingAmount; 
+        uint256 onGoingAmount = _userState.onGoingAmount;
         uint256 expiredAmount = _userState.expiredAmount;
         uint256 expiredQueuedRedeemAmount =
             _userState.expiredQueuedRedeemAmount;
@@ -446,7 +488,38 @@ library OptionLifecycle {
         //One time step b: accumulate expiredQueuedRedeemAmount to redeemed, reduce it from expired, and then clear it out
         //One time step c: copy onGoingQueuedRedeemAmount to expiredQueuedRedeemAmount, and then clear it out
         //Set on-going -> adjust expired -> accummulate expired to new on-going -> move old on-going to expired
-        
+
+        if (lastUpdateRound > 2 && !_userState.expiredAmountCaculated) {
+            (uint256 price, ) =
+                getDepositPriceAfterExpiryPerRound(
+                    _vaultState,
+                    uint16(lastUpdateRound - 2),
+                    _currentRound
+                );
+            if (price > 0) {
+                if (expiredAmount > 0) {
+                    expiredAmount = expiredAmount.mul(price).div(
+                        10**ROUND_PRICE_DECIMALS
+                    );
+                    expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
+                        .mul(price)
+                        .div(10**ROUND_PRICE_DECIMALS);
+                    onGoingAmount = onGoingAmount.add(expiredAmount).sub(
+                        expiredQueuedRedeemAmount
+                    );
+                    expiredAmount = 0;
+                    redeemed = redeemed.add(expiredQueuedRedeemAmount);
+                } else { 
+                    onGoingAmount = onGoingAmount.mul(price).div(
+                        10**ROUND_PRICE_DECIMALS
+                    ); 
+                }
+                if (lastUpdateRound == _currentRound) {
+                    expiredAmountCaculated = true;
+                }
+            }
+        }
+
         while (lastUpdateRound < _currentRound) {
             uint256 oldOnGoing = onGoingAmount;
 
@@ -455,53 +528,6 @@ library OptionLifecycle {
             onGoingAmount = pendingAmount;
             pendingAmount = 0;
 
-            //adjust expired
-            uint256 price =
-                lastUpdateRound > 2
-                    ? _vaultState.depositPriceAfterExpiryPerRound[
-                        uint16(lastUpdateRound - 2)
-                    ]
-                    : 0;
-            //sold with expiry level specified
-            if (price > 0) {
-                if (expiredAmount > 0) { 
-                    expiredAmount = expiredAmount.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
-                    ); 
-                    expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
-                        .mul(price)
-                        .div(10**ROUND_PRICE_DECIMALS);
-                }
-                else {
-                     oldOnGoing = oldOnGoing.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
-                    ); 
-                }
-            } 
-            //sold without expiry level specified
-            else if (
-                _vaultState.expired.buyerAddress != address(0) &&
-                _vaultState.currentRound == lastUpdateRound
-            ) { 
-                if (expiredAmount > 0) { 
-                    expiredAmount = expiredAmount.withPremium(
-                        _vaultState.expired.premiumRate
-                    );
-                    expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
-                        .withPremium(_vaultState.expired.premiumRate);
-
-                }
-                else { 
-                    oldOnGoing = oldOnGoing.withPremium(
-                        _vaultState.expired.premiumRate
-                    );
-                }
-
-            }
-            //not sold
-            /*else {
-                //we cannot decide whether the expiry level would be specified or not, we should keep expiredAmount
-            }*/ 
             onGoingAmount = onGoingAmount.add(expiredAmount).sub(
                 expiredQueuedRedeemAmount
             );
@@ -515,97 +541,52 @@ library OptionLifecycle {
             onGoingQueuedRedeemAmount = 0;
 
             lastUpdateRound = lastUpdateRound + 1;
-            if (
-                (_vaultState.currentRound == lastUpdateRound &&
-                _vaultState.onGoing.buyerAddress != address(0)) ||
-                //expiry level not specified
-                (_vaultState.currentRound == lastUpdateRound + 1 &&
-                _vaultState.expired.buyerAddress != address(0) && 
-                 _vaultState.onGoing.buyerAddress == address(0))
-            ) { 
 
-                onGoingAmount = onGoingAmount.add(expiredAmount);
-                expiredAmount = 0;
-            }  
-        }
+            if (lastUpdateRound <= 2) continue;
+            (uint256 price, bool expiryLevelSpecified) =
+                getDepositPriceAfterExpiryPerRound(
+                    _vaultState,
+                    uint16(lastUpdateRound - 2),
+                    _currentRound
+                );
 
-        //check if the expiry level is specified
-        uint256 price2 =
-            lastUpdateRound > 2
-                ? _vaultState.depositPriceAfterExpiryPerRound[
-                    uint16(lastUpdateRound - 2)
-                ]
-                : 0;
-
-        // console.log('special handling when round is not progressed');
-        //special handling when round is not progressed:
-        //1: expiry level set
-        if (price2 > 0) { 
-            if (expiredAmount > 0) { 
-                expiredAmount = expiredAmount.mul(price2).div(
-                    10**ROUND_PRICE_DECIMALS
-                );
-                expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
-                    .mul(price2)
-                    .div(10**ROUND_PRICE_DECIMALS);
-                onGoingAmount = onGoingAmount.add(expiredAmount).sub(
-                    expiredQueuedRedeemAmount
-                );
-                redeemed = redeemed.add(expiredQueuedRedeemAmount);
-                expiredQueuedRedeemAmount = 0;
-                expiredAmount = 0;
-            }
-            else { 
-                if (_userState.pending > 0 && _userState.lastUpdateRound == _currentRound - 1) {
-                    onGoingAmount = onGoingAmount.sub(_userState.pending);
-                } 
-                onGoingAmount = onGoingAmount.mul(price2).div(
-                    10**ROUND_PRICE_DECIMALS
-                );
-                if (_userState.pending > 0 && _userState.lastUpdateRound == _currentRound - 1) {
-                    onGoingAmount = onGoingAmount.add(_userState.pending);
-                }
-            }
-            
-        } 
-        //sold without expiry level specified
-        else if (
-                _vaultState.onGoing.buyerAddress != address(0) &&
-                _vaultState.currentRound == lastUpdateRound - 2
-            ) { 
+            if (price > 0) { 
                 if (expiredAmount > 0) {
-                     
-                    expiredAmount = expiredAmount.withPremium(
-                        _vaultState.expired.premiumRate
+                    expiredAmount = expiredAmount.mul(price).div(
+                        10**ROUND_PRICE_DECIMALS
                     );
                     expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
-                        .withPremium(_vaultState.expired.premiumRate);
-
-                }
-                else {
-                    
-                    if (_userState.pending > 0 && _userState.lastUpdateRound == _currentRound - 1) {
+                        .mul(price)
+                        .div(10**ROUND_PRICE_DECIMALS);
+                    if (expiryLevelSpecified) {
+                        onGoingAmount = onGoingAmount.add(expiredAmount).sub(
+                            expiredQueuedRedeemAmount
+                        );
+                        expiredAmount = 0;
+                    }
+                    redeemed = redeemed.add(expiredQueuedRedeemAmount);
+                    expiredQueuedRedeemAmount = 0;
+                } else {
+                    if (
+                        _userState.pending > 0 &&
+                        _userState.lastUpdateRound == lastUpdateRound - 1
+                    ) {
                         onGoingAmount = onGoingAmount.sub(_userState.pending);
-                    } 
-                    onGoingAmount = onGoingAmount.withPremium(
-                        _vaultState.onGoing.premiumRate
+                    }
+                    onGoingAmount = onGoingAmount.mul(price).div(
+                        10**ROUND_PRICE_DECIMALS
                     );
-                    if (_userState.pending > 0 && _userState.lastUpdateRound == _currentRound - 1) {
+                    if (
+                        _userState.pending > 0 &&
+                        _userState.lastUpdateRound == lastUpdateRound - 1
+                    ) {
                         onGoingAmount = onGoingAmount.add(_userState.pending);
                     }
-
                 }
-
-        }
-        //2: option sold
-        else if (
-            _vaultState.currentRound == lastUpdateRound &&
-            _vaultState.onGoing.buyerAddress != address(0)
-        ) { 
-            onGoingAmount = onGoingAmount.add(expiredAmount).sub(expiredQueuedRedeemAmount);
-            redeemed = redeemed.add(expiredQueuedRedeemAmount);
-            expiredQueuedRedeemAmount = 0;
-            expiredAmount = 0; 
+                if (lastUpdateRound == _currentRound) {
+                    expiredAmountCaculated = true;
+                }
+            }
         }
 
         Utils.assertUint128(pendingAmount);
@@ -625,7 +606,7 @@ library OptionLifecycle {
                 onGoingQueuedRedeemAmount: uint128(onGoingQueuedRedeemAmount),
                 expiredAmountCaculated: expiredAmountCaculated
             });
-            
+
         return updatedUserState;
     }
 }

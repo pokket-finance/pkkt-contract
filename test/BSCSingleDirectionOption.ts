@@ -221,9 +221,13 @@ describe.only("BSC Single Direction Option", async function () {
           await printState(vault, 0, alice)
           //round 10
           await advanceTimeAndBlock(60); 
+          await printState(vault, 0, alice);
+          //round 11
           await advanceTimeAndBlock(60); 
+          await printState(vault, 0, alice);
+          //round 12
           await advanceTimeAndBlock(60); 
-          await printState(vault, 0, alice)
+          await printState(vault, 0, alice);
           console.log('Alice initiate 3 ETH withdraw')
           await vault.connect(alice as Signer).initiateWithraw(0, BigNumber.from(3).mul(ETHMultiplier));
           await printState(vault, 0, alice)
@@ -381,7 +385,7 @@ describe.only("BSC Single Direction Option", async function () {
 
         });
 
-        it.skip("end user perspective", async function () { 
+        it("end user perspective", async function () { 
         
             //round 1
             await vault.connect(manager as Signer).kickOffOptions([{
@@ -403,6 +407,8 @@ describe.only("BSC Single Direction Option", async function () {
             }]);
   
             await vault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(ETHMultiplier));
+            
+           await printState(vault, 0, alice);
             await vault.connect(bob as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier));
             let aliceState = await vault.connect(alice as Signer).getUserState(0);
             assert.equal(aliceState.pending.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
@@ -450,6 +456,7 @@ describe.only("BSC Single Direction Option", async function () {
             expiryLevel: ethPrice * 1.04,
             vaultId: 1
           }]);
+          await printState(vault, 0, alice);
           //nothing to collect, user get premium
           aliceState = await vault.connect(alice as Signer).getUserState(0);
           assert.equal(aliceState.onGoingAmount.toString(), BigNumber.from(10).mul(ETHMultiplier).mul(10150).div(10000).toString());
@@ -464,6 +471,7 @@ describe.only("BSC Single Direction Option", async function () {
 
           //alice initiate withdraw after expiry, will terminate until next expire: round 2
           await vault.connect(alice as Signer).initiateWithraw(0, oldAliceOnGoing.div(10));
+          await printState(vault, 0, alice);
           //bob invest more for next round: round 3
           await vault.connect(bob as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier));
 
@@ -493,6 +501,7 @@ describe.only("BSC Single Direction Option", async function () {
           }];
           await  vault.connect(manager as Signer).expireOptions(expires);
 
+          await printState(vault, 0, alice);
            //trader has some value to collect for call option
            aliceState = await vault.connect(alice as Signer).getUserState(0);
            const optionHolderValue = BigNumber.from(expires[0].expiryLevel).sub(BigNumber.from(sellings[0].strike)).
@@ -513,10 +522,12 @@ describe.only("BSC Single Direction Option", async function () {
            const oldAliceBalance = await eth.balanceOf(alice.address);
            await expect(vault.connect(alice as Signer).withdraw(0, redeemded.add(1))).to.be.revertedWith("Not enough to withdraw");
            await vault.connect(alice as Signer).withdraw(0, redeemded.div(2));
+           await printState(vault, 0, alice);
            const newAliceBalance = await eth.balanceOf(alice.address);
            assert.equal(newAliceBalance.sub(oldAliceBalance).toString(), redeemded.div(2).toString());
 
            await vault.connect(alice as Signer).deposit(0, BigNumber.from(10).mul(ETHMultiplier));
+           await printState(vault, 0, alice);
            aliceState = await vault.connect(alice as Signer).getUserState(0);
            assert.equal(aliceState.pending.toString(), BigNumber.from(10).mul(ETHMultiplier).toString());
            assert.equal(aliceState.redeemed.toString(), redeemded.div(2).toString());
@@ -536,7 +547,9 @@ describe.only("BSC Single Direction Option", async function () {
             premiumRate: 0.015 * RatioMultiplier
           }];;
            await vault.connect(manager as Signer).sellOptions(selling2);
+           await printState(vault, 0, alice);
            await vault.connect(trader as Signer).buyOptions([0,1]);
+           await printState(vault, 0, alice);
 
            //round 5
            await advanceTimeAndBlock(60);
@@ -544,9 +557,12 @@ describe.only("BSC Single Direction Option", async function () {
            bobState = await vault.connect(bob as Signer).getUserState(0);
            const bobExpiredAmount = bobState.expiredAmount;
            const aliceExpiredAmount = aliceState.onGoingAmount;
+           await printState(vault, 0, alice);
            //they will be redeemable instantly after expiry
            await vault.connect(alice as Signer).initiateWithraw(0, aliceExpiredAmount);
+           await printState(vault, 0, alice);
            await vault.connect(alice as Signer).cancelWithdraw(0, aliceExpiredAmount.div(2));
+           await printState(vault, 0, alice);
            await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount);
            await vault.connect(bob as Signer).cancelWithdraw(1, bobExpiredAmount.div(2));
            await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount.div(2));
@@ -566,8 +582,10 @@ describe.only("BSC Single Direction Option", async function () {
            bobState = await vault.connect(bob as Signer).getUserState(0);
            
            
-           assert.equal(aliceState.redeemed.toString(), aliceExpiredAmount.div(2).mul(10100).div(10000).toString());
-           assert.isTrue(aliceState.onGoingAmount.eq(aliceState.redeemed));
+           assert.equal(aliceState.redeemed.toString(), (aliceExpiredAmount.sub(aliceExpiredAmount.div(2))).mul(10100).div(10000).toString());
+           assert.isTrue(aliceState.onGoingAmount.sub(aliceState.redeemed).abs().lte(1)); 
+           await printState(vault, 0, alice);
+           console.log(aliceState.expiredQueuedRedeemAmount.toString())
            assert.isTrue(aliceState.expiredQueuedRedeemAmount.eq(0));
            assert.isTrue(aliceState.expiredAmount.eq(0));
            assert.isTrue(aliceState.onGoingQueuedRedeemAmount.eq(0));
@@ -585,7 +603,7 @@ describe.only("BSC Single Direction Option", async function () {
 
 
         });
-        it.skip("manager and trader perspective", async function () {
+        it("manager and trader perspective", async function () {
           await expect(vault.connect(alice as Signer).deposit(1, BigNumber.from(1000).mul(BUSDMultiplier))).to.be.revertedWith("!started");
         
             //round 1
@@ -862,7 +880,7 @@ describe.only("BSC Single Direction Option", async function () {
           console.log("SingleDirectionOption upgraded successfully");
         }) */
 
-        it.skip("hacker perspective", async function () { 
+        it("hacker perspective", async function () { 
           const notOwner = "Ownable: caller is not the owner";
           const notManager = "!manager";
           const notWhitelisted = "!whitelisted";

@@ -401,7 +401,8 @@ export class SingleDirectionOption extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
-          number
+          number,
+          boolean
         ] & {
           pending: BigNumber;
           redeemed: BigNumber;
@@ -410,6 +411,7 @@ export class SingleDirectionOption extends BaseContract {
           onGoingAmount: BigNumber;
           onGoingQueuedRedeemAmount: BigNumber;
           lastUpdateRound: number;
+          expiredAmountCaculated: boolean;
         }
       ]
     >;
@@ -590,7 +592,8 @@ export class SingleDirectionOption extends BaseContract {
       BigNumber,
       BigNumber,
       BigNumber,
-      number
+      number,
+      boolean
     ] & {
       pending: BigNumber;
       redeemed: BigNumber;
@@ -599,6 +602,7 @@ export class SingleDirectionOption extends BaseContract {
       onGoingAmount: BigNumber;
       onGoingQueuedRedeemAmount: BigNumber;
       lastUpdateRound: number;
+      expiredAmountCaculated: boolean;
     }
   >;
 
@@ -780,7 +784,8 @@ export class SingleDirectionOption extends BaseContract {
         BigNumber,
         BigNumber,
         BigNumber,
-        number
+        number,
+        boolean
       ] & {
         pending: BigNumber;
         redeemed: BigNumber;
@@ -789,6 +794,7 @@ export class SingleDirectionOption extends BaseContract {
         onGoingAmount: BigNumber;
         onGoingQueuedRedeemAmount: BigNumber;
         lastUpdateRound: number;
+        expiredAmountCaculated: boolean;
       }
     >;
 

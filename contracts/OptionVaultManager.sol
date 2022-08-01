@@ -246,6 +246,10 @@ abstract contract OptionVaultManager is
             }
             onGoing.amount = uint128(total);
             if (data.expired.amount > 0) {
+                 data.depositPriceAfterExpiryPerRound[
+                    uint16(data.currentRound - 2)
+                ] = uint128(10**OptionLifecycle.ROUND_PRICE_DECIMALS);
+
                 if (data.expired.queuedRedeemAmount > 0) { 
                     uint256 totalRedeemed = uint256(data.expired.queuedRedeemAmount).add(data.totalRedeemed);
                     Utils.assertUint128(totalRedeemed);

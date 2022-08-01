@@ -227,6 +227,11 @@ const _abi = [
             name: "lastUpdateRound",
             type: "uint16",
           },
+          {
+            internalType: "bool",
+            name: "expiredAmountCaculated",
+            type: "bool",
+          },
         ],
         internalType: "struct StructureData.UserState",
         name: "",
