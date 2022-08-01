@@ -225,7 +225,7 @@ abstract contract OptionVaultManagerV2 is
             ];
 
             uint256 depositPriceAfterExpiry = diff
-                .mul(10**OptionLifecycle.ROUND_PRICE_DECIMALS)
+                .mul(Utils.RATIOMULTIPLIER)
                 .div(expiryParameters.expiryLevel);
             data.depositPriceAfterExpiryPerRound[
                 data.currentRound - 2

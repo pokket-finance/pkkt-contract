@@ -21,15 +21,24 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface UtilsInterface extends ethers.utils.Interface {
   functions: {
     "RATIOMULTIPLIER()": FunctionFragment;
+    "ROUND_PRICE_DECIMALS()": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "RATIOMULTIPLIER",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "ROUND_PRICE_DECIMALS",
+    values?: undefined
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "RATIOMULTIPLIER",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "ROUND_PRICE_DECIMALS",
     data: BytesLike
   ): Result;
 
@@ -81,21 +90,33 @@ export class Utils extends BaseContract {
 
   functions: {
     RATIOMULTIPLIER(overrides?: CallOverrides): Promise<[BigNumber]>;
+
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
   RATIOMULTIPLIER(overrides?: CallOverrides): Promise<BigNumber>;
 
+  ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
+
   callStatic: {
     RATIOMULTIPLIER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {};
 
   estimateGas: {
     RATIOMULTIPLIER(overrides?: CallOverrides): Promise<BigNumber>;
+
+    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
     RATIOMULTIPLIER(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    ROUND_PRICE_DECIMALS(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
   };
 }

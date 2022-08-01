@@ -19,7 +19,6 @@ library OptionLifecycle {
     using SafeCast for uint256;
     using StructureData for StructureData.UserState;
     uint256 public constant PERIOD = 7 days;
-    uint256 public constant ROUND_PRICE_DECIMALS = 8;
     uint256 public constant PERIOD_TEST = 60 seconds;
     uint256 public constant PERIOD_QA = 1 hours;
 
@@ -339,11 +338,7 @@ library OptionLifecycle {
                 _vaultState.totalRedeemed = uint128(totalRedeemed);
                 _vaultState.depositPriceAfterExpiryPerRound[
                     uint16(lastUpdateRound - 2)
-                ] = premiumRate  >  0 ? uint128(
-                    (10**OptionLifecycle.ROUND_PRICE_DECIMALS).withPremium(
-                        premiumRate
-                    )
-                ) : 0;
+                ] = premiumRate  >  0 ? uint128(Utils.RATIOMULTIPLIER + premiumRate) : 0;
             }
             _vaultState.expired = onGoing; 
             lastUpdateRound = lastUpdateRound + 1;
@@ -498,11 +493,11 @@ library OptionLifecycle {
             if (price > 0) { 
                 if (expiredAmount > 0) {
                     expiredAmount = expiredAmount.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
+                        Utils.RATIOMULTIPLIER
                     );
                     expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
                         .mul(price)
-                        .div(10**ROUND_PRICE_DECIMALS);
+                        .div(Utils.RATIOMULTIPLIER);
                     onGoingAmount = onGoingAmount.add(expiredAmount).sub(
                         expiredQueuedRedeemAmount
                     );
@@ -510,8 +505,8 @@ library OptionLifecycle {
                     redeemed = redeemed.add(expiredQueuedRedeemAmount);
                     expiredQueuedRedeemAmount = 0;
                 } else { 
-                    onGoingAmount = onGoingAmount.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
+                    onGoingAmount = onGoingAmount.mul(price).div( 
+                        Utils.RATIOMULTIPLIER
                     ); 
                 }
                 if (lastUpdateRound == _currentRound) {
@@ -553,11 +548,11 @@ library OptionLifecycle {
             if (price > 0) { 
                 if (expiredAmount > 0) {
                     expiredAmount = expiredAmount.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
+                        Utils.RATIOMULTIPLIER
                     );
                     expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
                         .mul(price)
-                        .div(10**ROUND_PRICE_DECIMALS);
+                        .div(Utils.RATIOMULTIPLIER);
                     if (expiryLevelSpecified) {
                         onGoingAmount = onGoingAmount.add(expiredAmount).sub(
                             expiredQueuedRedeemAmount
@@ -575,7 +570,7 @@ library OptionLifecycle {
                         onGoingAmount = onGoingAmount.sub(_userState.pending);
                     }
                     onGoingAmount = onGoingAmount.mul(price).div(
-                        10**ROUND_PRICE_DECIMALS
+                       Utils.RATIOMULTIPLIER
                     );
                     if (
                         _userState.pending > 0 &&

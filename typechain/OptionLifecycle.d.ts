@@ -23,7 +23,6 @@ interface OptionLifecycleInterface extends ethers.utils.Interface {
     "PERIOD()": FunctionFragment;
     "PERIOD_QA()": FunctionFragment;
     "PERIOD_TEST()": FunctionFragment;
-    "ROUND_PRICE_DECIMALS()": FunctionFragment;
   };
 
   encodeFunctionData(functionFragment: "PERIOD", values?: undefined): string;
@@ -32,19 +31,11 @@ interface OptionLifecycleInterface extends ethers.utils.Interface {
     functionFragment: "PERIOD_TEST",
     values?: undefined
   ): string;
-  encodeFunctionData(
-    functionFragment: "ROUND_PRICE_DECIMALS",
-    values?: undefined
-  ): string;
 
   decodeFunctionResult(functionFragment: "PERIOD", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "PERIOD_QA", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "PERIOD_TEST",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "ROUND_PRICE_DECIMALS",
     data: BytesLike
   ): Result;
 
@@ -100,8 +91,6 @@ export class OptionLifecycle extends BaseContract {
     PERIOD_QA(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     PERIOD_TEST(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
   PERIOD(overrides?: CallOverrides): Promise<BigNumber>;
@@ -110,16 +99,12 @@ export class OptionLifecycle extends BaseContract {
 
   PERIOD_TEST(overrides?: CallOverrides): Promise<BigNumber>;
 
-  ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
-
   callStatic: {
     PERIOD(overrides?: CallOverrides): Promise<BigNumber>;
 
     PERIOD_QA(overrides?: CallOverrides): Promise<BigNumber>;
 
     PERIOD_TEST(overrides?: CallOverrides): Promise<BigNumber>;
-
-    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {};
@@ -130,8 +115,6 @@ export class OptionLifecycle extends BaseContract {
     PERIOD_QA(overrides?: CallOverrides): Promise<BigNumber>;
 
     PERIOD_TEST(overrides?: CallOverrides): Promise<BigNumber>;
-
-    ROUND_PRICE_DECIMALS(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -140,9 +123,5 @@ export class OptionLifecycle extends BaseContract {
     PERIOD_QA(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     PERIOD_TEST(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    ROUND_PRICE_DECIMALS(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
   };
 }
