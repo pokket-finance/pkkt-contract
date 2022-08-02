@@ -27,7 +27,7 @@ const main = async ({ target }, { network, ethers, deployments}) => {
         }) ;
         console.log("Send 100 eth to " + target);
      }
-    if (network.config?.chainId == CHAINID.ETH_ROPSTEN) {
+    if (network.config?.chainId == CHAINID.ETH_GOERLI) {
         
         const usdc = await getDeployedContractHelper("USDC", ethers, deployments) as ERC20Mock;
         await usdc.transfer(target, BigNumber.from(1000000).mul(USDC_MULTIPLIER)); 
