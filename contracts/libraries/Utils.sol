@@ -4,7 +4,7 @@ pragma solidity =0.8.4;
 import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 library Utils { 
      
-    uint256 public constant ROUND_PRICE_DECIMALS = 8;
+    uint256 public constant ROUND_PRICE_DECIMALS = 10;
     uint256 public constant RATIOMULTIPLIER = 10 ** ROUND_PRICE_DECIMALS;
  
      using SafeMath for uint256;

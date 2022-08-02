@@ -14,7 +14,7 @@ const BUSDMultiplier = BigNumber.from(10).pow(BUSD_DECIMALS);
 const ETHMultiplier = BigNumber.from(10).pow(ETH_DECIMALS);
 const WBTCMultiplier = BigNumber.from(10).pow(WBTC_DECIMALS);
 const PricePrecision = 4;
-const RatioMultiplier = 10 ** 8; //precision xx.xx%
+const RatioMultiplier = 10 ** 10; //precision xx.xxxx%
 const StrikeMultiplier = 10 ** 4;
 const ETHBUSDOPTIONPAIR = 0;
 const WBTCBUSDOPTIONPAIR = 1;
@@ -666,9 +666,9 @@ describe.only("BSC Single Direction Option", async function () {
       const optionHolderValue = BigNumber.from(expires[0].expiryLevel).sub(BigNumber.from(sellings[0].strike)).
         mul(oldAliceOnGoing).div(BigNumber.from(expires[0].expiryLevel));
       const remaining = oldAliceOnGoing.mul(BigNumber.from(10100)).div(10000).sub(optionHolderValue);
-      const expiryPrice = remaining.mul(10 ** 8).div(oldAliceOnGoing);
-      const newOnGoing = oldAliceOnGoing.mul(expiryPrice).mul(9).div(10).div(10 ** 8);
-      const redeemded = oldAliceOnGoing.mul(expiryPrice).mul(1).div(10).div(10 ** 8);
+      const expiryPrice = remaining.mul(RatioMultiplier).div(oldAliceOnGoing);
+      const newOnGoing = oldAliceOnGoing.mul(expiryPrice).mul(9).div(10).div(RatioMultiplier);
+      const redeemded = oldAliceOnGoing.mul(expiryPrice).mul(1).div(10).div(RatioMultiplier);
       assert.equal(aliceState.onGoingAmount.toString(), newOnGoing.toString());
       assert.isTrue(redeemded.gt(0));
       assert.isTrue(aliceState.redeemed.eq(redeemded));

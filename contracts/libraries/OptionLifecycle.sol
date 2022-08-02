@@ -338,7 +338,7 @@ library OptionLifecycle {
                 _vaultState.totalRedeemed = uint128(totalRedeemed);
                 _vaultState.depositPriceAfterExpiryPerRound[
                     uint16(lastUpdateRound - 2)
-                ] = premiumRate  >  0 ? uint128(Utils.RATIOMULTIPLIER + premiumRate) : 0;
+                ] = premiumRate  >  0 ? (Utils.RATIOMULTIPLIER + premiumRate) : 0;
                 _vaultState.expiryLevelSkipped[uint16(lastUpdateRound - 2)] = true;
             }
             _vaultState.expired = onGoing; 

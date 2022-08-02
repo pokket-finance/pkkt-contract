@@ -248,7 +248,7 @@ abstract contract OptionVaultManager is
             if (data.expired.amount > 0) {
                  data.depositPriceAfterExpiryPerRound[
                     uint16(data.currentRound - 2)
-                ] = uint128(Utils.RATIOMULTIPLIER);
+                ] = Utils.RATIOMULTIPLIER;
 
                 if (data.expired.queuedRedeemAmount > 0) { 
                     uint256 totalRedeemed = uint256(data.expired.queuedRedeemAmount).add(data.totalRedeemed);
@@ -325,11 +325,10 @@ abstract contract OptionVaultManager is
             uint256 depositPriceAfterExpiry =
                 remaining.mul(Utils.RATIOMULTIPLIER).div(
                     expired.amount
-                );
-            Utils.assertUint128(depositPriceAfterExpiry); 
+                ); 
             data.depositPriceAfterExpiryPerRound[
                 data.currentRound - 2
-            ] = uint128(depositPriceAfterExpiry);
+            ] = depositPriceAfterExpiry;
 
             uint256 redeemed =
                 remaining.mul(expired.queuedRedeemAmount).div(expired.amount);

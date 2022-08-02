@@ -229,7 +229,7 @@ abstract contract OptionVaultManagerV2 is
                 .div(expiryParameters.expiryLevel);
             data.depositPriceAfterExpiryPerRound[
                 data.currentRound - 2
-            ] = uint128(depositPriceAfterExpiry);
+            ] = depositPriceAfterExpiry;
 
             uint256 optionHolderValue = diff.mul(expired.amount).div(
                 expiryParameters.expiryLevel
