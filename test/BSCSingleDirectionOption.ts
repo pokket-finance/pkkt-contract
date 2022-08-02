@@ -437,7 +437,19 @@ describe.only("BSC Single Direction Option", async function () {
       console.log('Alice initiate withdraw 2 ETH')
       await printState(vault, 0, alice); 
       await vault.connect(trader as Signer).buyOptions([0]);
-      console.log(`Buy option at round ${(await vault.getVaultState(0)).currentRound} with 3% premium rate`)
+      const round = (await vault.getVaultState(0)).currentRound;
+      console.log(`Buy option at round ${round} with 3% premium rate for round ${round - 1}'s tvl`)
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      console.log(`Passed expiryLevel specification for round ${round-1}`)
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice); 
+      const aliceState = await vault.connect(alice as Signer).getUserState(0);
+      await vault.connect(alice as Signer).initiateWithraw(0, aliceState.expiredAmount);
+      console.log(`Alice initiate ${ethers.utils.formatEther( aliceState.expiredAmount)} ETH withdraw`);
       await printState(vault, 0, alice); 
       await advanceTimeAndBlock(60);
       await printState(vault, 0, alice); 

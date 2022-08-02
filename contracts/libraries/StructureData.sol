@@ -61,6 +61,7 @@ library StructureData {
         StructureData.OptionState onGoing;
         StructureData.OptionState expired; 
         mapping(uint16 => uint128) depositPriceAfterExpiryPerRound; 
+        mapping(uint16 => bool) expiryLevelSkipped;
         mapping(address=>StructureData.UserState) userStates;
     }
 

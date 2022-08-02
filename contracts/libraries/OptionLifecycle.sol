@@ -339,6 +339,7 @@ library OptionLifecycle {
                 _vaultState.depositPriceAfterExpiryPerRound[
                     uint16(lastUpdateRound - 2)
                 ] = premiumRate  >  0 ? uint128(Utils.RATIOMULTIPLIER + premiumRate) : 0;
+                _vaultState.expiryLevelSkipped[uint16(lastUpdateRound - 2)] = true;
             }
             _vaultState.expired = onGoing; 
             lastUpdateRound = lastUpdateRound + 1;
@@ -424,7 +425,7 @@ library OptionLifecycle {
     ) internal view returns (uint256, bool) {
         uint256 price = _vaultState.depositPriceAfterExpiryPerRound[_round]; 
         //expiry level specified
-        if (price > 0) return (price, true);
+        if (price > 0) return (price, !_vaultState.expiryLevelSkipped[_round]);
         //expiry level overdued, use premiumRate
         if (
             _latestRound > _round + 2 &&
