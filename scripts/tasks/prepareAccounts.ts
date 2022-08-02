@@ -102,10 +102,10 @@ const main = async ({  }, {
     deployerAddress = result.deployerPrivateKey ? (await new ethers.Wallet(result.deployerPrivateKey, provider).getAddress()) : null;
 
     if (!result.adminAddress && result.adminAddress != deployerAddress) {
-      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${result.ownerAddress}; Manager Address: ${result.managerAddress}`); 
     }
     else{
-      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Manager Address: ${result.managerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${result.ownerAddress}; Manager Address: ${result.managerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
  
     }
     await fileStorage.writeValue("deployerAddress", result.deployerAddress);
