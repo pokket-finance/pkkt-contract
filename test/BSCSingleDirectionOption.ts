@@ -369,13 +369,13 @@ describe.only("BSC Single Direction Option", async function () {
       await vault.connect(alice as Signer).initiateWithraw(2, BigNumber.from(1).mul(WBTCMultiplier));
       await advanceTimeAndBlock(60);
       await printState(vault, 2, alice);
-      console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound} with 0.05% premium rate`)
       await vault.connect(manager as Signer).expireOptions([
         {
           vaultId: 2,
           expiryLevel: btcPrice * 1.02,
         }
       ]);
+      console.log(`Set expiry level at round ${(await vault.getVaultState(2)).currentRound} with 0.05% premium rate`)
       await printState(vault, 2, alice);
       const userState = await vault.connect(alice as Signer).getUserState(2);
       await vault.connect(alice as Signer).withdraw(2, userState.redeemed);
@@ -455,9 +455,95 @@ describe.only("BSC Single Direction Option", async function () {
       await printState(vault, 0, alice); 
       await advanceTimeAndBlock(60);
       await printState(vault, 0, alice); 
+      
+      await vault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(ETHMultiplier));
+      console.log('Alice deposit 1 ETH');
+      await printState(vault, 0, alice); 
+      await advanceTimeAndBlock(60);
+      await vault.connect(manager as Signer).sellOptions([{
+        vaultId: 0,
+        strike: ethPrice * 1.05,
+        premiumRate: 0.02 * RatioMultiplier //2%
+      }]);
+      console.log(`Sell option at round ${(await vault.getVaultState(0)).currentRound} with 2% premium rate`)
+      await printState(vault, 0, alice); 
+      await vault.connect(trader as Signer).buyOptions([0]);
+      const round2 = (await vault.getVaultState(0)).currentRound;
+      console.log(`Buy option at round ${round2} with 3% premium rate for round ${round2 - 1}'s tvl`)
+      await printState(vault, 0, alice);  
+      await vault.connect(alice as Signer).deposit(0, BigNumber.from(2).mul(ETHMultiplier));
+      console.log('Alice deposit 2 ETH');
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 0, alice);  
+      await advanceTimeAndBlock(60);
 
-    });
+      //kick off eth-busd put option
+      await vault.connect(manager as Signer).kickOffOptions([{
+        vaultId: 1,
+        maxCapacity: BigNumber.from(10000).mul(BUSDMultiplier),
+        environment: 2
+      }]);
+      console.log('kick off eth-busd put option');
+      await vault.connect(alice as Signer).deposit(1, BigNumber.from(100).mul(BUSDMultiplier));
+      console.log('Alice deposit 100 BUSD');
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await vault.connect(alice as Signer).deposit(1, BigNumber.from(200).mul(BUSDMultiplier));
+      console.log('Alice deposit 200 BUSD');
+      await printState(vault, 1, alice); 
 
+      await vault.connect(manager as Signer).sellOptions([{
+        vaultId: 1,
+        strike: ethPrice * 0.95,
+        premiumRate: 0.03 * RatioMultiplier //1%
+      }]);
+      console.log(`Sell option at round ${(await vault.getVaultState(1)).currentRound} with 3% premium rate`)
+      await printState(vault, 1, alice); 
+      await vault.connect(trader as Signer).buyOptions([1]);
+      const round3 = (await vault.getVaultState(1)).currentRound;
+      console.log(`Buy option at round ${round3} with 3% premium rate for round ${round3 - 1}'s tvl`)
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await vault.connect(alice as Signer).deposit(1, BigNumber.from(300).mul(BUSDMultiplier));
+      console.log('Alice deposit 300 BUSD');
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);      
+      await vault.connect(manager as Signer).sellOptions([{
+        vaultId: 1,
+        strike: ethPrice * 0.95,
+        premiumRate: 0.005 * RatioMultiplier //0.5%
+      }]);
+      console.log(`Sell option at round ${(await vault.getVaultState(1)).currentRound} with 0.5% premium rate`)
+      await printState(vault, 1, alice); 
+      await vault.connect(trader as Signer).buyOptions([1]);
+      const round4 = (await vault.getVaultState(1)).currentRound;
+      console.log(`Buy option at round ${round4} with 0.5% premium rate for round ${round4 - 1}'s tvl`)
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+
+      await vault.connect(manager as Signer).expireOptions([
+        {
+          vaultId: 1,
+          expiryLevel: ethPrice * 0.98,
+        }
+      ]);
+      console.log(`Set expiry level at round ${(await vault.getVaultState(1)).currentRound} with 0.5% premium rate`)
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+      await printState(vault, 1, alice);  
+      await advanceTimeAndBlock(60);
+
+    }); 
     it("end user perspective", async function () {
 
       //round 1
@@ -644,6 +730,8 @@ describe.only("BSC Single Direction Option", async function () {
       await vault.connect(bob as Signer).cancelWithdraw(1, bobExpiredAmount.div(2));
       await vault.connect(bob as Signer).initiateWithraw(1, bobExpiredAmount.div(2));
 
+      await vault.connect(alice as Signer).deposit(0, BigNumber.from(1).mul(ETHMultiplier));
+      console.log('Alice deposit 1 ETH');
       const expires2 = [{
         expiryLevel: (ethPrice * 0.95).toFixed(0),
         vaultId: 0
@@ -678,6 +766,10 @@ describe.only("BSC Single Direction Option", async function () {
       assert.isTrue(bobState.expiredQueuedRedeemAmount.eq(0));
       assert.isTrue(bobState.expiredAmount.eq(0));
       assert.isTrue(bobState.onGoingQueuedRedeemAmount.eq(0));
+      await advanceTimeAndBlock(60); 
+      await printState(vault, 0, alice);
+      await advanceTimeAndBlock(60); 
+      await printState(vault, 0, alice);
 
 
     });

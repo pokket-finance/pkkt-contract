@@ -485,13 +485,13 @@ library OptionLifecycle {
         //One time step c: copy onGoingQueuedRedeemAmount to expiredQueuedRedeemAmount, and then clear it out
         //Set on-going -> adjust expired -> accummulate expired to new on-going -> move old on-going to expired 
         if (lastUpdateRound > 2 && !_userState.expiredAmountCaculated) {
-            (uint256 price, ) =
+            (uint256 price, bool expiryLevelSpecified) =
                 getDepositPriceAfterExpiryPerRound(
                     _vaultState,
                     uint16(lastUpdateRound - 2),
                     _currentRound
                 );
-            if (price > 0) { 
+            if (price > 0) {  
                 if (expiredAmount > 0) {
                     expiredAmount = expiredAmount.mul(price).div(
                         Utils.RATIOMULTIPLIER
@@ -499,12 +499,14 @@ library OptionLifecycle {
                     expiredQueuedRedeemAmount = expiredQueuedRedeemAmount
                         .mul(price)
                         .div(Utils.RATIOMULTIPLIER);
-                    onGoingAmount = onGoingAmount.add(expiredAmount).sub(
-                        expiredQueuedRedeemAmount
-                    );
-                    expiredAmount = 0;
-                    redeemed = redeemed.add(expiredQueuedRedeemAmount);
-                    expiredQueuedRedeemAmount = 0;
+                    if (expiryLevelSpecified) {
+                        onGoingAmount = onGoingAmount.add(expiredAmount).sub(
+                            expiredQueuedRedeemAmount
+                        );
+                        expiredAmount = 0;                    
+                        redeemed = redeemed.add(expiredQueuedRedeemAmount);
+                        expiredQueuedRedeemAmount = 0;
+                    } 
                 } else { 
                     onGoingAmount = onGoingAmount.mul(price).div( 
                         Utils.RATIOMULTIPLIER
