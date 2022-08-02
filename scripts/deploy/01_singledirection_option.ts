@@ -1,11 +1,14 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { NULL_ADDRESS, USDC_ADDRESS, WBTC_ADDRESS, USDC_DECIMALS, WBTC_DECIMALS, ETH_DECIMALS,USDC_MULTIPLIER, WBTC_MULTIPLIER} from "../../constants/constants"; 
-import { BigNumber, BigNumberish, Contract } from "ethers";
-import { ethers } from "hardhat";
-import {postDeployment} from "../helper/deployHelper";
+import { BigNumber, BigNumberish, Contract,ContractFactory } from "ethers";
+import { ethers } from "hardhat"; 
 import {getEmailer} from '../helper/emailHelper';
 import * as dotenv from "dotenv";  
 import {CHAINID} from "../../constants/constants"
+import {deployUpgradeableContract, postDeployment} from '../helper/deployHelper';
+import { SingleDirectionOptionUpgradeable } from "../../typechain";
+import { getFileStorage } from "../helper/storageHelper";
+
 dotenv.config();   
 const main = async ({
   network,
@@ -14,9 +17,9 @@ const main = async ({
   getNamedAccounts,
 }: HardhatRuntimeEnvironment) => {
   const { deploy } = deployments;
-  var { deployer, owner, manager } = await getNamedAccounts();   
-  if (network.config.chainId && network.config.chainId != CHAINID.ETH_MAINNET && network.config.chainId != CHAINID.ETH_ROPSTEN) {
-    console.log('Not eth-mainnet/ropsten/hardhat, skip deploying SingleDirectionOption');
+  var { deployer, owner, manager, admin } = await getNamedAccounts();    
+  if (network.config.chainId && network.config.chainId != CHAINID.ETH_MAINNET && network.config.chainId != CHAINID.ETH_GOERLI) {
+    console.log('Not eth-mainnet/goerli/hardhat, skip deploying SingleDirectionOption');
     return;
   } 
   const emailer = await getEmailer();
@@ -103,30 +106,76 @@ const main = async ({
       callOrPut: false
     }
   ]];
-  const optionVault = await deploy("SingleDirectionOption", {
-    from: deployer,
-    args: SINGLEDIRECTION_ARGS,
-    contract: "SingleDirectionOptionStatic",
+  const optionVaultLogic = await deploy("SingleDirectionOption", {
+    from: deployer, 
+    contract: "SingleDirectionOptionUpgradeable",
     libraries: {
       OptionLifecycle: optionLifecycle.address,
     }, 
   }); 
 
+  await postDeployment(optionVaultLogic, run, "SingleDirectionOption", network.name);    
   
-  await postDeployment(optionVault, run, "SingleDirectionOption", network.name, SINGLEDIRECTION_ARGS);     
+  const optionVault = await ethers.getContractFactory("SingleDirectionOptionUpgradeable", {
+    libraries: {
+      OptionLifecycle: optionLifecycle.address,
+    },
+  });
+
+  //this solution is not consistent with typechain generated class
+  /*const initData = optionVault.interface.encodeFunctionData(
+    "initialize",
+    HODLBOOSTER_ARGS
+  );
+
+  const proxy = await deploy("HodlBoosterOptionProxy", {
+    contract: "AdminUpgradeabilityProxy",
+    from: deployer,
+    args: [optionVaultLogic.address, admin, initData],
+  });
+ 
+  console.log(`Deployed BSC HodlBoosterOption Proxy on ${network.name} to ${proxy.address}`);
+
+  try {
+    await run("verify:verify", {
+      address: proxy.address,
+      constructorArguments: [optionVaultLogic.address, admin, initData],
+    });
+  } catch (error) {
+    console.log(error);
+  } */
+  
+  const useNewAdmin = admin && admin != deployer;
+  const proxy = 
+  useNewAdmin ?
+  await deployUpgradeableContract(optionVault as ContractFactory, SINGLEDIRECTION_ARGS, admin) as SingleDirectionOptionUpgradeable:
+  await deployUpgradeableContract(optionVault as ContractFactory, SINGLEDIRECTION_ARGS) as SingleDirectionOptionUpgradeable;
+  
+  if (useNewAdmin) {
+    console.log(`Deployed SingleDirectionOption proxy on ${network.name} to ${proxy.address} and set the admin address to ${admin}`);
+  }
+  else {
+    console.log(`Deployed SingleDirectionOption proxy on ${network.name} to ${proxy.address}`);
+  }
+
+  if (process.env.FROM_SECURE_STORAGE) { 
+    var storage = await getFileStorage();
+    await storage.writeValue("deployerPrivateKey", "");
+  }
 
   const emailContent = { 
     to: emailer.emailTos, 
     cc: emailer.emailCcs,
     subject:`SingleDirectionOption deployed on ${network.name}`,
-    content: `<h2>Deployed SingleDirectionOption on ${network.name} to ${optionVault.address}</h2><h3>Owner Address: ${owner}</h3><h3>Manager Address: ${manager}</h3>`,
+    content: `<h2>Deployed SingleDirectionOption on ${network.name} to ${proxy.address}</h2><h3>Owner Address: ${owner}</h3><h3>Manager Address: ${manager}</h3>` + 
+    (useNewAdmin ? `<h3>Proxy Admin Address: ${admin}</h3>` : ""),
     isHtml: true
 }
 
   await emailer.emailSender.sendEmail(emailContent);
   
   console.log(`Deployment notification email sent`);    
-};
+};   
 main.tags = ["SingleDirectionOption"];
 
 export default main;
