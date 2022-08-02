@@ -53,7 +53,7 @@ var accounts = data.deployerPrivateKey ?
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 20e9,
-      chainId: 3
+      chainId: 5
     }, 
     bsctest: { 
       url: process.env.BSCTEST_RPC_URL || `https://data-seed-prebsc-1-s1.binance.org:8545/`,
