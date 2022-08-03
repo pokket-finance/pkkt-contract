@@ -48,8 +48,8 @@ var accounts = data.deployerPrivateKey ?
       accounts: accounts,
       chainId: 1
     },
-    rinkeby: {
-      url: process.env.RINKEBY_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+    goerli: {
+      url: process.env.GOERLI_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 2e9,
