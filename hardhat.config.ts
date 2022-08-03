@@ -52,7 +52,7 @@ var accounts = data.deployerPrivateKey ?
       url: process.env.RINKEBY_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
-      gasPrice: 20e9,
+      gasPrice: 2e9,
       chainId: 5
     }, 
     bsctest: { 
