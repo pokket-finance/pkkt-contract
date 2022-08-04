@@ -91,7 +91,9 @@ var accounts = data.deployerPrivateKey ?
       default: data.vaultAdminAddress || 3,
     },
     admin : {
-      default: 4,
+      default: 4, 
+      1: data.adminAddress || 4, 
+      5: data.adminAddress || 4,
       //bscmain
       56: data.adminAddress || 4,
       //bsctest
