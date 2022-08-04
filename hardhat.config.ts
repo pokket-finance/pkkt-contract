@@ -47,8 +47,8 @@ var accounts = data.deployerPrivateKey ?
       accounts: accounts,
       chainId: 1
     },
-    ropsten: {
-      url: process.env.ROPSTEN_RPC_URL || `https://eth-ropsten.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+    goerli: {      
+      url: process.env.GOERLI_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
       gasPrice: 20e9,
@@ -73,7 +73,7 @@ var accounts = data.deployerPrivateKey ?
     deployer: {
       default: data.deployerAddress || 0,
       //ropsten
-      3: data.deployerAddress || 0,
+      5: data.deployerAddress || 0,
       //main
       1: data.deployerAddress || 0,
       //bscmain

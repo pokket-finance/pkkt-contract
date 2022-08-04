@@ -121,13 +121,13 @@ const main = async ({ forcesettlerkey }, {
     const result = await promptHelper(schema);   
     
     deployerAddress = result.deployerPrivateKey ? (await new ethers.Wallet(result.deployerPrivateKey, provider).getAddress()) : null;
-    vaultAdminAddress = result.vaultAdminPrivateKey ? (await new ethers.Wallet(result.vaultAdminPrivateKey, provider).getAddress()) : null;
+    vaultAdminAddress = result.vaultAdminPrivateKey ? (await new ethers.Wallet(result.vaultAdminPrivateKey, provider).getAddress()) : null; 
 
     if (!result.adminAddress && result.adminAddress != deployerAddress) {
-      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${result.ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}`); 
     }
     else{
-      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
+      console.log(`Deployer Address: ${deployerAddress}; Owner Address: ${result.ownerAddress}; Vault Admin Address: ${vaultAdminAddress}; Vault Manager Address: ${result.vaultManagerAddress}; Proxy Admin Address: ${result.adminAddress}`); 
  
     }
     await fileStorage.writeValue("deployerAddress", deployerAddress);

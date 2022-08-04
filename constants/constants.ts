@@ -13,7 +13,7 @@ export enum OptionExecution{
 
 export enum CHAINID {
     ETH_MAINNET = 1, // eslint-disable-line no-unused-vars
-    ETH_ROPSTEN = 3, // eslint-disable-line no-unused-vars 
+    ETH_GOERLI = 5, // eslint-disable-line no-unused-vars 
     BSC_MAINNET = 56, // eslint-disable-line no-unused-vars
     BSC_TESTNET = 97, // eslint-disable-line no-unused-vars
 }
