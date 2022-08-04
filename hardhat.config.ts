@@ -74,7 +74,7 @@ var accounts = data.deployerPrivateKey ?
     deployer: {
       default: data.deployerAddress || 0,
       //ropsten
-      3: data.deployerAddress || 0,
+      5: data.deployerAddress || 0,
       //main
       1: data.deployerAddress || 0,
       //bscmain
@@ -90,6 +90,8 @@ var accounts = data.deployerPrivateKey ?
     },
     admin : {
       default: 3,
+      1: data.adminAddress || 3,
+      5: data.adminAddress || 3,
       //bscmain
       56: data.adminAddress || 3,
       //bsctest
