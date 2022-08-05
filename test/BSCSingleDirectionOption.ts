@@ -1008,22 +1008,6 @@ describe.only("BSC Single Direction Option", async function () {
       await advanceTime(60);
       await advanceBlock();
 
-      const history = await vault.connect(trader as Signer).expiredHistory();
-      for (let item of history) {
-        const vaultDefinition = vaultDefinitions[item.vaultId];
-        const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
-        console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, 
-            strike: ${item.strike.toNumber() / StrikeMultiplier}, expiryLevel: ${item.expiryLevel.toNumber() / StrikeMultiplier},  
-            premimum: ${item.premiumRate.toNumber() / RatioMultiplier}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
-      }
-      const history2 = await vault.connect(carol as Signer).expiredHistory();
-      for (let item of history2) {
-        const vaultDefinition = vaultDefinitions[item.vaultId];
-        const assetAmountDecimals = vaultDefinition.assetAmountDecimals;
-        console.log(`vaultId: ${vaultDefinition.name}, round: ${item.round}, amount: ${ethers.utils.formatUnits(item.amount, assetAmountDecimals)}, 
-            strike: ${item.strike.toNumber() / StrikeMultiplier}, expiryLevel: ${item.expiryLevel.toNumber() / StrikeMultiplier},  
-            premimum: ${item.premiumRate.toNumber() / RatioMultiplier}, optionHolderValue ${ethers.utils.formatUnits(item.optionHolderValue, assetAmountDecimals)}`)
-      }
     });
 
 

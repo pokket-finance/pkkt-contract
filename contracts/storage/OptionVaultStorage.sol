@@ -12,8 +12,6 @@ abstract contract OptionVaultStorageV1 {
     mapping(uint8 => address) internal assets;
   
     mapping(uint8 => StructureData.VaultState) internal vaultStates;
-    //todo: this is not needed once we have the subGraph query available
-    mapping(uint8 => mapping(uint16 => StructureData.SoldVaultState)) internal soldVaultStates;
 
     mapping(address => StructureData.OptionBuyerState) internal buyerStates;
  

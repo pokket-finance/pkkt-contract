@@ -92,14 +92,6 @@ library StructureData {
     }
 
 
-    struct SoldVaultState {
-        uint128 amount;
-        uint128 strike;
-        uint128 expiryLevel; //set when setting expiry level
-        uint128 optionHolderValue; //set when setting expiry level 
-        uint104 premiumRate;
-        address buyerAddress;
-    }
     struct ExpiredVaultState {
         uint128 amount;
         uint128 strike;

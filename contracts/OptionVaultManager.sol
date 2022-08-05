@@ -222,17 +222,6 @@ abstract contract OptionVaultManager is
             uint256 premium = total.premium(onGoing.premiumRate);
             address asset = vaultDefinitions[vaultId].asset;
             
-           //todo: trigger event
-            StructureData.SoldVaultState memory soldState = StructureData.SoldVaultState({
-                amount: uint128(total),
-                strike: onGoing.strike,
-                premiumRate: onGoing.premiumRate,
-                buyerAddress: msg.sender,
-                expiryLevel: 0,
-                optionHolderValue: 0 
-            });
-            soldVaultStates[vaultId][data.currentRound - 1] = soldState;
-            
             emit OptionBought(vaultId, data.currentRound - 1, msg.sender, total, onGoing.strike, onGoing.premiumRate);
 
             if (asset == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)) {
@@ -312,10 +301,7 @@ abstract contract OptionVaultManager is
             buyerState.optionValueToCollect[asset] = uint128(
                 optionHolderValue.add(buyerState.optionValueToCollect[asset])
             ); 
-   
-           StructureData.SoldVaultState storage soldState = soldVaultStates[expiryParameters.vaultId][data.currentRound - 2];
-           soldState.expiryLevel = expiryParameters.expiryLevel;
-           soldState.optionHolderValue = uint128(optionHolderValue);
+
            emit OptionExpired(expiryParameters.vaultId, data.currentRound - 2, expiryParameters.expiryLevel, uint128(optionHolderValue));
 
             uint256 remaining =
@@ -390,71 +376,6 @@ abstract contract OptionVaultManager is
                 count++;
             }
         }
-        return values;
-    }
-
-    //todo: this is not needed once we have the subGraph query is available
-    function expiredHistory()
-        external
-        view
-        override
-        returns (StructureData.ExpiredVaultState[] memory)
-    {
-        uint256 count = 0;
-        for(uint8 vaultId = 0; vaultId < vaultCount; vaultId++) {
-
-             StructureData.VaultState storage data = vaultStates[vaultId];
-             StructureData.VaultSnapShot memory vaultSnapshot = OptionLifecycle.recalcVault(data); 
-             if (vaultSnapshot.currentRound < 3){
-                 continue;
-             }
-             for(uint16 round = 1; round <= vaultSnapshot.currentRound - 2; round++) {  
-                  StructureData.SoldVaultState storage soldState = soldVaultStates[vaultId][round];
-                 if (soldState.buyerAddress == msg.sender && 
-                     (soldState.expiryLevel != 0 || round < vaultSnapshot.currentRound - 2)) {
-                     count++;
-                 }
-             }
-        }
-
-        StructureData.ExpiredVaultState[] memory values = new StructureData.ExpiredVaultState[](count);
-        if (count == 0) {
-            return values;   
-        }   
-        count = 0;
-        for(uint8 vaultId = 0; vaultId <vaultCount; vaultId++) {
-
-             StructureData.VaultState storage data = vaultStates[vaultId];
-             StructureData.VaultSnapShot memory vaultSnapshot = OptionLifecycle.recalcVault(data); 
-             if (vaultSnapshot.currentRound < 3){
-                 continue;
-             }
-             for(uint16 round = 1; round <= vaultSnapshot.currentRound - 2; round++) {  
-                 StructureData.SoldVaultState memory soldState = soldVaultStates[vaultId][round];
-                 if (soldState.buyerAddress != msg.sender) {
-                     continue;
-                 }
-                 if (soldState.expiryLevel == 0) {
-                     //expiryLevel not specified 
-                     if (round == vaultSnapshot.currentRound - 2) {
-                         continue;
-                     }
-                     //expiryLevel not specified, but already passed cutoff, set it to strike
-                     soldState.expiryLevel = soldState.strike;
-                 }
-                 StructureData.ExpiredVaultState memory value = StructureData.ExpiredVaultState({
-                     amount: soldState.amount, 
-                     strike: soldState.strike,
-                     premiumRate: soldState.premiumRate,
-                     round: round,
-                     vaultId: vaultId,
-                     expiryLevel: soldState.expiryLevel,
-                     optionHolderValue: soldState.optionHolderValue
-                 });
-                 values[count++] = value;
-             }
-        }
-        
         return values;
     }
 

@@ -143,56 +143,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "expiredHistory",
-    outputs: [
-      {
-        components: [
-          {
-            internalType: "uint128",
-            name: "amount",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "strike",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "expiryLevel",
-            type: "uint128",
-          },
-          {
-            internalType: "uint128",
-            name: "optionHolderValue",
-            type: "uint128",
-          },
-          {
-            internalType: "uint16",
-            name: "round",
-            type: "uint16",
-          },
-          {
-            internalType: "uint104",
-            name: "premiumRate",
-            type: "uint104",
-          },
-          {
-            internalType: "uint8",
-            name: "vaultId",
-            type: "uint8",
-          },
-        ],
-        internalType: "struct StructureData.ExpiredVaultState[]",
-        name: "",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [
       {
         components: [
