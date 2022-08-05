@@ -43,7 +43,7 @@
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.16",
     "ts-mocha": "^8.0.0",
-    "ts-node": "^9.1.1",
+    "ts-node": "^10.8.1",
     "typechain": "^6.1.0",
     "typescript": "^4.2.4",
     "util": "^0.12.4",
