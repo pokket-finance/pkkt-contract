@@ -1,0 +1,627 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0x881efB06901C96C9eA81BcF3eE4bc4f6Ed9E7Af9",
+    "txHash": "0x580373d6a1f767af73607b749b2c92319394cc068f59716ebf423984b8815241"
+  },
+  "proxies": [
+    {
+      "address": "0x0fB2ac88462278F6A0341680b747Ee2e747AB52E",
+      "txHash": "0x9ac5f0a8698e80a4cac31cef58c257eb99f4a3c2082254d1acc38f5e07f91460",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "b4d2bb28792736e30fdfcb5de8639d4a29eafc91fd6d6bc51ae0943595214232": {
+      "address": "0x568C1Cf464A764AE0956780A1660415177b84215",
+      "txHash": "0x5e4214b13b77cf5ab8d84626ed356c6b391a078ee203ba32b7b6617d7e4d7e32",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:30"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:21"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:77"
+          },
+          {
+            "label": "locked",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_uint256",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:6"
+          },
+          {
+            "label": "managerRoleAddress",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_address",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:7"
+          },
+          {
+            "label": "adminRoleAddress",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_address",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:8"
+          },
+          {
+            "label": "optionPairCount",
+            "offset": 20,
+            "slot": "103",
+            "type": "t_uint8",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:9"
+          },
+          {
+            "label": "assetCount",
+            "offset": 21,
+            "slot": "103",
+            "type": "t_uint8",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:10"
+          },
+          {
+            "label": "currentRound",
+            "offset": 22,
+            "slot": "103",
+            "type": "t_uint16",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:11"
+          },
+          {
+            "label": "underSettlement",
+            "offset": 24,
+            "slot": "103",
+            "type": "t_bool",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:12"
+          },
+          {
+            "label": "settlementCashflowResult",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_mapping(t_address,t_struct(SettlementCashflowResult)7046_storage)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:14"
+          },
+          {
+            "label": "assetData",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_mapping(t_address,t_struct(AssetData)6924_storage)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:16"
+          },
+          {
+            "label": "optionPairs",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_mapping(t_uint8,t_struct(OptionPairDefinition)7002_storage)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:18"
+          },
+          {
+            "label": "executionAccountingResult",
+            "offset": 0,
+            "slot": "107",
+            "type": "t_mapping(t_uint8,t_struct(OptionPairExecutionAccountingResult)7037_storage)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:20"
+          },
+          {
+            "label": "optionData",
+            "offset": 0,
+            "slot": "108",
+            "type": "t_mapping(t_uint8,t_struct(OptionData)6944_storage)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:23"
+          },
+          {
+            "label": "asset",
+            "offset": 0,
+            "slot": "109",
+            "type": "t_mapping(t_uint8,t_address)",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:24"
+          },
+          {
+            "label": "moneyMovements",
+            "offset": 0,
+            "slot": "110",
+            "type": "t_mapping(t_address,t_mapping(t_uint16,t_struct(MoneyMovementData)7053_storage))",
+            "contract": "OptionVaultStorageV1",
+            "src": "contracts\\storage\\OptionVaultStorage.sol:26"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_enum(OptionExecution)7027": {
+            "label": "enum StructureData.OptionExecution",
+            "members": [
+              "NoExecution",
+              "ExecuteCall",
+              "ExecutePut"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_int128": {
+            "label": "int128",
+            "numberOfBytes": "16"
+          },
+          "t_mapping(t_address,t_mapping(t_uint16,t_struct(MoneyMovementData)7053_storage))": {
+            "label": "mapping(address => mapping(uint16 => struct StructureData.MoneyMovementData))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(AssetData)6924_storage)": {
+            "label": "mapping(address => struct StructureData.AssetData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(SettlementCashflowResult)7046_storage)": {
+            "label": "mapping(address => struct StructureData.SettlementCashflowResult)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(UserState)6961_storage)": {
+            "label": "mapping(address => struct StructureData.UserState)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_struct(MoneyMovementData)7053_storage)": {
+            "label": "mapping(uint16 => struct StructureData.MoneyMovementData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint16,t_struct(OptionState)6892_storage)": {
+            "label": "mapping(uint16 => struct StructureData.OptionState)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_address)": {
+            "label": "mapping(uint8 => address)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_struct(OptionData)6944_storage)": {
+            "label": "mapping(uint8 => struct StructureData.OptionData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_struct(OptionPairDefinition)7002_storage)": {
+            "label": "mapping(uint8 => struct StructureData.OptionPairDefinition)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint8,t_struct(OptionPairExecutionAccountingResult)7037_storage)": {
+            "label": "mapping(uint8 => struct StructureData.OptionPairExecutionAccountingResult)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AssetData)6924_storage": {
+            "label": "struct StructureData.AssetData",
+            "members": [
+              {
+                "label": "releasedAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "depositAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "leftOverAmount",
+                "type": "t_int128",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(MoneyMovementData)7053_storage": {
+            "label": "struct StructureData.MoneyMovementData",
+            "members": [
+              {
+                "label": "blockTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "movementAmount",
+                "type": "t_int128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "manager",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(OptionData)6944_storage": {
+            "label": "struct StructureData.OptionData",
+            "members": [
+              {
+                "label": "totalReleasedDepositAssetAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "totalReleasedCounterPartyAssetAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "assetToTerminateForNextRound",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "optionStates",
+                "type": "t_mapping(t_uint16,t_struct(OptionState)6892_storage)",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "usersInvolved",
+                "type": "t_array(t_address)dyn_storage",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "userStates",
+                "type": "t_mapping(t_address,t_struct(UserState)6961_storage)",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(OptionPairDefinition)7002_storage": {
+            "label": "struct StructureData.OptionPairDefinition",
+            "members": [
+              {
+                "label": "callOptionId",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "putOptionId",
+                "type": "t_uint8",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "depositAssetAmountDecimals",
+                "type": "t_uint8",
+                "offset": 2,
+                "slot": "0"
+              },
+              {
+                "label": "counterPartyAssetAmountDecimals",
+                "type": "t_uint8",
+                "offset": 3,
+                "slot": "0"
+              },
+              {
+                "label": "depositAsset",
+                "type": "t_address",
+                "offset": 4,
+                "slot": "0"
+              },
+              {
+                "label": "counterPartyAsset",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "manualDepositDisabled",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(OptionPairExecutionAccountingResult)7037_storage": {
+            "label": "struct StructureData.OptionPairExecutionAccountingResult",
+            "members": [
+              {
+                "label": "callOptionResult",
+                "type": "t_struct(SettlementAccountingResult)7023_storage",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "putOptionResult",
+                "type": "t_struct(SettlementAccountingResult)7023_storage",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "execute",
+                "type": "t_enum(OptionExecution)7027",
+                "offset": 0,
+                "slot": "10"
+              }
+            ],
+            "numberOfBytes": "352"
+          },
+          "t_struct(OptionState)6892_storage": {
+            "label": "struct StructureData.OptionState",
+            "members": [
+              {
+                "label": "totalAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "totalTerminate",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "strikePrice",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "round",
+                "type": "t_uint16",
+                "offset": 16,
+                "slot": "1"
+              },
+              {
+                "label": "premiumRate",
+                "type": "t_uint16",
+                "offset": 18,
+                "slot": "1"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "callOrPut",
+                "type": "t_bool",
+                "offset": 21,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(SettlementAccountingResult)7023_storage": {
+            "label": "struct StructureData.SettlementAccountingResult",
+            "members": [
+              {
+                "label": "depositAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "autoRollAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "autoRollPremium",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "releasedAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "1"
+              },
+              {
+                "label": "releasedPremium",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "autoRollCounterPartyAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "2"
+              },
+              {
+                "label": "autoRollCounterPartyPremium",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "releasedCounterPartyAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "releasedCounterPartyPremium",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "executed",
+                "type": "t_bool",
+                "offset": 16,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(SettlementCashflowResult)7046_storage": {
+            "label": "struct StructureData.SettlementCashflowResult",
+            "members": [
+              {
+                "label": "newDepositAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "newReleasedAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "leftOverAmount",
+                "type": "t_int128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "contractAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(UserState)6961_storage": {
+            "label": "struct StructureData.UserState",
+            "members": [
+              {
+                "label": "pendingAsset",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "tempLocked",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "0"
+              },
+              {
+                "label": "ongoingAsset",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "assetToTerminate",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "1"
+              },
+              {
+                "label": "assetToTerminateForNextRound",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "releasedDepositAssetAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "2"
+              },
+              {
+                "label": "releasedCounterPartyAssetAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "hasState",
+                "type": "t_bool",
+                "offset": 16,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}

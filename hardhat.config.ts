@@ -51,8 +51,8 @@ var accounts = data.deployerPrivateKey ?
       url: process.env.GOERLI_RPC_URL || `https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       gas: 2100000, 
       accounts: accounts,
-      gasPrice: 20e9,
-      chainId: 3
+      gasPrice: 2e9,
+      chainId: 5
     }, 
     bsctest: { 
       url: process.env.BSCTEST_RPC_URL || `https://data-seed-prebsc-1-s1.binance.org:8545`,
