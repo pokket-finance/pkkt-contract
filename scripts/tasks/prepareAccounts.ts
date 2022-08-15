@@ -4,7 +4,7 @@ import promptHelper from '../helper/promptHelper';
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const main = async ({ forceAdminKey }, {
+const main = async ({ forceadminkey }, {
     network,
     deployments,
     getNamedAccounts,
