@@ -142,7 +142,7 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 task("export-deployments", "Exports deployments into JSON", exportDeployments);
 
 task("prepare-accounts", "Prepare accounts", prepareAccounts)
-.addFlag("forcesettlerkey", "If set, settler private key must be input if missing"); 
+.addFlag("forceAdminKey", "If set, admin private key must be input if missing"); 
 
 task("new-epoch", "Initiate a new epoch", initiateSettlement);
  

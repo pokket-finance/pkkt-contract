@@ -1,5 +1,5 @@
  
-import { getStorage } from "../helper/storageHelper";
+import { getFileStorage, getStorage } from "../helper/storageHelper";
 import {getEmailer} from '../helper/emailHelper';
 import { HodlBoosterOptionUpgradeable, HodlBoosterOptionStatic } from "../../typechain";
 
@@ -10,11 +10,11 @@ const main = async ({}, {
   ethers
 }) => { 
   
-    const { vaultAdmin } = await getNamedAccounts(); 
-    var storage = getStorage();  
-    var privateKey =  (await storage.readValue("VAULT_ADMIN_PRIVATE_KEY")) as string;
+    const { vaultAdmin } = await getNamedAccounts();  
+    var fileStorage = getFileStorage();
+    var privateKey =  (await fileStorage.readValue("vaultAdminPrivateKey")) as string;
     if (!privateKey) {
-        console.error("Failed to find VAULT_ADMIN_PRIVATE_KEY");
+        console.error("Failed to find vaultAdminPrivateKey");
         return;
     }
     privateKey = privateKey.startsWith("0x") ? privateKey : ("0x" + privateKey);  
@@ -37,7 +37,15 @@ const main = async ({}, {
     const previousRound = await hodlBoosterOptionContract.currentRound();
     console.log(`HodlBoosterOption is currently under ${previousRound} epoch`);
     await hodlBoosterOptionContract.connect(vaultAdminWallet).initiateSettlement();
-    console.log("Initiated new epoch upon HodlBoosterOption");
+    console.log("Initiated new epoch upon HodlBoosterOption");  
+    if (process.env.FROM_SECURE_STORAGE) { 
+      var storage = await getFileStorage();
+      await storage.writeValue("ownerAddress", "");
+      await storage.writeValue("deployerPrivateKey", "");
+      await storage.writeValue("adminAddress", "");
+      await storage.writeValue("vaultManagerAddress", "");
+      await storage.writeValue("vaultAdminPrivateKey", "");
+    }
     //wait for longer
     //await new Promise(resolve => setTimeout(resolve, parseInt(process.env.NETWORK_DELAY?? "10000"))); 
     const currentRound = previousRound + 1;

@@ -25,10 +25,7 @@ Project currently use hardhat for deployment. The variable should import from pr
 1. run **npm run transfer-ownership:bsc-qa** (for bsctestnet) or **npm run transfer-ownership:bsc-prod** (for bscmainnet) to transfer the ownership of HodlBoosterContract from the original owner specified during deployment.
     - Original owner's private key must be provided at this stage and stored in memory temporarily for transferring ownership on chain
 
-2. run **npm run set-settler:bsc-qa** (for bsctestnet) or **npm run set-settler:bsc-prod** (for bscmainnet) to change the settler on chain or simply upload the settler private key    
-    - changeSettlerOnChain: if set to true, owner's private key must be provided at this stage and stored in memory temporarily for change the settler on chain. Also remember to restart traderperctive backend.
-    - settlerPrivateKey: would be persisted to a secured storage, take, aws ssm. This must be set for traderperctive backend to function well
-
+ 
 ## License
 
 MIT
