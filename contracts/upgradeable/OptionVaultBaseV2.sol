@@ -347,7 +347,8 @@ abstract contract OptionVaultBaseV2 is
                     newReleasedAmount: assetSubData.releasedAmount,
                     newDepositAmount: assetSubData.depositAmount,
                     leftOverAmount: assetSubData.leftOverAmount,
-                    contractAddress: assetAddress
+                    contractAddress: assetAddress,
+                    sentOrWithdrawn: false
                 });
             settlementCashflowResult[assetAddress] = instruction;
             //todo: check overflow

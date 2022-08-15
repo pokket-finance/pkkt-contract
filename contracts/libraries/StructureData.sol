@@ -130,6 +130,7 @@ library StructureData {
         uint128 newReleasedAmount;
         int128 leftOverAmount; //positive, if trader didn't withdraw last time; negative, if trader failed to send back last time;
         address contractAddress; //0 for eth
+        bool sentOrWithdrawn; //true if executed
     }
 
     struct MoneyMovementData { 

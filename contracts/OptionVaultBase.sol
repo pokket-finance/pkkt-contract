@@ -273,6 +273,9 @@ abstract contract OptionVaultBase is
                     );
                 }
             }
+            else { 
+               previousCallOptionState.executed =  execution == StructureData.OptionExecution.ExecuteCall;
+            }
 
             StructureData.OptionState storage previousPutOptionState = putOption
                 .optionStates[previousRound - 1];
@@ -320,6 +323,9 @@ abstract contract OptionVaultBase is
                     );
                 }
             }
+            else { 
+               previousPutOptionState.executed =  execution == StructureData.OptionExecution.ExecutePut;
+            }
             OptionLifecycle.commitByOption(callOption, previousRound);
             OptionLifecycle.commitByOption(putOption, previousRound);
         }
@@ -340,7 +346,8 @@ abstract contract OptionVaultBase is
                     newReleasedAmount: assetSubData.releasedAmount,
                     newDepositAmount: assetSubData.depositAmount,
                     leftOverAmount: assetSubData.leftOverAmount,
-                    contractAddress: assetAddress
+                    contractAddress: assetAddress,
+                    sentOrWithdrawn: false
                 });
             settlementCashflowResult[assetAddress] = instruction;
             //todo: check overflow
@@ -381,6 +388,7 @@ abstract contract OptionVaultBase is
                 manager:msg.sender
             });
             assetSubData.leftOverAmount = 0;
+            settlementCashflowResult[assetAddress].sentOrWithdrawn = true;
         }  
     }
     
@@ -411,6 +419,7 @@ abstract contract OptionVaultBase is
                 manager:msg.sender
             });
             assetSubData.leftOverAmount = 0;
+            settlementCashflowResult[assetAddress].sentOrWithdrawn = true;
         } 
     }
     
@@ -432,7 +441,7 @@ abstract contract OptionVaultBase is
             address assetAddress = asset[i];
             for(uint16 round = 1; round <= currentRound; round++) {
                 StructureData.MoneyMovementData memory data = moneyMovements[assetAddress][round];
-                if (data.manager == msg.sender) {
+                if (data.manager != address(0)) {
                     result[count] = StructureData.MoneyMovementResult({
                         blockTime: data.blockTime,
                         movementAmount: data.movementAmount,

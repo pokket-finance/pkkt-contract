@@ -406,6 +406,11 @@ const _abi = [
         name: "contractAddress",
         type: "address",
       },
+      {
+        internalType: "bool",
+        name: "sentOrWithdrawn",
+        type: "bool",
+      },
     ],
     stateMutability: "view",
     type: "function",

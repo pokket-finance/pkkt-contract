@@ -400,11 +400,12 @@ export class OptionVaultBaseV2 extends BaseContract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, string] & {
+      [BigNumber, BigNumber, BigNumber, string, boolean] & {
         newDepositAmount: BigNumber;
         newReleasedAmount: BigNumber;
         leftOverAmount: BigNumber;
         contractAddress: string;
+        sentOrWithdrawn: boolean;
       }
     >;
 
@@ -587,11 +588,12 @@ export class OptionVaultBaseV2 extends BaseContract {
     arg0: string,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, BigNumber, BigNumber, string] & {
+    [BigNumber, BigNumber, BigNumber, string, boolean] & {
       newDepositAmount: BigNumber;
       newReleasedAmount: BigNumber;
       leftOverAmount: BigNumber;
       contractAddress: string;
+      sentOrWithdrawn: boolean;
     }
   >;
 
@@ -770,11 +772,12 @@ export class OptionVaultBaseV2 extends BaseContract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, string] & {
+      [BigNumber, BigNumber, BigNumber, string, boolean] & {
         newDepositAmount: BigNumber;
         newReleasedAmount: BigNumber;
         leftOverAmount: BigNumber;
         contractAddress: string;
+        sentOrWithdrawn: boolean;
       }
     >;
 
